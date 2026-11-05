@@ -11,6 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def p(*parts): return os.path.join(ROOT, *parts)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from correlate import county_centroids
+from packer import pack_layer, lenses_for
 
 STATE_FIPS = {"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"}
 
@@ -134,6 +135,28 @@ def write_data_api(registry, repo, layers_data):
     with open(p("docs","DATA_API.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
+# ---- plate extras for registry-packed layers (statistics, not packing) ----
+def _hook_omen(lay, st, d):
+    lay["dark"] = sum(1 for x in d["s"] if x == 0); lay["light"] = d["n"] - lay["dark"]
+    d["dark"], d["light"] = lay["dark"], lay["light"]
+
+def _hook_suicide(lay, st, d):
+    if st.get("suppressedCount") is not None:
+        lay["plateStats"].append({"label":"counties suppressed (kept dark)","value":fmt_int(st["suppressedCount"])})
+    youth = sorted(st.get("stateYouth") or [], key=lambda r: -r["value"])[:3]
+    if youth:
+        lay["plateStats"].append({"label":"highest state youth rates","value":" · ".join(f"{y['state']} {y['value']}" for y in youth)})
+    lay["plateStats"].append({"label":"vintage","value":st.get("vintage","")})
+
+def _hook_social(lay, st, d):
+    rr = sorted(st["regions"], key=lambda r: -r["value"])
+    ecl = lambda r: re.sub(r"^economic connectedness\s*", "EC ", r["label"])
+    lay["plateStats"].append({"label":"most connected","value":ecl(rr[0])})
+    lay["plateStats"].append({"label":"least connected","value":ecl(rr[-1])})
+    lay["plateStats"].append({"label":"benchmark","value":"EC 1.0 = class-blind friendship"})
+
+PLATE_HOOKS = {"omen-names": _hook_omen, "despair-suicide": _hook_suicide, "company-socialcapital": _hook_social}
+
 def build():
     registry = load(p("registry","registry.json"))
     fpath = p("data","findings.json")
@@ -155,7 +178,22 @@ def build():
         lay["retrieved"] = st.get("retrieved","")
         lay["sources"] = st.get("sources", [])
 
-        if lid == "memory-births":
+        if lay.get("pack"):
+            # v0.7 Phase 0.3: the registry declares the payload; no per-layer code
+            d = pack_layer(lay, st, shrink_label)
+            layers_data[lid] = d
+            cnt = lay["pack"].get("count")
+            lay["count"] = (sum(d[cnt]) if cnt and cnt in d else
+                            d["n"] if d["kind"] in ("points", "flows", "raster") else
+                            len(d.get("counties") or d.get("countries") or {}))
+            fl = lenses_for(lay, d)
+            if fl: lay.setdefault("filters", []).extend(fl)
+            if d.get("time"): lay["time"] = d["time"]
+            if d.get("categories"): lay["categories"] = d["categories"]
+            hook = PLATE_HOOKS.get(lid)
+            if hook: hook(lay, st, d)
+
+        elif lid == "memory-births":
             cells = st["cells"]
             labs = {}
             c_lat, c_lon, c_v = [], [], []
@@ -275,17 +313,6 @@ def build():
             if not any(s.get("label")=="top states" for s in lay["plateStats"]):
                 lay["plateStats"].append({"label":"top states","value":top3})
 
-        elif lid == "omen-names":
-            recs = st["records"]
-            pk = {"lat":[rnd(r["lat"]) for r in recs],"lon":[rnd(r["lon"]) for r in recs],
-                  "name":[(r.get("name") or "")[:40] for r in recs],
-                  "s":[0 if (r.get("meta") or {}).get("side")=="dark" else 1 for r in recs],
-                  "cls":[((r.get("meta") or {}).get("class") or "")[:18] for r in recs],
-                  "st":[((r.get("meta") or {}).get("state") or "")[:2] for r in recs]}
-            dark = sum(1 for s in pk["s"] if s==0); light = len(recs)-dark
-            layers_data[lid] = {"kind":"points","n":len(recs),"dark":dark,"light":light, **pk}
-            lay["count"] = len(recs); lay["dark"]=dark; lay["light"]=light
-
         elif lid == "wonder-ufos":
             # group identical rounded coords; coarsen if still huge
             groups = defaultdict(lambda: [0, 0])   # v, max yr
@@ -310,41 +337,6 @@ def build():
             layers_data[lid] = {"kind":"points","n":len(keys),"reports":total_reports, **pk}
             lay["count"] = total_reports
             lay["vintage"] = st.get("vintage","")
-
-        elif lid == "despair-overdoses":
-            counties, vmax = pack_county_regions(st)
-            layers_data[lid] = {"kind":"regions","regionKind":"county","counties":counties,
-                                "vmax": vmax, "vintage": st.get("vintage","")}
-            lay["count"] = len(counties)
-
-        elif lid == "residue-superfund":
-            STMAP = {"proposed":0,"final":1,"deleted":2}
-            recs = st["records"]
-            pk = {"lat":[rnd(r["lat"]) for r in recs],"lon":[rnd(r["lon"]) for r in recs],
-                  "name":[(r.get("name") or "")[:60] for r in recs],
-                  "st2":[STMAP.get((r.get("meta") or {}).get("status","final"),1) for r in recs],
-                  "state":[((r.get("meta") or {}).get("state") or "")[:2] for r in recs]}
-            layers_data[lid] = {"kind":"points","n":len(recs), **pk}
-            lay["count"] = len(recs)
-
-        elif lid in ("despair-suicide", "company-socialcapital", "faith-altar"):
-            counties, vmax = pack_county_regions(st)
-            layers_data[lid] = {"kind":"regions","regionKind":"county","counties":counties,
-                                "vmax": vmax, "vintage": st.get("vintage","")}
-            lay["count"] = len(counties)
-            if lid == "despair-suicide":
-                if st.get("suppressedCount") is not None:
-                    lay["plateStats"].append({"label":"counties suppressed (kept dark)","value":fmt_int(st["suppressedCount"])})
-                youth = sorted(st.get("stateYouth") or [], key=lambda r: -r["value"])[:3]
-                if youth:
-                    lay["plateStats"].append({"label":"highest state youth rates","value":" · ".join(f"{y['state']} {y['value']}" for y in youth)})
-                lay["plateStats"].append({"label":"vintage","value":st.get("vintage","")})
-            if lid == "company-socialcapital":
-                rr = sorted(st["regions"], key=lambda r: -r["value"])
-                ecl = lambda r: re.sub(r"^economic connectedness\s*", "EC ", r["label"])
-                lay["plateStats"].append({"label":"most connected","value":ecl(rr[0])})
-                lay["plateStats"].append({"label":"least connected","value":ecl(rr[-1])})
-                lay["plateStats"].append({"label":"benchmark","value":"EC 1.0 = class-blind friendship"})
 
         elif lid == "control-arsenal":
             recs = st["records"]
@@ -463,10 +455,6 @@ def build():
         mk_filter("wonder-ufos","dec","Decade (latest report)",[(0,"1940s"),(1,"1950s"),(2,"1960s"),(3,"1970s"),(4,"1980s"),(5,"1990s"),(6,"2000s"),(7,"2010s")], seq=True)
     if "motion-fulfillment" in layers_data:
         mk_filter("motion-fulfillment","t","Facility type",[(0,"Fulfillment"),(1,"Sortation"),(2,"Cross-dock")], constellation=True)
-    if "omen-names" in layers_data:
-        mk_filter("omen-names","s","Side",[(0,"Devils & hells"),(1,"Angels & paradises")])
-    if "residue-superfund" in layers_data:
-        mk_filter("residue-superfund","st2","Status",[(0,"Proposed"),(1,"On the list"),(2,"Deleted (cleaned)")])
     if "loss-crashes" in layers_data:
         MNL = [(i, m) for i, m in enumerate(["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]) if i]
         mk_filter("loss-crashes","m","Month",MNL, seq=True)
