@@ -1,6 +1,6 @@
 {
   "disclaimer": "WHERE, NOT WHY — every number on this page is descriptive. Geography correlates everything with everything; the survey shows where things coincide and never claims to know why.",
-  "computed": "2026-07-07 (v0.5 additions reviewed; migration×overdose r=0.15 and connectedness×migration r=0.05 computed and REJECTED as too weak to ship)",
+  "computed": "2026-11-05 (v0.6: the never-correlated layers — faith, company, the sorting — run through pipeline/correlate.py v06 with nationwide, within-state, and population-band checks; two shipped, four rejected and recorded in correlate.py). Earlier: 2026-07-07 v0.5 review.",
   "method_root": "pipeline/correlate.py — county centroids decoded from the counties TopoJSON; distances by haversine; correlations are Pearson on log-transformed values. All inputs are the survey's own staged, provenance-tracked layers.",
   "findings": [
     {
@@ -115,6 +115,44 @@
         "despair-overdoses"
       ],
       "scope": "us"
+    },
+    {
+      "id": "sorting-pews",
+      "title": "The Sorting Leaves the Pews Behind",
+      "stat": "−15%",
+      "statLabel": "religious adherence where households arrive fastest",
+      "body": "The fifth of counties gaining households fastest average 444 religious adherents per 1,000 residents. The fifth losing them fastest average 524. The pattern holds inside states, not just between the Sun Belt and the old cores. One plain explanation is mechanical: congregations are counted where their buildings stand, and buildings lag behind new subdivisions. The survey shows the coincidence, not which explanation is right.",
+      "method": "2,841 counties with IRS SOI net household migration (2022–23) scaled per 1,000 residents and 2020 U.S. Religion Census adherence (counties above 1,000 per 1k excluded as cross-county draw). Pearson r = −0.20, Spearman −0.19; within-state (state-demeaned) r = −0.20. Quintile means 524 vs 444. Adherence predates the migration year.",
+      "layers": [
+        "motion-sorting",
+        "faith-altar"
+      ],
+      "scope": "us"
+    },
+    {
+      "id": "lutheran-confound",
+      "title": "The Altar That Was Really a Map",
+      "stat": "3.8× → 1.3×",
+      "statLabel": "the Lutheran gap, nationwide vs inside the same states",
+      "tag": "CONFOUNDED — SHOWN ON PURPOSE",
+      "lesson": true,
+      "body": "Counties whose largest tradition is Lutheran average 6.2 overdose deaths per 100k; non-denominational counties average 23.8. A headline writes itself. Then compare counties inside the same states and the gap nearly closes: 5.7 against 7.4. Lutheran counties are Upper Midwest counties, and the Upper Midwest sits far from the epidemic's seams. The spurious card warns that everything follows people. This one warns that everything follows region.",
+      "method": "Largest tradition family per county from the 2020 U.S. Religion Census; 2024 CDC crude overdose rates. Nationwide means: Lutheran 6.2 (n=163), Baptist 19.6 (n=1,047), non-denominational 23.8 (n=311). Within the nine states holding at least five Lutheran-plurality and five other counties, weighted means 5.7 vs 7.4. Adherence rate itself vs overdose: r = −0.19 nationwide, −0.10 within states — rejected as a finding.",
+      "layers": [
+        "faith-altar",
+        "despair-overdoses"
+      ],
+      "scope": "us",
+      "bbox": [
+        [
+          -104.5,
+          40
+        ],
+        [
+          -86.5,
+          49.4
+        ]
+      ]
     }
   ]
 }

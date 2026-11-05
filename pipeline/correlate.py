@@ -3,7 +3,7 @@
 Build-time spatial statistics across layers. Emits candidate findings to stdout
 for hand review. Descriptive only: WHERE, not WHY.
 """
-import json, math, os
+import json, math, os, sys
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -163,7 +163,7 @@ def main():
     all_share = sum(1 for f in rates if f[:2] in app_states)/len(rates)
     print(f"F8 appalachia: {share*100:.0f}% of the 100 highest-rate counties are in KY/WV/OH/VA/TN vs {all_share*100:.1f}% baseline share of counties")
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 1:
     main()
 
 # ---- v0.5 additions (run 2026-07-07) ----
@@ -171,3 +171,86 @@ if __name__ == "__main__":
 # F10 net migration vs OD: n=2768  gainers 22.2 vs losers 19.3, r=0.152                   -> REJECTED (too weak)
 # F11 EC vs net migration: n=2816  r=0.045                                                -> REJECTED (null)
 # Suicide data is excluded from the correlator entirely per the WANTLIST safe-messaging protocol.
+
+# ======================================================================
+# v0.6 — the never-correlated layers: faith, company, the sorting.
+# Suicide stays out of the correlator entirely (WANTLIST protocol).
+# Run: python3 pipeline/correlate.py v06
+# ======================================================================
+def spearman(xs, ys):
+    def ranks(v):
+        o = sorted(range(len(v)), key=lambda i: v[i]); r = [0.0]*len(v); i = 0
+        while i < len(o):
+            j = i
+            while j+1 < len(o) and v[o[j+1]] == v[o[i]]: j += 1
+            for k in range(i, j+1): r[o[k]] = (i+j)/2
+            i = j+1
+        return r
+    return pearson(ranks(xs), ranks(ys))
+
+def quintiles(pairs):
+    """pairs of (x, y): mean y in the bottom and top fifth of x."""
+    s = sorted(pairs); n = len(s); q = n//5
+    lo = [y for _, y in s[:q]]; hi = [y for _, y in s[-q:]]
+    return sum(lo)/len(lo), sum(hi)/len(hi), q
+
+def v06():
+    od = {str(r["key"]).zfill(5): r["value"] for r in load(p("data","staging","despair-overdoses.json"))["regions"]}
+    fa_st = load(p("data","staging","faith-altar.json"))["regions"]
+    fa = {str(r["key"]).zfill(5): r["value"] for r in fa_st}
+    pop = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("population_2020") for r in fa_st}
+    trad = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("largest_tradition_family") for r in fa_st}
+    ec = {str(r["key"]).zfill(5): r["value"] for r in load(p("data","staging","company-socialcapital.json"))["regions"]}
+    so = load(p("data","staging","motion-sorting.json"))
+    net = {str(c["fips"]).zfill(5): c["net"] for c in so["counties"]}
+    # net migration per 1,000 residents (households per 1k people — a rate, not a raw count)
+    netr = {f: 1000.0*v/pop[f] for f, v in net.items() if pop.get(f)}
+    capped = {f: v for f, v in fa.items() if v <= 1000}   # >1000/1k = cross-county worshipper draw (documented)
+
+    def pair(a, b, name, la="", lb=""):
+        ks = [k for k in a if k in b]
+        xs = [a[k] for k in ks]; ys = [b[k] for k in ks]
+        r = pearson(xs, ys); rs = spearman(xs, ys)
+        lo, hi, q = quintiles(list(zip(xs, ys)))
+        print(f"{name}: n={len(ks)} pearson={r:.3f} spearman={rs:.3f} | mean {lb} in bottom fifth of {la}={lo:.2f}, top fifth={hi:.2f} (n={q} each)")
+        return ks
+
+    print("\n--- v0.6 candidates ---")
+    pair(capped, od, "F12 adherence x overdose", "adherence", "OD")
+    pair(capped, ec, "F13 adherence x connectedness", "adherence", "EC")
+    pair(netr, ec, "F14 net migration rate x connectedness", "netmig", "EC")
+    pair(netr, capped, "F15 net migration rate x adherence", "netmig", "adherence")
+    pair(netr, od, "F16 net migration rate x overdose", "netmig", "OD")
+    # confound check for F12: does it survive within population bands?
+    ks = [k for k in capped if k in od and pop.get(k)]
+    bands = [(0, 10000), (10000, 50000), (50000, 250000), (250000, 1e9)]
+    for lo_, hi_ in bands:
+        sub = [k for k in ks if lo_ <= pop[k] < hi_]
+        if len(sub) > 30:
+            print(f"   F12 within pop {lo_:>7,}-{hi_:<11,.0f}: n={len(sub)} r={pearson([capped[k] for k in sub],[od[k] for k in sub]):.3f}")
+    for lo_, hi_ in bands:
+        sub = [k for k in capped if k in ec and pop.get(k) and lo_ <= pop[k] < hi_]
+        if len(sub) > 30:
+            print(f"   F13 within pop {lo_:>7,}-{hi_:<11,.0f}: n={len(sub)} r={pearson([capped[k] for k in sub],[ec[k] for k in sub]):.3f}")
+    # tradition: overdose by largest tradition family (descriptive)
+    from collections import defaultdict as dd
+    g = dd(list)
+    for k, t in trad.items():
+        if k in od and t: g[t].append(od[k])
+    print("   OD by largest tradition (n>=40):", ", ".join(f"{t} {sum(v)/len(v):.1f} (n={len(v)})" for t, v in sorted(g.items(), key=lambda kv: -sum(kv[1])/len(kv[1])) if len(v) >= 40))
+    g2 = dd(list)
+    for k, t in trad.items():
+        if k in ec and t: g2[t].append(ec[k])
+    print("   EC by largest tradition (n>=40):", ", ".join(f"{t} {sum(v)/len(v):.2f} (n={len(v)})" for t, v in sorted(g2.items(), key=lambda kv: -sum(kv[1])/len(kv[1])) if len(v) >= 40))
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v06":
+    v06()
+
+# ---- v0.6 review (run 2026-11-05, `python3 pipeline/correlate.py v06`) ----
+# F12 adherence vs OD:          r=-0.186; within-state -0.103; ~0 in counties >50k   -> REJECTED (regional)
+# F13 adherence vs EC:          r=-0.048 overall (-0.31 in big counties: subgroup)   -> REJECTED (forking paths)
+# F14 net-migration rate vs EC: r=0.043                                              -> REJECTED (null, again)
+# F15 net-migration rate vs adherence: r=-0.200, spearman -0.190, within-state -0.202 -> SHIPPED "The Sorting Leaves the Pews Behind"
+# F16 net-migration rate vs OD: r=0.119                                              -> REJECTED (too weak)
+# Tradition x OD: Lutheran 6.2 vs non-denominational 23.8 nationwide, 5.7 vs 7.4 within states
+#                                                                                    -> SHIPPED as a confounding lesson

@@ -69,6 +69,11 @@
       "id": "arsenal-altar", "title": "The Arsenal and the Altar", "kicker": "CONTROL × FAITH", "scope": "us",
       "layers": ["control-arsenal", "faith-altar"], "bbox": [[-107, 29], [-80, 42]],
       "text": "Two geographies of devotion, drawn from license rolls and pew counts. Steel points are the places that sell arms; the candle-gold wash is the density of the faithful. Sometimes they are the same places, sometimes opposites — the survey only shows where, and lets you argue about why."
+    },
+    {
+      "id": "who-knows-whom", "title": "Who Knows Whom", "kicker": "COMPANY — FRIENDSHIP ACROSS CLASS", "scope": "us",
+      "layers": ["company-socialcapital"], "bbox": [[-125, 24], [-66, 50]],
+      "text": "Economic connectedness asks one question of a county: do its poorer residents have friends who are not poor? At 1.0, friendship ignores class entirely. Only one county in six reaches it. The state averages run from 0.56 in South Carolina to 1.09 in New Hampshire, and the Upper Midwest and the mountain West glow while the Deep South stays pale. The map measures who knows whom, which is not the same as who helps whom."
     }
   ],
   "layers": [

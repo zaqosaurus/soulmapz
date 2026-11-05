@@ -1664,15 +1664,16 @@ function buildFindingsMenu(){
  const m=$('#findingsMenu');m.innerHTML='';
  const d=document.createElement('div');d.className='fm-disc';d.textContent=R.findings.disclaimer;m.appendChild(d);
  R.findings.findings.forEach(f=>{
-  const it=document.createElement('div');it.className='fm-card'+(f.spurious?' spur':'');
-  it.innerHTML='<div class="fm-stat">'+f.stat+'</div><div class="fm-body"><div class="fm-t">'+f.title+(f.spurious?' <span class="fm-tag">SPURIOUS — ON PURPOSE</span>':'')+'</div><div class="fm-s">'+f.statLabel+'</div></div>';
+  const it=document.createElement('div');it.className='fm-card'+(f.spurious||f.lesson?' spur':'');
+  const tag=f.tag||(f.spurious?'SPURIOUS — ON PURPOSE':'');
+  it.innerHTML='<div class="fm-stat">'+f.stat+'</div><div class="fm-body"><div class="fm-t">'+f.title+(tag?' <span class="fm-tag">'+tag+'</span>':'')+'</div><div class="fm-s">'+f.statLabel+'</div></div>';
   it.addEventListener('click',()=>applyFinding(f));
   m.appendChild(it);
  });
 }
 function findingCap(f){
  const ac=f.spurious?'#8a94a6':(byId[f.layers[0]]?byId[f.layers[0]].accent:'#e8b34b');
- return '<div class="cc-k" style="color:'+ac+'">FINDING'+(f.spurious?' — EPISTEMIC CONTROL':'')+'</div>'+
+ return '<div class="cc-k" style="color:'+ac+'">FINDING'+(f.spurious?' — EPISTEMIC CONTROL':f.lesson?' — A LESSON IN CONFOUNDING':'')+'</div>'+
   '<div class="cc-t">'+f.title+'</div>'+
   '<div class="cc-stat" style="color:'+ac+'">'+f.stat+' <span>'+f.statLabel.toUpperCase()+'</span></div>'+
   '<div class="cc-x">'+f.body+'</div>'+
