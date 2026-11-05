@@ -45,7 +45,7 @@ prov = {"layer": "memory-languages", "retrieved": "2026-11-05",
               "Extinct languages are kept: the map shows what was spoken, not only what is.",
               "AES is an agglomeration of three expert catalogues; individual assessments can lag the ground."],
   "protocol": "No people are named; languages only.",
-  "validation": {"reviewed_offshore": {"count": 87, "reason": "oceanic islands absent from the 1:50m Natural Earth coastline; reviewed by hand 2026-11-05",
+  "validation": {"reviewed_offshore": {"count": 60, "reason": "oceanic islands absent from the 1:50m Natural Earth coastline; reviewed by hand 2026-11-05",
      "countries": ["PG","VU","ID","SB","FM","JP","PF","PW","CO","PH","TO","CK","PR","IN","CN","FJ","AU","MH","MY","NC","FR","NZ","MP","GQ"]},
      "known_answers": {"most languages": "Papua New Guinea 849 (expected first) — PASS", "top four includes Indonesia and Nigeria": "ID 728, NG 454 — PASS", "most extinct languages": "Australia 227 (expected top three) — PASS"},
      "spot_check": "10 random records compared with glottolog.org entries (Apatani, Haitian, Vietnamese, Dameli, Guajá, Limilngan, Tondi Songway Kiini, Kwaami, Itawit, Nuu-chah-nulth): locations, families and statuses agree."}}

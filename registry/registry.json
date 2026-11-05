@@ -196,6 +196,35 @@
       ]
     },
     {
+      "id": "power-plants",
+      "title": "The World's Furnaces",
+      "theme": "power",
+      "accent": "#ff8a3d",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "scopeFilter": {"us": {"field": "cc", "label": "United States of America"}},
+      "weight": 0.0,
+      "unit": "power plants",
+      "statline": "{n} power plants, sized by what they can burn",
+      "status": "pending",
+      "caveat": "frozen in 2021 (WRI no longer maintains the database); nameplate capacity, not generation; small plants unevenly covered outside the U.S. and Europe",
+      "pack": {"kind": "points", "sort": "v", "fields": [{"name": "name", "type": "str", "max": 36}, {"name": "v", "type": "float", "nd": 0}, {"name": "fu", "from": "meta.fuel", "type": "enum", "values": ["coal", "gas", "oil", "nuclear", "hydro", "wind", "solar", "other"], "labels": ["Coal", "Gas", "Oil", "Nuclear", "Hydro", "Wind", "Solar", "Other"], "default": 7}, {"name": "cc", "from": "meta.country", "type": "enum", "top": 200, "other": false}], "lenses": [{"field": "fu", "label": "Fuel"}], "coordNd": 2},
+      "colorBy": {"field": "fu", "colors": ["#c9473b", "#ff8a3d", "#b5653a", "#d9f25c", "#4fa3e0", "#a8e0f0", "#ffd84d", "#a08bc0"]},
+      "size": {"field": "v", "scale": "sqrt", "min": 0.9, "max": 7.5, "vmax": 3000, "alpha": 0.9, "worldAlpha": 0.66, "core": 0.42},
+      "tip": {"ti": "{name}", "ti2": "{fu} plant · {v|int} MW", "s": "{fu} · {v|int} MW · {cc}"},
+      "essay": {
+        "what": "34,936 power plants in 167 countries, each sized by the electricity it can make and coloured by what it burns or catches: coal, gas, oil, nuclear, hydro, wind, solar. Together they could deliver about 5.7 terawatts — the furnace under every other layer of this map.",
+        "how": "The World Resources Institute's Global Power Plant Database v1.3.0, built from national registries, the Global Energy Observatory, Enipedia and WRI's own work, under CC-BY 4.0. Fuels are folded into eight groups (petcoke with oil; biomass, waste, geothermal, storage and tidal under other). Names are kept for plants of 50 MW or more; capacity is nameplate, not generation. The database has been frozen since 2021: coal plants closed since and the solar and wind built since are missing.",
+        "why": "Lay the data centers on top: the cloud settles where the furnaces already burn. China holds 956 gigawatts of coal capacity — almost four times the United States — while the U.S. lists the most plants of any country, partly because its national registry reaches down to the smallest solar farms. The bright red knots are where the world's electricity is still made from fire."
+      },
+      "plateStats": [
+        {"label": "plants", "value": "34,936"},
+        {"label": "coal capacity, China", "value": "956 GW"},
+        {"label": "largest plant", "value": "Three Gorges Dam"},
+        {"label": "vintage", "value": "v1.3.0, frozen 2021"}
+      ]
+    },
+    {
       "id": "motion-fulfillment",
       "title": "The Fulfillment Bloodstream",
       "theme": "motion",

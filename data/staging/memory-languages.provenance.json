@@ -56,7 +56,7 @@
  "protocol": "No people are named; languages only.",
  "validation": {
   "reviewed_offshore": {
-   "count": 87,
+   "count": 60,
    "reason": "oceanic islands absent from the 1:50m Natural Earth coastline; reviewed by hand 2026-11-05",
    "countries": [
     "PG",

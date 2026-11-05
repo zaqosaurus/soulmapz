@@ -61,7 +61,14 @@ def in_ring(x, y, r):
     return inside
 
 def on(polys, lat, lon, tol):
-    for dx, dy in ((0, 0), (tol, 0), (-tol, 0), (0, tol), (0, -tol), (tol, tol), (-tol, -tol), (tol, -tol), (-tol, tol)):
+    # probe the point, then rings of 8 directions every 0.1° out to `tol`, so a small
+    # island is found rather than stepped over
+    probes = [(0, 0)]
+    r = 0.1
+    while r <= tol + 1e-9:
+        probes += [(r, 0), (-r, 0), (0, r), (0, -r), (r*.7, r*.7), (-r*.7, -r*.7), (r*.7, -r*.7), (-r*.7, r*.7)]
+        r += 0.1
+    for dx, dy in probes:
         y = lat + dy
         for x in (lon + dx, lon + dx + 360, lon + dx - 360):
             for x0, y0, x1, y1, p in polys:
@@ -90,13 +97,19 @@ def main():
         rev = {}
         pv = os.path.join(ROOT, "data", "staging", f"{lid}.provenance.json")
         if os.path.exists(pv): rev = (json.load(open(pv)).get("validation") or {}).get("reviewed_offshore") or {}
-        if far and rev and rev.get("count") == len(far) and all((r.get("meta") or {}).get("countries", "").split(";")[0] in rev.get("countries", []) for r in far):
+        if far and rev and rev.get("count") == len(far) and all(str((r.get("meta") or {}).get("countries") or (r.get("meta") or {}).get("country") or "").split(";")[0] in rev.get("countries", []) for r in far):
             print(f"NOTE {len(far)} far-offshore points match the hand review in the sidecar ({rev.get('reason','')})")
             far = []
         report(f"points on {'U.S. ' if us else ''}land (±0.35°), or near a coast (±1.5°)", not far,
                f"{len(off)} near-coast (e.g. " + "; ".join(r.get('name','') for r in off[:8]) + f"); {len(far)} far offshore" + (": " + "; ".join(f"{r.get('name','')} {r['lat']},{r['lon']}" for r in far[:8]) if far else ""))
-        keys = [(r["lat"], r["lon"], r.get("name")) for r in recs]
-        report("no duplicate (lat, lon, name)", len(set(keys)) == len(keys), f"{len(keys) - len(set(keys))} duplicates")
+        IDK = ("gppd_id", "glottocode", "osm_id", "epa_id", "qid", "id")
+        def key(r):
+            m = r.get("meta") or {}
+            for k in IDK:
+                if m.get(k): return ("id", m[k])
+            return (r["lat"], r["lon"], r.get("name"))
+        keys = [key(r) for r in recs]
+        report("no duplicate records (source id, else lat/lon/name)", len(set(keys)) == len(keys), f"{len(keys) - len(set(keys))} duplicates")
     if prot:
         BAD = {"name", "age", "address", "victim", "person", "dob", "first_name", "last_name"}
         hits = set()

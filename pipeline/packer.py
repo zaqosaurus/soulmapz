@@ -60,7 +60,7 @@ def enum_table(spec, raws):
     else:
         cnt = Counter(n for n in (norm(r) for r in raws) if n is not None)
         values = [v for v, _ in cnt.most_common(spec.get("top", 12))]
-        labels = [v[:1].upper() + v[1:] for v in values]
+        labels = [v[:1].upper() + v[1:] for v in values] if spec.get("capitalize", True) else list(values)
         if spec.get("other", True):
             values.append("\x00other"); labels.append(spec.get("otherLabel", "Other"))
     idx = {v.lower(): i for i, v in enumerate(values)}
@@ -117,8 +117,9 @@ def pack_points(lay, st):
     recs = [r for r in st["records"] if r.get("lat") is not None and r.get("lon") is not None]
     recs = _sorted(recs, spec.get("sort"))
     if spec.get("limit"): recs = recs[:spec["limit"]]
+    cnd = spec.get("coordNd", 3)
     out = {"kind": "points", "n": len(recs),
-           "lat": [rnd(r["lat"]) for r in recs], "lon": [rnd(r["lon"]) for r in recs]}
+           "lat": [rnd(r["lat"], cnd) for r in recs], "lon": [rnd(r["lon"], cnd) for r in recs]}
     codes = {}
     for f in spec.get("fields", []):
         enc, labels = encoder(f, recs)

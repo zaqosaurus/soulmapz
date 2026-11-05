@@ -180,7 +180,12 @@ function buildScope(s){
   if(d.kind==='memory'){
    C.layers[l.id]={cells:projArrays(proj,d.cells.lon,d.cells.lat),stars:projArrays(proj,d.stars.lon,d.stars.lat)};
   }else if(d.kind==='points'){
-   C.layers[l.id]={pts:projArrays(proj,d.lon,d.lat)};
+   const P0=projArrays(proj,d.lon,d.lat);
+   // registry scopeFilter: e.g. the U.S. sheet keeps only U.S. records of a world layer
+   // (Albers USA would otherwise draw Canadian and Mexican points that fall inside its frame)
+   const sf=l.scopeFilter&&l.scopeFilter[s];
+   if(sf&&d[sf.field]){const cs=d.codes&&d.codes[sf.field],want=cs?cs.indexOf(sf.label):sf.value,arr=d[sf.field];for(let i=0;i<P0.n;i++)if(arr[i]!==want)P0.keep[i]=0;}
+   C.layers[l.id]={pts:P0};
   }else if(d.kind==='flows'){
    const L0={fa:projArrays(proj,d.arcs.alon,d.arcs.alat),fb:projArrays(proj,d.arcs.blon,d.arcs.blat)};
    if(d.geo){
@@ -546,11 +551,11 @@ function drawPointsTo(ctx,lid,step){
    // registry-only layer: default voice. `size` scales by a field (log or sqrt);
    // `colorBy` gives each code of an enum field its own colour.
    const l=byId[lid],sz=l.size||{},spr=spriteFor(lid),vv=d[sz.field||'v'];
-   const cb=l.colorBy,ca=cb?d[cb.field]:null,core=(VIS[lid]&&VIS[lid].core)||.7;
+   const cb=l.colorBy,ca=cb?d[cb.field]:null,core=sz.core||(VIS[lid]&&VIS[lid].core)||.7;
    const sprs=ca?cb.colors.map(c=>spriteColor(c||l.accent,core)):null;
    const mn=sz.min!=null?sz.min:1.6,mx=sz.max!=null?sz.max:5,vmx=sz.vmax||d.vmaxv||(d.vmaxv=vv?vv.reduce((m,x)=>Math.max(m,x||0),1):1);
    const rad=!vv?(()=>sz.r||2.0):sz.scale==='sqrt'?(i=>mn+Math.sqrt(Math.max(vv[i],0)/vmx)*(mx-mn)):(i=>Math.min(mn+Math.log1p(Math.max(vv[i],0))*(sz.k||.55),mx));
-   if(sz.alpha)ctx.globalAlpha=sz.alpha;
+   if(sz.alpha)ctx.globalAlpha=sz.alpha*(scope==='world'&&sz.worldAlpha?sz.worldAlpha:1);
    for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(sprs?(sprs[ca[i]]||spr):spr,P.xs[i],P.ys[i],rad(i));}
    ctx.globalAlpha=1;
   }
@@ -943,7 +948,7 @@ function tipHTML(f){
   return {k,ti,s,color:l.accent,wide:true};
  }
  else if(l.tip){
-  ti=tplFill(l.tip.ti||'{name}',d,f.i)||l.title;s=tplFill(l.tip.s||'',d,f.i);
+  ti=tplFill(l.tip.ti||'{name}',d,f.i)||(l.tip.ti2?tplFill(l.tip.ti2,d,f.i):'')||l.title;s=tplFill(l.tip.s||'',d,f.i);
   const cb=l.colorBy;
   return {k,ti,s,color:cb&&d[cb.field]?(cb.colors[d[cb.field][f.i]]||l.accent):l.accent,wide:!!l.tip.wide};
  }
