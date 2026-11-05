@@ -283,8 +283,8 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 
 | Phase | State | Notes |
 |---|---|---|
-| 0 · foundations | not started | |
-| 1 · unlock what we have | not started | |
+| 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. |
+| 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. 2.95 MB, smoke 73/73. |
 | 2 · reachable acquisitions | not started | sources verified reachable 2026-11-05 |
 | 3 · network unlock | mostly unlocked 2026-11-05 | **Work:** api.census.gov, ucdp.uu.se, api.unhcr.org, www.irs.gov, query.wikidata.org (send an honest User-Agent naming the project). **ATF:** the site itself refuses scripts (a bot gate at the origin). The survey does not get around bot checks, so The Arsenal stays PENDING unless ATF publishes a direct file. **OpenStreetMap:** overpass-api.de is allowed but drops the connection during setup, and the overpass.kumi.systems mirror times out — a server or route problem, not policy; retry later before Phase 3.1, else PENDING. **Night lights:** eogdata.mines.edu fails certificate verification; look for another open source or keep PENDING. **Dark-sky places:** darksky.org shows a bot challenge; take the list from Wikidata instead. |
 | 4 · findings round 2 | not started | |
