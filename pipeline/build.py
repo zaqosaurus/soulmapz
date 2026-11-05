@@ -341,8 +341,9 @@ def build():
                 lay["plateStats"].append({"label":"vintage","value":st.get("vintage","")})
             if lid == "company-socialcapital":
                 rr = sorted(st["regions"], key=lambda r: -r["value"])
-                lay["plateStats"].append({"label":"most connected","value":rr[0]["label"][:44]})
-                lay["plateStats"].append({"label":"least connected","value":rr[-1]["label"][:44]})
+                ecl = lambda r: re.sub(r"^economic connectedness\s*", "EC ", r["label"])
+                lay["plateStats"].append({"label":"most connected","value":ecl(rr[0])})
+                lay["plateStats"].append({"label":"least connected","value":ecl(rr[-1])})
                 lay["plateStats"].append({"label":"benchmark","value":"EC 1.0 = class-blind friendship"})
 
         elif lid == "control-arsenal":
@@ -378,7 +379,8 @@ def build():
             lay["count"] = len(recs)
             lay["amt"] = f"${total/1e6:,.0f}M"
             for r in recs[:4]:
-                lay["plateStats"].append({"label":r["name"][:26]+" — "+(r.get("meta") or {}).get("years",""),"value":f"${r['v']/1e6:,.1f}M"})
+                place = re.sub(r"\s*\(.*\)$", "", r["name"])   # 'Hidalgo County, TX (Weslaco contracts)' -> 'Hidalgo County, TX'
+                lay["plateStats"].append({"label":place+" — "+(r.get("meta") or {}).get("years",""),"value":f"${r['v']/1e6:,.1f}M"})
 
         elif lid == "motion-sorting":
             cents = county_centroids()

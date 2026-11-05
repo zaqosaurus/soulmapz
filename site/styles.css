@@ -371,3 +371,60 @@ a.cc-btn{text-decoration:none;display:inline-block}
   #shareBtn{padding:7px 8px;font-size:8.5px}
   #shareInner{margin:6vh 12px;padding:22px 18px}
 }
+
+/* ============ V0.6: the print atlas ============ */
+#atlasBtn{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;padding:9px 12px;color:var(--ink-dim);border:1px solid var(--line-strong);transition:all .2s}
+#atlasBtn:hover{background:rgba(232,228,216,.08);color:var(--ink)}
+@media (max-width:760px){#atlasBtn{padding:7px 8px;font-size:8.5px}}
+#atlas{display:none}
+@media print{
+  @page{size:11in 8.5in;margin:.4in}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important;color:#141414}
+  body>*:not(#atlas){display:none!important}
+  #atlas{display:block;font-family:var(--serif);color:#141414;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .at-page{break-after:page;page-break-after:always;height:7.66in;overflow:hidden;position:relative}
+  .at-page:last-child{break-after:auto;page-break-after:auto}
+  .at-run{font-family:var(--mono);font-size:7pt;letter-spacing:.24em;color:#666;margin-bottom:.08in}
+  .at-cover{display:flex;flex-direction:column;justify-content:center;padding:0 .6in}
+  .at-over{font-family:var(--mono);font-size:8pt;letter-spacing:.32em;color:#555}
+  .at-cover h1{font-weight:900;font-size:64pt;line-height:1;margin:.2in 0 .1in}
+  .at-cover h1 em{font-style:italic;color:#b8862a}
+  .at-tag{font-family:var(--mono);font-size:8.5pt;letter-spacing:.18em;color:#555}
+  #atlas .at-man{font-size:12pt;line-height:1.6;max-width:7.4in;margin:.3in 0}
+  .at-contents{display:flex;gap:.4in;font-family:var(--mono);font-size:8pt;color:#555}
+  .at-contents b{display:block;font-family:var(--serif);font-size:20pt;color:#141414;font-weight:700}
+  .at-colo{font-family:var(--mono);font-size:7pt;letter-spacing:.2em;color:#777;position:absolute;bottom:0;left:0}
+  .at-cover .at-colo{left:.6in}
+  .at-sheet img{display:block;width:100%;max-height:6.6in;object-fit:contain;background:#070a10}
+  .at-legend{display:flex;flex-wrap:wrap;gap:.06in .25in;font-family:var(--mono);font-size:7pt;color:#333;margin-top:.1in}
+  .at-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:0}
+  .at-plate{display:grid;grid-template-columns:6.05in 1fr;gap:.25in}
+  .at-plate-map img{display:block;width:100%;background:#070a10}
+  .at-plate-map .at-run{margin-top:.08in}
+  .at-plate-text{font-size:8.3pt;line-height:1.48;overflow:hidden}
+  .at-kicker{font-family:var(--mono);font-size:7pt;letter-spacing:.28em;filter:brightness(.7)}
+  .at-plate-text h2{font-style:italic;font-weight:700;font-size:17pt;line-height:1.1;margin:.04in 0 .03in}
+  .at-unit{font-family:var(--mono);font-size:6.8pt;color:#555;margin-bottom:.08in}
+  .at-stats{display:grid;grid-template-columns:1fr 1fr;gap:.04in .12in;margin:.06in 0}
+  .at-stat b{display:block;font-size:9.5pt}
+  .at-stat span{font-family:var(--mono);font-size:5.8pt;letter-spacing:.1em;color:#666;text-transform:uppercase}
+  #atlas h3{font-family:var(--mono);font-size:6.5pt;letter-spacing:.28em;color:#8a6a1e;margin:.09in 0 .02in;font-weight:500}
+  #atlas p{margin:0 0 .05in}
+  .at-note{font-family:var(--mono);font-size:6.3pt;line-height:1.5;color:#555;border:1px dashed #bbb;padding:.05in .07in;margin-top:.08in}
+  .at-protocol{font-family:var(--mono);font-size:7pt;line-height:1.5;border:1px solid #b8862a;padding:.06in .08in;margin-bottom:.08in}
+  .at-src{font-family:var(--mono);font-size:6pt;line-height:1.5;color:#444;word-break:break-all}
+  .at-url{color:#777}
+  .at-findings,.at-colophon{height:auto;overflow:visible}
+  .at-findings h2,.at-colophon h2{font-style:italic;font-size:22pt;margin:0 0 .06in}
+  .at-disc{font-family:var(--mono);font-size:7pt;color:#555;margin-bottom:.12in}
+  .at-finding{display:grid;grid-template-columns:1.1in 1fr;gap:.15in;padding:.08in 0;border-top:1px solid #ddd;break-inside:avoid;font-size:8.5pt;line-height:1.45}
+  .at-fstat{font-weight:800;font-size:15pt;color:#8a6a1e;text-align:right}
+  .at-control .at-fstat{color:#777}
+  .at-ft{font-weight:700;font-size:10.5pt}
+  .at-ft small{font-family:var(--mono);font-size:5.8pt;letter-spacing:.14em;border:1px dashed #999;padding:1px 4px;font-weight:400;color:#555}
+  .at-fs{font-family:var(--mono);font-size:6.5pt;color:#666;margin-bottom:.03in}
+  .at-meth{font-family:var(--mono);font-size:6.3pt;line-height:1.5;color:#555}
+  .at-colophon{font-size:9.5pt;line-height:1.55;max-width:8in}
+  .at-colophon .at-colo{position:static;margin-top:.2in}
+  .at-cite{font-family:var(--mono);font-size:7.5pt}
+}

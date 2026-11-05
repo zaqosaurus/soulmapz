@@ -2391,6 +2391,113 @@ function toggleLensPlay(lid,field){
  step();
 }
 
+// ======================================================================
+// ---------- v0.6: THE PRINT ATLAS — the survey as a physical object ----------
+// Composed in the page from the live engine, one solo render per layer, then handed
+// to the browser's print dialog (which saves to PDF). No network, no server.
+// ======================================================================
+function renderSnapshot(sc,ids){
+ // put the engine into a still pose and photograph the map area of the four canvases
+ if(sc!==scope){scope=sc;buildScope(sc);}
+ t=d3.zoomIdentity;era=-1;
+ for(const k in lens)delete lens[k];
+ for(const l of live){const on=ids.indexOf(l.id)>=0&&l.scopes.includes(sc)?1:0;target[l.id]=on;alpha[l.id]=on;}
+ hoverPt=null;terrainDirty=true;
+ for(const lid of ids){
+  if(!byId[lid]||!hasGlow(byId[lid])||!byId[lid].scopes.includes(sc))continue;
+  bakeLayer(lid,true);glowBMs[lid].prevT=null;
+ }
+ drawBase();drawTerrain();drawGlow();drawLabels();
+ const C=SC[scope],e=C.ext,pad=14;
+ const x0=Math.max(0,e[0][0]-pad),y0=Math.max(0,e[0][1]-pad),x1=Math.min(W,e[1][0]+pad),y1=Math.min(H,e[1][1]+pad);
+ const off=document.createElement('canvas');off.width=Math.round((x1-x0)*dpr);off.height=Math.round((y1-y0)*dpr);
+ const g=off.getContext('2d');
+ g.fillStyle='#070a10';g.fillRect(0,0,off.width,off.height);
+ for(const k of ['base','terr','glow','lab'])g.drawImage(cvs[k],x0*dpr,y0*dpr,off.width,off.height,0,0,off.width,off.height);
+ return off.toDataURL('image/jpeg',0.9);
+}
+function atlasPlateHTML(l,img){
+ const th=themeById[l.theme];
+ const stats=(l.plateStats||[]).map(s=>'<div class="at-stat"><b>'+s.value+'</b><span>'+s.label+'</span></div>').join('');
+ const srcs=(l.sources||[]).map(s=>'<div>'+esc(s.name)+(s.url?' — <span class="at-url">'+esc(s.url)+'</span>':'')+'</div>').join('');
+ return '<section class="at-page at-plate"><div class="at-plate-map">'+
+   (img?'<img src="'+img+'" alt="'+esc(l.title)+' — solo render">':'')+
+   '<div class="at-run">PLATE · '+esc(th.name.toUpperCase())+' — '+esc(th.reading.toUpperCase())+'</div></div>'+
+  '<div class="at-plate-text">'+
+   (l.protocol?'<div class="at-protocol">'+l.protocol+'</div>':'')+
+   '<div class="at-kicker" style="color:'+l.accent+'">'+esc(th.name.toUpperCase())+'</div>'+
+   '<h2>'+l.title+'</h2><div class="at-unit">'+(l.statline||l.unit)+(l.retrieved?' · surveyed '+String(l.retrieved).slice(0,10):'')+'</div>'+
+   (stats?'<div class="at-stats">'+stats+'</div>':'')+
+   '<h3>WHAT</h3><p>'+l.essay.what+'</p><h3>HOW</h3><p>'+l.essay.how+'</p><h3>WHY</h3><p>'+l.essay.why+'</p>'+
+   (l.caveat?'<div class="at-note"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
+   (srcs?'<h3>SOURCES</h3><div class="at-src">'+srcs+'</div>':'')+
+  '</div></section>';
+}
+let atlasBusy=false;
+function composeAtlas(){
+ if(atlasBusy)return;atlasBusy=true;
+ if(rec){toast('Finish or discard the reading you are composing first.');atlasBusy=false;return;}
+ if(reading!==null||tourIdx!==null||findingOpen)endReading();
+ if(plateOpen)closePlate();
+ stopLensPlay();unpinTip();
+ const saved={scope,targets:{...target},alpha:{...alpha},t:{k:t.k,x:t.x,y:t.y},era,lens:JSON.parse(JSON.stringify(lens))};
+ const today=new Date().toISOString().slice(0,10);
+ const pages=[],jobs=[];
+ const usIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('us')&&byId[id].status==='live');
+ // the sheets mirror the views the live map opens with; every layer still gets its own plate
+ const worldIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('world')&&byId[id].status==='live');
+ jobs.push(()=>{pages.push({k:'sheet',n:1,title:'The Human Signal — Conterminous United States',ids:usIds,img:renderSnapshot('us',usIds)});});
+ jobs.push(()=>{pages.push({k:'sheet',n:2,title:'The Human Signal — The World',ids:worldIds,img:renderSnapshot('world',worldIds)});});
+ for(const l of live)jobs.push(()=>{pages.push({k:'plate',l,img:renderSnapshot(l.scopes.includes('us')?'us':'world',[l.id])});});
+ let i=0;
+ toast('Composing the atlas — '+jobs.length+' renders…',20000);
+ const step=()=>{
+  try{jobs[i]();}catch(e){err(e);}
+  i++;
+  if(i<jobs.length){toast('Composing the atlas — render '+(i+1)+' of '+jobs.length+'…',20000);setTimeout(step,30);return;}
+  finishAtlas(pages,saved,today);
+ };
+ setTimeout(step,60);
+}
+function finishAtlas(pages,saved,today){
+ // restore the reader's view exactly
+ if(saved.scope!==scope){scope=saved.scope;buildScope(scope);}
+ for(const k in saved.targets)target[k]=saved.targets[k];
+ for(const k in saved.alpha)alpha[k]=saved.alpha[k];
+ era=saved.era;for(const k in lens)delete lens[k];Object.assign(lens,saved.lens);
+ $('#scopeUS').classList.toggle('on',scope==='us');$('#scopeWorld').classList.toggle('on',scope==='world');
+ resetGlowFades();
+ d3.select('#stage').call(zoomB.transform,d3.zoomIdentity.translate(saved.t.x,saved.t.y).scale(saved.t.k));
+ chipRefresh();updateStatline();updateDatumDefault();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;bakeGlow(true);
+ const M=R.meta,sheets=pages.filter(p=>p.k==='sheet'),plates=pages.filter(p=>p.k==='plate');
+ const legend=ids=>ids.map(id=>'<span><i style="background:'+byId[id].accent+'"></i>'+byId[id].title+' — '+(byId[id].statline||byId[id].unit)+'</span>').join('');
+ const fnd=R.findings?R.findings.findings.map(f=>'<div class="at-finding'+(f.spurious||f.lesson?' at-control':'')+'"><div class="at-fstat">'+f.stat+'</div><div><div class="at-ft">'+f.title+(f.tag||f.spurious?' <small>'+(f.tag||'SPURIOUS — ON PURPOSE')+'</small>':'')+'</div><div class="at-fs">'+f.statLabel+'</div><p>'+f.body+'</p><div class="at-meth">METHOD — '+f.method+'</div></div></div>').join(''):'';
+ const pending=R.layers.filter(l=>l.status!=='live');
+ let html='<section class="at-page at-cover"><div class="at-over">'+esc(M.sheet)+' · SURVEYED '+esc(M.surveyed)+'</div>'+
+  '<h1>THE <em>SOUL</em> SURVEY</h1><div class="at-tag">'+esc(M.tagline.toUpperCase())+'</div>'+
+  '<p class="at-man">'+M.manifesto+'</p>'+
+  '<div class="at-contents"><div><b>'+sheets.length+'</b>sheets</div><div><b>'+plates.length+'</b>plates</div><div><b>'+(R.findings?R.findings.findings.length:0)+'</b>findings</div><div><b>'+pending.length+'</b>pending slots</div></div>'+
+  '<div class="at-colo">THE PRINT ATLAS · v'+esc(M.version)+' · RENDERED '+today+' · '+esc(M.site)+'</div></section>';
+ for(const s of sheets)html+='<section class="at-page at-sheet"><div class="at-run">SHEET '+s.n+' · '+esc(s.title.toUpperCase())+'</div><img src="'+s.img+'" alt="'+esc(s.title)+'"><div class="at-legend">'+legend(s.ids)+'</div></section>';
+ for(const p of plates)html+=atlasPlateHTML(p.l,p.img);
+ if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+'</section>';
+ html+='<section class="at-page at-colophon"><div class="at-run">COLOPHON</div><h2>Method, sources, and the slots still empty</h2>'+
+  '<p>Every layer is a real dataset with coordinates. Density becomes elevation: the relief on each sheet is computed from the layers shown, Gaussian-smoothed, contoured, and hillshaded in the browser that printed this atlas. Point layers render as additive light. Coordinates are quantized to about 110 m and giant datasets are aggregated to cells. Every staging file ships with a provenance sidecar naming its source, retrieval date, method, and caveats.</p>'+
+  (pending.length?'<h3>PENDING SLOTS — SHOWN EMPTY RATHER THAN FAKED</h3>'+pending.map(l=>'<p><b>'+l.title+'.</b> '+(l.pendingNote||'Source gated; slot reserved.')+'</p>').join(''):'')+
+  '<h3>LICENSES</h3><p>Basemaps: Natural Earth (public domain). Reference places: GeoNames (CC-BY 4.0). Notable people: Laouenan et al., <i>Scientific Data</i> 2022 (CC-BY-SA 4.0). Data centers: © OpenStreetMap contributors (ODbL). Social Capital Atlas: Meta custom permissive license, no re-identification. U.S. Religion Census: facts reproduced with attribution. FARS, GNIS, EPA, CDC, IRS SOI: U.S. public data. Full table: DATA_LICENSES.md in the repository.</p>'+
+  '<h3>CITE</h3><p class="at-cite">The Soul Survey (v'+esc(M.version)+', '+esc(M.surveyed.toLowerCase())+'). A topographic survey of the collective soul, conducted in objective data. '+esc(M.site)+' — source: github.com/'+esc(M.repo)+'</p>'+
+  '<div class="at-colo">WHERE, NOT WHY.</div></section>';
+ let el=$('#atlas');if(!el){el=document.createElement('div');el.id='atlas';document.body.appendChild(el);}
+ el.innerHTML=html;
+ atlasBusy=false;
+ const imgs=[...el.querySelectorAll('img')];
+ Promise.all(imgs.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>{
+  toast('Atlas ready — '+(pages.length+3)+' pages. Choose “Save as PDF” in the print dialog to keep it.',6000);
+  document.dispatchEvent(new CustomEvent('atlas:ready',{detail:{pages:pages.length+3}}));
+  if(!window.__ATLAS_NOPRINT__)setTimeout(()=>window.print(),250);
+ });
+}
+
 // ---------- zoom ----------
 const zoomB=d3.zoom().scaleExtent([1,26]).clickDistance(6).on('zoom',ev=>{
  t=ev.transform;dirty=true;needBake=true;zooming=true;
@@ -2426,6 +2533,7 @@ function init(){
  document.addEventListener('click',ev=>{if(!ev.target.closest('.mh-menu-wrap')){$('#readingsMenu').classList.remove('open');$('#findingsMenu').classList.remove('open');}});
  $('#locateBtn').addEventListener('click',locateMe);
  $('#exportBtn').addEventListener('click',exportSheet);
+ $('#atlasBtn').addEventListener('click',composeAtlas);
  $('#audioBtn').addEventListener('click',audioToggle);
  $('#indexBtn').addEventListener('click',openIndex);
  $('#shareBtn').addEventListener('click',()=>openShare(location.href.split('#')[0]+currentHash(true),null));

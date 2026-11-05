@@ -187,3 +187,19 @@ Commit plan: (1) pipeline + registry + docs, (2) engine + styles + template,
 3. The Print Atlas (EXPERIENCE #10): cover, US and World sheets, one plate per layer
    with its essay and sources, the findings page with methods. Built in the browser
    from the live engine; no new runtime network calls.
+
+### Stretch status (2026-11-05)
+
+| Step | State | Notes |
+|---|---|---|
+| 1 · smoke test | **done** | `tests/smoke.js`, 49 checks. Its first run found a real v0.5 bug (layers switched on without moving the map stayed dark), reproduced on the v0.5 build before fixing. |
+| 2 · findings | **done** | two shipped (sorting × pews; the Lutheran confound as a lesson), four rejected and logged in `correlate.py`; new reading *Who Knows Whom*. |
+| 3 · print atlas | **done** | ▤ ATLAS composes cover, 2 sheets, 15 plates, findings, colophon (21 printed pages) and opens the print dialog. Sheets mirror the curated default views. The smoke test renders it to PDF with Chromium's print engine. |
+
+**Headless caveats for the atlas.** The real print dialog is not exercised (`window.print` is
+suppressed in the test). Plate image resolution follows the screen it was composed on, so a
+phone composes small plates. Fonts in print are the ones the page already loaded.
+
+**Rule for test failures:** a headless failure says where to look. Code changes only when the
+cause is visible in the code or reproducible on the original build.
+
