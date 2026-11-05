@@ -289,3 +289,40 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 | 3 · network unlock | mostly unlocked 2026-11-05 | **Work:** api.census.gov, ucdp.uu.se, api.unhcr.org, www.irs.gov, query.wikidata.org (send an honest User-Agent naming the project). **ATF:** the site itself refuses scripts (a bot gate at the origin). The survey does not get around bot checks, so The Arsenal stays PENDING unless ATF publishes a direct file. **OpenStreetMap:** overpass-api.de is allowed but drops the connection during setup, and the overpass.kumi.systems mirror times out — a server or route problem, not policy; retry later before Phase 3.1, else PENDING. **Night lights:** eogdata.mines.edu fails certificate verification; look for another open source or keep PENDING. **Dark-sky places:** darksky.org shows a bot challenge; take the list from Wikidata instead. |
 | 4 · findings round 2 | not started | |
 | 5 · release v0.7 | not started | |
+
+---
+
+## 11. HANDOFF (read this first when resuming)
+
+**State on 2026-11-05.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
+v0.6 is done on the branch: Ledger lit, citizen readings, constellations, plunge, pinning,
+permalink v2, living log, Data API page, print atlas, two v0.6 findings, notice. Phase 0 of this
+plan has not started.
+
+**Commands**
+```bash
+python3 pipeline/build.py                       # ~3 s; prints the page size; regenerates docs/DATA_API.md
+NODE_PATH=$(npm root -g) node tests/smoke.js    # 49 checks; SHOTS=<dir> saves screenshots + atlas.pdf
+python3 pipeline/correlate.py                   # v0.5 findings;  `python3 pipeline/correlate.py v06` for v0.6
+git checkout -- dist/index.html docs/index.html # after every build until a release commit
+```
+
+**Working rules learned the hard way**
+- Do not commit `dist/index.html` or `docs/index.html` until a release commit (maintainer's choice).
+- Edit `registry/registry.json` by text, not by `json.dump`, or the whole file reformats.
+- A headless failure says where to look; change code only when the cause is in the code or
+  reproduces on the previous build. Review renders and the atlas PDF by eye, not just counts.
+- Never get around a site's bot check (no browser User-Agent spoofing). Send an honest
+  User-Agent naming the project. A site that refuses scripts becomes a PENDING slot.
+- `app.js` is one IIFE; new code goes before `// ---------- zoom ----------`; `init()` wires DOM.
+  New DOM ids must exist in `site/template.html` or `init()` throws and the page dies.
+- Commit trailers come from the session's attribution reminder. No model ids anywhere in the repo.
+
+**Network (verified 2026-11-05):** works — raw.githubusercontent.com, the Eviction Lab S3 bucket,
+api.census.gov, www.irs.gov, ucdp.uu.se, api.unhcr.org (`/population/v1/...`), query.wikidata.org.
+Fails — www.atf.gov (origin bot gate), overpass-api.de and overpass.kumi.systems (server side;
+retry), eogdata.mines.edu (certificate), darksky.org (bot challenge). Everything else is untested
+or blocked.
+
+**Next action:** Phase 0.1 (compressed payloads), with the Phase 0 QC loop: render the 8
+canonical views to PNG *before* changing code.
