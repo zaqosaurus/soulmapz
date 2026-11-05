@@ -497,6 +497,15 @@ def build():
     # DecompressionStream before the app starts. `--plain` builds the uncompressed page
     # (for browsers without DecompressionStream, and for debugging).
     plain = "--plain" in sys.argv
+    # the fallback page is always written beside the real one (git-ignored), so the
+    # smoke test can prove both load paths carry the same data
+    if not plain:
+        fb = html.replace("//{{DATA}}", "window.__REGISTRY__=" + js_safe(registry) + ";\n" +
+                          "window.__LAYERDATA__=" + js_safe(layers_data) + ";\n" +
+                          "window.__BASEMAPS__=" + js_safe(basemaps) + ";")
+        fb = fb.replace("//{{APP}}", "window.__SOUL_APP__=function(){\n" + read(p("site","app.js")) + "\n};\n" + read(p("site","boot.js")))
+        os.makedirs(p("dist"), exist_ok=True)
+        with open(p("dist","index.plain.html"), "w", encoding="utf-8") as f: f.write(fb)
     def gz64(obj):
         raw = json.dumps(obj, separators=(",",":"), ensure_ascii=False).encode("utf-8")
         return base64.b64encode(gzip.compress(raw, 9, mtime=0)).decode("ascii")
