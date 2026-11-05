@@ -98,6 +98,34 @@
       ]
     },
     {
+      "id": "memory-languages",
+      "title": "The Last Speakers",
+      "theme": "memory",
+      "accent": "#7fd6c2",
+      "scopes": ["world"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "languages",
+      "statline": "{n} languages, every one a way of seeing",
+      "status": "pending",
+      "caveat": "one representative point per language, not a territory; endangerment as Glottolog's agglomerated status (AES)",
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 40}, {"name": "aes", "from": "meta.aes", "type": "int", "default": 0}, {"name": "es", "from": "meta.aes", "type": "enum", "values": ["1", "2", "3", "4", "5", "6"], "labels": ["Not endangered", "Threatened", "Shifting", "Moribund", "Nearly extinct", "Extinct"], "default": -1}, {"name": "fam", "from": "meta.family", "type": "str", "max": 28}], "lenses": [{"field": "es", "label": "Endangerment (AES)"}]},
+      "colorBy": {"field": "es", "colors": ["#4f8f84", "#7fd6c2", "#e8d36a", "#f0a050", "#ff6b5e", "#8a94a6"]},
+      "size": {"r": 1.9},
+      "tip": {"ti": "{name}", "s": "{es} · {fam}"},
+      "essay": {
+        "what": "7,836 languages, each placed where Glottolog puts its heart, coloured by how close it is to silence: from not endangered through threatened, shifting, moribund and nearly extinct to extinct. 983 are already gone. Another 2,520 are shifting, moribund or nearly extinct — spoken mostly by grandparents.",
+        "how": "Glottolog 5.3 (Max Planck Institute for Evolutionary Anthropology), read as CLDF: every language-level languoid that is a spoken first language or a sign language, with Glottolog's coordinate and its Agglomerated Endangerment Status, which folds three expert catalogues (EGIDS, UNESCO, ElCat) into six steps. Pidgins, unattested and artificial languages are left out.",
+        "why": "Papua New Guinea alone holds 849 of these points, more than any other country. The red and grey sit where empires and settlers arrived: Australia has lost 227 languages, the United States 135, Brazil 95. Each grey point is a way of naming the world that no one alive can use. This is the survey's light side and its loss in one layer: the remembered, at the scale of a people."
+      },
+      "plateStats": [
+        {"label": "languages on the map", "value": "7,836"},
+        {"label": "extinct", "value": "983"},
+        {"label": "shifting → nearly extinct", "value": "2,520"},
+        {"label": "most languages", "value": "Papua New Guinea 849 · Indonesia 728 · Nigeria 454"}
+      ]
+    },
+    {
       "id": "desire-searches",
       "title": "The Geography of Desire",
       "theme": "desire",

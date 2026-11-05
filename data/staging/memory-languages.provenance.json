@@ -1,0 +1,95 @@
+{
+ "layer": "memory-languages",
+ "retrieved": "2026-11-05",
+ "license": {
+  "name": "CC-BY 4.0",
+  "text_file": "data/raw/glottolog/LICENSE (Creative Commons Attribution 4.0 International, read 2026-11-05)",
+  "citation": "Hammarström, Harald & Forkel, Robert & Haspelmath, Martin & Bank, Sebastian. 2026. Glottolog 5.3. Leipzig: Max Planck Institute for Evolutionary Anthropology. (Available online at https://glottolog.org)"
+ },
+ "files": {
+  "languages.csv": {
+   "url": "https://raw.githubusercontent.com/glottolog/glottolog-cldf/master/cldf/languages.csv",
+   "bytes": 2477017,
+   "sha256": "1a50a393bc81568b656f9522be18aa4f80f38e94309ba6c863d583234adfbb89"
+  },
+  "values.csv": {
+   "url": "https://raw.githubusercontent.com/glottolog/glottolog-cldf/master/cldf/values.csv",
+   "bytes": 21447242,
+   "sha256": "a8601cb04ccc6a310538217f772d2461853aa0ea49e3bfe24c7396570fc4ea25"
+  },
+  "codes.csv": {
+   "url": "https://raw.githubusercontent.com/glottolog/glottolog-cldf/master/cldf/codes.csv",
+   "bytes": 1871,
+   "sha256": "cc1d2d2a4a27e3f9d396f255acfa755ee4a63125b8467f9f8f904ee0dc8717b4"
+  }
+ },
+ "method": "Language-level languoids in the categories Spoken_L1_Language and Sign_Language, with Glottolog coordinates and an AES (Agglomerated Endangerment Status) value. AES folds EGIDS, UNESCO and ElCat into six steps: not endangered, threatened, shifting, moribund, nearly extinct, extinct.",
+ "counts": {
+  "languoids": 27177,
+  "language_level": 8618,
+  "kept": 7836,
+  "by_status": {
+   "shifting": 1799,
+   "moribund": 421,
+   "not endangered": 2768,
+   "extinct": 983,
+   "nearly extinct": 300,
+   "threatened": 1565
+  },
+  "dropped": {
+   "category Unclassifiable": 128,
+   "category Bookkeeping": 380,
+   "category Unattested": 68,
+   "category Artificial_Language": 31,
+   "no endangerment status": 60,
+   "category Mixed_Language": 4,
+   "category Pidgin": 87,
+   "no coordinates": 5,
+   "category Speech_Register": 19
+  }
+ },
+ "caveats": [
+  "One point per language: Glottolog's coordinate is a representative point, not a territory.",
+  "Extinct languages are kept: the map shows what was spoken, not only what is.",
+  "AES is an agglomeration of three expert catalogues; individual assessments can lag the ground."
+ ],
+ "protocol": "No people are named; languages only.",
+ "validation": {
+  "reviewed_offshore": {
+   "count": 87,
+   "reason": "oceanic islands absent from the 1:50m Natural Earth coastline; reviewed by hand 2026-11-05",
+   "countries": [
+    "PG",
+    "VU",
+    "ID",
+    "SB",
+    "FM",
+    "JP",
+    "PF",
+    "PW",
+    "CO",
+    "PH",
+    "TO",
+    "CK",
+    "PR",
+    "IN",
+    "CN",
+    "FJ",
+    "AU",
+    "MH",
+    "MY",
+    "NC",
+    "FR",
+    "NZ",
+    "MP",
+    "GQ"
+   ]
+  },
+  "known_answers": {
+   "most languages": "Papua New Guinea 849 (expected first) — PASS",
+   "top four includes Indonesia and Nigeria": "ID 728, NG 454 — PASS",
+   "most extinct languages": "Australia 227 (expected top three) — PASS"
+  },
+  "spot_check": "10 random records compared with glottolog.org entries (Apatani, Haitian, Vietnamese, Dameli, Guajá, Limilngan, Tondi Songway Kiini, Kwaami, Itawit, Nuu-chah-nulth): locations, families and statuses agree."
+ }
+}

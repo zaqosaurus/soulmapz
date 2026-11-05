@@ -9,6 +9,7 @@ on that basis.
 | Layer | Source | License / Terms | Notes |
 |---|---|---|---|
 | memory-births | Laouenan et al., "A cross-verified database of notable people, 3500BC–2018AD", *Scientific Data* (2022), via Sciences Po dataverse (doi:10.21410/7E4/RDAG3O) | **CC-BY-SA 4.0** (share-alike) | 2,291,817 records streamed; aggregated to 0.25° cells; MD5-verified download |
+| memory-languages | Glottolog 5.3 (Hammarström, Forkel, Haspelmath & Bank 2026; Max Planck Institute for Evolutionary Anthropology), CLDF release `glottolog/glottolog-cldf` | **CC-BY 4.0** — attribution required | 7,836 languages with coordinates and AES endangerment; licence text in the provenance sidecar |
 | desire-searches | Pornhub Insights "2025 Year in Review" — official state infographic read via archive; cross-checked against independent press (Advocate, UNILAD, NY Post syndication) | Published facts, attributed | Text terms only; 22 states carry no data because Pornhub blocks access there |
 | power-datacenters | OpenStreetMap contributors (telecom/building=data_center via Overpass), plus 98 records from the Brockovich data-center accountability map | **ODbL** — attribution required | © OpenStreetMap contributors; Brockovich entries carry per-record citations |
 | power-fortune500 | Fortune 500 (2025 list, FY2024 revenue) via fortune.com's published ranking data; coordinates via GeoNames | Published facts; GeoNames CC-BY 4.0 | 500/500 geocoded, 100% revenue coverage |

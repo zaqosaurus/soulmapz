@@ -88,12 +88,14 @@ async function openPlate(page, lid) {
     if (r === 'ledger-betrayals') { check('the Ledger draws light', (await litSamples(page)) > 50); await shot(page, 'ledger'); }
     await page.keyboard.press('Escape'); await page.waitForTimeout(1700);
   }
-  const pointLayers = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live' && (l.forms.points || l.forms.flows) && l.scopes.includes('us')).map(l => l.id));
+  const pointLayers = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live' && (l.forms.points || l.forms.flows)).map(l => l.id));
   for (const lid of pointLayers) {
     await openPlate(page, lid);
     const n = await litSamples(page);
     check(`layer "${lid}" draws in solo view`, n > 10, n + ' lit samples');
+    if (!(await page.evaluate(lid => window.__REGISTRY__.layers.find(l => l.id === lid).scopes.includes('us'), lid))) await shot(page, 'solo-' + lid);
     await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+    if ((await page.evaluate(() => window.__SURVEY__.scope())) !== 'us') { await page.keyboard.press('u'); await page.waitForTimeout(1200); }
   }
 
   // --- the Index, receipts, pinning ---
@@ -134,6 +136,7 @@ async function openPlate(page, lid) {
   await p2.close();
   const p1 = await open(browser, PAGE + '#s=us&l=100001000000000&e=-1&k=2.000&x=-500.0&y=-300.0');
   check('a v1 (pixel) link still opens', p1._errors.length === 0 && Math.abs((await zoomK(p1)) - 2) < 0.01);
+  check('an old link still means the same layers (frozen v0.6 order)', await p1.evaluate(() => { const on = [...document.querySelectorAll('.chip.on[data-lid]')].map(c => c.dataset.lid).sort().join(','); return on === 'memory-births,motion-sorting'; }), await p1.evaluate(() => [...document.querySelectorAll('.chip.on[data-lid]')].map(c => c.dataset.lid).join(',')));
   await p1.close();
 
   // --- lenses: entity lens in the link, seq lens steps ---

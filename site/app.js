@@ -1213,6 +1213,10 @@ function buildRail(){
  return railOrder;
 }
 let railOrder=[];
+// Permalinks address layers by position. The v0.6 order is frozen so links already shared
+// keep meaning the same layers; every later layer is appended in registry order.
+const HASH_LEGACY=["memory-births","desire-searches","power-datacenters","power-fortune500","motion-fulfillment","motion-sorting","loss-crashes","loss-layoffs","omen-names","wonder-ufos","despair-overdoses","despair-suicide","residue-superfund","company-socialcapital","control-arsenal","faith-altar","betrayal-ledger"];
+const HASH_ORDER=HASH_LEGACY.concat(R.layers.map(l=>l.id).filter(id=>HASH_LEGACY.indexOf(id)<0));
 
 function openPlate(lid){
  const l=byId[lid],th=themeById[l.theme];
@@ -1843,7 +1847,7 @@ function exportSheet(){
 // on any screen; a lens rides along (z=); a citizen reading rides along (t=).
 // v1 links (pixel x/y) still open.
 function currentHash(noTour){
- const l=railOrder.map(id=>target[id]>0?1:0).join('');
+ const l=HASH_ORDER.map(id=>target[id]>0?1:0).join('');
  const cam=camNow();
  let h='#s='+scope+'&l='+l+'&e='+era+'&k='+t.k.toFixed(3);
  if(cam)h+='&c='+cam.lon+','+cam.lat; else h+='&x='+t.x.toFixed(1)+'&y='+t.y.toFixed(1);
@@ -2459,13 +2463,13 @@ function decodeTour(str){
 function captureStop(caption,keepPin){
  const cam=camNow()||{lon:0,lat:0,k:1};
  const zl=Object.keys(lens).find(id=>lens[id]&&scopeHas(id)&&target[id]>0);
- return {c:[cam.lon,cam.lat],k:cam.k,s:scope,l:railOrder.map(id=>target[id]>0?1:0).join(''),e:era,
+ return {c:[cam.lon,cam.lat],k:cam.k,s:scope,l:HASH_ORDER.map(id=>target[id]>0?1:0).join(''),e:era,
   z:zl?{lid:zl,field:lens[zl].field,v:lens[zl].v}:null,
   p:(rec&&rec.pin)?rec.pin.slice():(keepPin||null),x:(caption||'').slice(0,600)};
 }
 function applyStop(st,ms,done){
  if(st.s!==scope)switchScope(st.s);
- for(let i=0;i<railOrder.length;i++)target[railOrder[i]]=(st.l&&st.l[i]==='1'&&scopeHas(railOrder[i]))?1:0;
+ for(let i=0;i<HASH_ORDER.length;i++)if(byId[HASH_ORDER[i]])target[HASH_ORDER[i]]=(st.l&&st.l[i]==='1'&&scopeHas(HASH_ORDER[i]))?1:0;
  era=st.e;
  for(const id in lens)delete lens[id];
  if(st.z&&byId[st.z.lid]&&byId[st.z.lid].filters){
@@ -2794,7 +2798,7 @@ function init(){
  sh.addEventListener('pointermove',ev=>{if(!shDrag||!compareMode)return;compareMode.x=Math.max(.12,Math.min(.88,ev.clientX/W));sh.style.left=(compareMode.x*100)+'%';dirty=true;});
  window.addEventListener('pointerup',()=>{shDrag=false;});
  if(hp&&hp.bits){
-  for(let i=0;i<railOrder.length&&i<hp.bits.length;i++)target[railOrder[i]]=hp.bits[i]==='1'?1:0;
+  for(let i=0;i<HASH_ORDER.length;i++)if(byId[HASH_ORDER[i]])target[HASH_ORDER[i]]=hp.bits[i]==='1'?1:0;
   for(const l of live){alpha[l.id]=target[l.id];}
  }
  const stage=$('#stage');
