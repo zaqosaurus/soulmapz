@@ -347,6 +347,13 @@ def build():
                   "outcome":[((r.get("meta") or {}).get("outcome") or "")[:220] for r in recs],
                   # the receipts ride with the point: up to three citations per entry (URLs only)
                   "cites":[[str(c)[:160] for c in ((r.get("meta") or {}).get("cites") or [])[:3]] for r in recs]}
+            # v0.7: the price per head, only where the victim is the residents' own government
+            phs = load_staging("betrayal-ledger-perhead")
+            if phs:
+                phm = {r["name"]: r for r in phs["rows"]}
+                pk["ph"] = [phm[r["name"]]["per_resident"] if r["name"] in phm else -1 for r in recs]
+                pk["phj"] = [phm[r["name"]]["jurisdiction"] if r["name"] in phm else "" for r in recs]
+                pk["php"] = [phm[r["name"]]["population_2020"] if r["name"] in phm else 0 for r in recs]
             total = sum(pk["v"])
             layers_data[lid] = {"kind":"points","n":len(recs),"stolen":total, **pk}
             lay["count"] = len(recs)

@@ -938,6 +938,7 @@ function tipHTML(f){
   s='<b>'+esc(d.who[f.i])+'</b>'+(d.years[f.i]?' · '+esc(d.years[f.i]):'')+
     (d.scheme[f.i]?'<br>'+esc(d.scheme[f.i]):'')+
     (d.outcome[f.i]?'<br><i>'+esc(d.outcome[f.i])+'</i>':'')+
+    (d.ph&&d.ph[f.i]>=0?'<br>≈ <b>'+(d.ph[f.i]>=10?'$'+fmtInt(Math.round(d.ph[f.i])):'$'+d.ph[f.i].toFixed(2))+' per resident</b> of '+esc(d.phj[f.i])+' ('+fmtInt(d.php[f.i])+' people, 2020 Census)':'')+
     (cites.length?'<br><span class="tt-cite">receipts · '+cites.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(hostOf(u))+'</a>').join(' · ')+'</span>':'');
   return {k,ti,s,color:l.accent,wide:true};
  }

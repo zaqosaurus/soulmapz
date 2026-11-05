@@ -1,0 +1,36 @@
+{
+ "layer": "betrayal-ledger-perhead",
+ "retrieved": "2026-11-05",
+ "purpose": "Denominators for the price per head shown on Ledger tooltips (PLAN_V07 Phase 1, finding H18).",
+ "sources": [
+  {
+   "name": "Wikidata Query Service (population, P1082, point in time 2020-04-01)",
+   "url": "https://query.wikidata.org/",
+   "license": "CC0 1.0 (Wikidata structured data)",
+   "sha256_of_response": "0c4c29e38c8c1450d865475bdb39cc66ff6a73cd8e596c69aa9c89c2158d9ba9",
+   "bytes": 33979
+  },
+  {
+   "name": "U.S. Census 2020 county populations as carried in data/staging/faith-altar.json (population_2020)",
+   "license": "public domain (U.S. government work)"
+  }
+ ],
+ "gate": "The Census API (api.census.gov) now answers every query with a redirect to missing_key.html: it requires an API key in the URL, which this environment does not hold. Wikidata's 2020-04-01 statements are the 2020 Census counts, cited per item (QID in each row).",
+ "selection": "Included only Ledger entries where the money was taken from the residents' own general-purpose government (city, town, village, county). Excluded entries and reasons are listed in the staging file. Addison, NY is the village (the clerk-treasurer served the village), not the surrounding town.",
+ "caveats": [
+  "2020 population is a common yardstick; the thefts span 1980s-2020s and populations moved.",
+  "Amounts are court-recorded totals; some schemes ran for decades.",
+  "A per-resident figure is arithmetic, not a measure of harm."
+ ],
+ "counts": {
+  "ledger_entries": 44,
+  "included": 18,
+  "excluded": 26
+ },
+ "known_answer_checks": [
+  "Dixon, IL 2020 = 15,274 (Census QuickFacts figure)",
+  "Vernon, CA 2020 = 222 (famously tiny industrial city)",
+  "Cicero, IL 2020 = 85,268"
+ ],
+ "verdict": "H18 REJECTED as a size contrast (1.9x < 5x); per-resident figures ship on tooltips."
+}

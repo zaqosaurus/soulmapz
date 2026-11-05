@@ -254,3 +254,106 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v06":
 # F16 net-migration rate vs OD: r=0.119                                              -> REJECTED (too weak)
 # Tradition x OD: Lutheran 6.2 vs non-denominational 23.8 nationwide, 5.7 vs 7.4 within states
 #                                                                                    -> SHIPPED as a confounding lesson
+
+# ======================= v0.7 Phase 1 findings =======================
+# Pre-stated before running (2026-11-05):
+# H17 "The thrones are exhaling": counties holding a Fortune 500 headquarters lose
+#     households on net more often than counties of the same size without one.
+#     Matching: each HQ county vs the 10 non-HQ counties nearest in 2020 population
+#     (log scale). SHIP only if the HQ share losing exceeds the matched share by >= 10
+#     points AND the mean net-migration rate gap keeps its sign within states
+#     (each HQ county vs matched controls from its own state, where >= 3 exist).
+# H18 "The price per head": median Ledger theft per resident is higher in places
+#     under 25,000 than in places of 25,000+. Descriptive, n is the Ledger itself;
+#     SHIP only if every included entry has a verified denominator and the gap is
+#     at least 5x between the medians.
+
+def county_polygons():
+    topo = load(p("data","ref","counties-10m.json"))
+    sx, sy = topo["transform"]["scale"]; tx, ty = topo["transform"]["translate"]
+    arcs = []
+    for arc in topo["arcs"]:
+        pts, x, y = [], 0, 0
+        for dx, dy in arc:
+            x += dx; y += dy
+            pts.append((x*sx+tx, y*sy+ty))
+        arcs.append(pts)
+    def ring(r):
+        out = []
+        for ai in r:
+            seg = arcs[ai] if ai >= 0 else arcs[~ai][::-1]
+            out.extend(seg if not out else seg[1:])
+        return out
+    polys = {}
+    for g in topo["objects"]["counties"]["geometries"]:
+        fips = str(g["id"]).zfill(5)
+        if g["type"] == "Polygon": rings = [[ring(r) for r in g["arcs"]]]
+        elif g["type"] == "MultiPolygon": rings = [[ring(r) for r in poly] for poly in g["arcs"]]
+        else: continue
+        xs = [q[0] for poly in rings for q in poly[0]]; ys = [q[1] for poly in rings for q in poly[0]]
+        polys[fips] = (min(xs), min(ys), max(xs), max(ys), rings)
+    return polys
+
+def _in_ring(x, y, r):
+    inside = False
+    j = len(r) - 1
+    for i in range(len(r)):
+        xi, yi = r[i]; xj, yj = r[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / ((yj - yi) or 1e-12) + xi: inside = not inside
+        j = i
+    return inside
+
+def county_of(lat, lon, polys):
+    for f, (x0, y0, x1, y1, rings) in polys.items():
+        if not (x0 <= lon <= x1 and y0 <= lat <= y1): continue
+        for poly in rings:
+            if _in_ring(lon, lat, poly[0]) and not any(_in_ring(lon, lat, h) for h in poly[1:]): return f
+    return None
+
+def v07():
+    import statistics
+    fa_st = load(p("data","staging","faith-altar.json"))["regions"]
+    pop = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("population_2020") for r in fa_st}
+    so = load(p("data","staging","motion-sorting.json"))
+    netr = {str(c["fips"]).zfill(5): 1000.0*c["net"]/pop[str(c["fips"]).zfill(5)] for c in so["counties"] if pop.get(str(c["fips"]).zfill(5))}
+    polys = county_polygons()
+    hq = defaultdict(int)
+    miss = 0
+    for r in load(p("data","staging","power-fortune500.json"))["records"]:
+        f = county_of(r["lat"], r["lon"], polys)
+        if f: hq[f] += 1
+        else: miss += 1
+    H = [f for f in hq if f in netr]
+    N = [f for f in netr if f not in hq]
+    lp = lambda f: math.log(pop[f])
+    def matched(f, pool, k=10):
+        return sorted(pool, key=lambda g: abs(lp(g) - lp(f)))[:k]
+    share = lambda fs: sum(1 for f in fs if netr[f] < 0) / len(fs)
+    ctrl = [g for f in H for g in matched(f, N)]
+    print(f"H17: {len(hq)} HQ counties ({miss} HQs unplaced); {len(H)} with migration data")
+    print(f"  share losing households: HQ {share(H)*100:.0f}%  vs  size-matched controls {share(ctrl)*100:.0f}%  (unmatched non-HQ {share(N)*100:.0f}%)")
+    print(f"  mean net per 1k: HQ {statistics.mean(netr[f] for f in H):+.2f}  vs  matched {statistics.mean(netr[g] for g in ctrl):+.2f}")
+    gaps = []
+    for f in H:
+        pool = [g for g in N if g[:2] == f[:2]]
+        if len(pool) < 3: continue
+        m = matched(f, pool, 3)
+        gaps.append(netr[f] - statistics.mean(netr[g] for g in m))
+    neg = sum(1 for x in gaps if x < 0)
+    print(f"  within-state (3 nearest-size controls each): n={len(gaps)} mean gap {statistics.mean(gaps):+.2f}/1k, HQ below its controls in {neg}/{len(gaps)}")
+    ph = load(p("data","staging","betrayal-ledger-perhead.json"))["rows"]
+    sm = [r["per_resident"] for r in ph if r["population_2020"] < 25000]
+    bg = [r["per_resident"] for r in ph if r["population_2020"] >= 25000]
+    print(f"H18: n={len(ph)}  median per resident under 25k ${statistics.median(sm):,.2f} (n={len(sm)}) vs 25k+ ${statistics.median(bg):,.2f} (n={len(bg)}); ratio {statistics.median(sm)/statistics.median(bg):.1f}x")
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v07":
+    v07()
+# H17 thrones exhaling:  HQ 65% losing vs size-matched 58% (raw non-HQ 48%); within-state
+#                        HQ below its controls in 96/144, mean gap -1.25/1k
+#                        -> REJECTED (7-point gap < the pre-stated 10; size explains most of
+#                           the raw 64%-vs-48% contrast — the early number was a size effect)
+# H18 price per head:    n=18 verified denominators (26 Ledger entries excluded: 13 bribery,
+#                        8 special districts, 5 mixed victims); medians $270 (<25k, n=11) vs
+#                        $141 (25k+, n=7), 1.9x -> REJECTED as a size contrast (< 5x). The
+#                        early "$312 vs $4.27" did not survive careful denominators. The
+#                        per-resident figure itself ships as a fact on each Ledger tooltip.

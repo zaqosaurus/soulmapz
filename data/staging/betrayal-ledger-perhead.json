@@ -1,0 +1,203 @@
+{
+ "layer": "betrayal-ledger-perhead",
+ "retrieved": "2026-11-05",
+ "method": "Ledger amount (court-recorded) divided by the 2020 Census population of the government the money was taken from. Included only where the victim is the residents' own general-purpose government (city, town, village or county). Populations for towns from Wikidata's population statements dated 2020-04-01 (the 2020 Census count), for counties from the 2020 Census figure in the faith staging file. The Census API itself now requires a key and was not used.",
+ "rows": [
+  {
+   "name": "Dixon, IL",
+   "jurisdiction": "Dixon, Illinois (city)",
+   "ref": "Q113602",
+   "population_2020": 15274,
+   "amount": 53700000,
+   "per_resident": 3515.78,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Beaumont, CA",
+   "jurisdiction": "Beaumont, California (city)",
+   "ref": "Q813431",
+   "population_2020": 53036,
+   "amount": 43000000,
+   "per_resident": 810.77,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Cicero, IL",
+   "jurisdiction": "Cicero, Illinois (town)",
+   "ref": "Q578221",
+   "population_2020": 85268,
+   "amount": 12000000,
+   "per_resident": 140.73,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Bell, CA",
+   "jurisdiction": "Bell, California (city)",
+   "ref": "Q377736",
+   "population_2020": 33559,
+   "amount": 5500000,
+   "per_resident": 163.89,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Addison, NY",
+   "jurisdiction": "Addison, New York (village)",
+   "ref": "Q3460811",
+   "population_2020": 1561,
+   "amount": 1171362,
+   "per_resident": 750.39,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Spring Lake, NC",
+   "jurisdiction": "Spring Lake, North Carolina (town)",
+   "ref": "Q2024555",
+   "population_2020": 11660,
+   "amount": 567070,
+   "per_resident": 48.63,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Fort Gay, WV",
+   "jurisdiction": "Fort Gay, West Virginia (town)",
+   "ref": "Q1991953",
+   "population_2020": 675,
+   "amount": 370000,
+   "per_resident": 548.15,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Center, MO",
+   "jurisdiction": "Center, Missouri (city)",
+   "ref": "Q530678",
+   "population_2020": 528,
+   "amount": 317326,
+   "per_resident": 601.0,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Greenville, MO",
+   "jurisdiction": "Greenville, Missouri (city)",
+   "ref": "Q966437",
+   "population_2020": 443,
+   "amount": 168957,
+   "per_resident": 381.39,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Roxie, MS",
+   "jurisdiction": "Roxie, Mississippi (town)",
+   "ref": "Q1022786",
+   "population_2020": 469,
+   "amount": 109426,
+   "per_resident": 233.32,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Hickory Flat, MS",
+   "jurisdiction": "Hickory Flat, Mississippi (town)",
+   "ref": "Q1836961",
+   "population_2020": 496,
+   "amount": 104257,
+   "per_resident": 210.2,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Vernon, CA",
+   "jurisdiction": "Vernon, California (city)",
+   "ref": "Q934111",
+   "population_2020": 222,
+   "amount": 60000,
+   "per_resident": 270.27,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Crawford, NY",
+   "jurisdiction": "Crawford, New York (town)",
+   "ref": "Q3708470",
+   "population_2020": 9130,
+   "amount": 21296,
+   "per_resident": 2.33,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Harrisburg, PA",
+   "jurisdiction": "Harrisburg, Pennsylvania (city)",
+   "ref": "Q25280",
+   "population_2020": 50099,
+   "amount": 18000,
+   "per_resident": 0.36,
+   "source": "Wikidata P1082, 2020-04-01 (U.S. Census 2020)"
+  },
+  {
+   "name": "Rio Rico / Santa Cruz County, AZ",
+   "jurisdiction": "Santa Cruz County, Arizona",
+   "ref": "04023",
+   "population_2020": 47669,
+   "amount": 38700000,
+   "per_resident": 811.85,
+   "source": "U.S. Census 2020 via the Religion Census county file (data/staging/faith-altar.json, population_2020)"
+  },
+  {
+   "name": "Clark County, OH",
+   "jurisdiction": "Clark County, Ohio",
+   "ref": "39023",
+   "population_2020": 136001,
+   "amount": 1800000,
+   "per_resident": 13.24,
+   "source": "U.S. Census 2020 via the Religion Census county file (data/staging/faith-altar.json, population_2020)"
+  },
+  {
+   "name": "Owen County, IN",
+   "jurisdiction": "Owen County, Indiana",
+   "ref": "18119",
+   "population_2020": 21321,
+   "amount": 346157,
+   "per_resident": 16.24,
+   "source": "U.S. Census 2020 via the Religion Census county file (data/staging/faith-altar.json, population_2020)"
+  },
+  {
+   "name": "LaPorte County, IN",
+   "jurisdiction": "LaPorte County, Indiana",
+   "ref": "18091",
+   "population_2020": 112417,
+   "amount": 150000,
+   "per_resident": 1.33,
+   "source": "U.S. Census 2020 via the Religion Census county file (data/staging/faith-altar.json, population_2020)"
+  }
+ ],
+ "excluded": {
+  "bribery or kickbacks (no cost per resident is defined)": [
+   "Hidalgo County, TX (Weslaco contracts)",
+   "Atlanta, GA",
+   "Jefferson County, AL",
+   "Detroit, MI",
+   "Maverick County, TX",
+   "Bridgeport, CT",
+   "New Orleans, LA",
+   "Camden, NJ (ABSCAM)",
+   "Providence, RI",
+   "Cuyahoga County, OH",
+   "Passaic, NJ",
+   "Gwinnett County, GA",
+   "Camden, NJ"
+  ],
+  "victim is a school, water or utility district, not the town's government": [
+   "Panoche Water District, CA",
+   "Roslyn, NY",
+   "Patterson, CA",
+   "Hollandale, MS",
+   "Clarksdale, MS",
+   "South Cheyenne Water & Sewer District, WY",
+   "Seattle, WA",
+   "Grand Prairie, TX"
+  ],
+  "victim mixed or not the residents' government (several taxing bodies, a bank, or funds moved within the city)": [
+   "Aldan, PA",
+   "Fairview Township, PA",
+   "Butler County, OH",
+   "Jefferson Parish, LA",
+   "Crystal City, TX"
+  ]
+ }
+}

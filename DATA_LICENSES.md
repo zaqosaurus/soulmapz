@@ -24,6 +24,7 @@ on that basis.
 | company-socialcapital | Social Capital Atlas (Chetty et al. 2022) via HDX | **Meta custom permissive license** — redistribution OK with license attached; no combining to re-identify individuals | EC ×2 calibration (1.0 = class-blind); differential-privacy noise |
 | faith-altar | 2020 U.S. Religion Census (ASARB) via usreligioncensus.org | **All rights reserved, attribution requested** — facts reproduced with attribution | ~1% counties >1,000/1k (cross-county worshipper draw, documented) |
 | betrayal-ledger | Curated by the survey from DOJ/USAO releases, court records, major-outlet reporting | Facts of public record; per-entry citations in staging | Conviction/plea only; court-established amounts |
+| betrayal-ledger (per-resident figures) | Town populations: Wikidata population statements dated 2020-04-01 (the 2020 Census count), one QID per row; county populations: U.S. Census 2020 | Wikidata **CC0**; Census public domain | 18 of 44 entries — only where the victim is the residents' own government; see `data/staging/betrayal-ledger-perhead.json` |
 | memory-bios | Wikidata descriptions (via wbgetentities) | CC0 | One line per star; IDs recovered from the cross-verified database |
 | control-arsenal | — pending — ATF FFL lists verified open but browser-gated during acquisition | US public data (when landed) | ZIP gazetteer staged (GeoNames CC-BY) |
 | loss-layoffs | — pending — | — | Standardized WARN sources are paywalled/gated; layer intentionally empty |

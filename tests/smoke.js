@@ -101,6 +101,7 @@ async function openPlate(page, lid) {
   await page.keyboard.press('Enter'); await page.waitForTimeout(3000);
   let ts = await tipState(page);
   check('Index → Dixon pins a tooltip with its receipts', ts.shown && ts.pinned && ts.links >= 2, ts.text);
+  check('the Ledger tooltip carries the price per head', await page.$eval('#tooltip', t => /\$3,516 per resident/.test(t.textContent)));
   await shot(page, 'dixon');
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
   check('ESC releases a pinned tooltip', !(await tipState(page)).shown);
