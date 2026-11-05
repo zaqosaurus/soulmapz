@@ -114,11 +114,13 @@ function buildSprites(){
 }
 // Any point layer the registry declares gets a sprite in its own accent, even if no
 // hand-tuned voice exists for it yet — a new layer must never render invisible.
+const SPRC={};
+function spriteColor(hex,core){const k=hex+':'+core;return SPRC[k]||(SPRC[k]=makeSprite(hex,core));}
 function spriteFor(lid){
  if(!SPR['_'+lid])SPR['_'+lid]=makeSprite(byId[lid].accent,(VIS[lid]&&VIS[lid].core)||.62);
  return SPR['_'+lid];
 }
-function inEra(b){
+function inEra(b,era){
  if(b==null||isNaN(b))return false;
  if(era===0)return b<=500;
  if(era===1)return b>=501&&b<=1500;
@@ -180,7 +182,25 @@ function buildScope(s){
   }else if(d.kind==='points'){
    C.layers[l.id]={pts:projArrays(proj,d.lon,d.lat)};
   }else if(d.kind==='flows'){
-   C.layers[l.id]={fa:projArrays(proj,d.arcs.alon,d.arcs.alat),fb:projArrays(proj,d.arcs.blon,d.arcs.blat)};
+   const L0={fa:projArrays(proj,d.arcs.alon,d.arcs.alat),fb:projArrays(proj,d.arcs.blon,d.arcs.blat)};
+   if(d.geo){
+    // v0.7 Phase 0.6: any point pair → a great-circle arc, sampled once per sheet.
+    // A jump wider than a third of the sheet is the antimeridian: the pen lifts there.
+    const jump=(ext[1][0]-ext[0][0])/3,N=28;L0.gc=[];
+    for(let i=0;i<d.arcs.alat.length;i++){
+     const ip=d3.geoInterpolate([d.arcs.alon[i],d.arcs.alat[i]],[d.arcs.blon[i],d.arcs.blat[i]]);
+     const xy=new Float32Array((N+1)*3);let ok=0,px=null;
+     for(let j=0;j<=N;j++){
+      const p=proj(ip(j/N));
+      if(!p){xy[j*3+2]=0;px=null;continue;}
+      xy[j*3]=p[0];xy[j*3+1]=p[1];xy[j*3+2]=(px===null||Math.abs(p[0]-px)>jump)?1:2;px=p[0];ok++;
+     }
+     L0.gc.push(ok>1?xy:null);
+    }
+   }
+   C.layers[l.id]=L0;
+  }else if(d.kind==='raster'){
+   C.layers[l.id]={raster:true};
   }
  }
  // density grids + contours
@@ -190,6 +210,7 @@ function buildScope(s){
  for(const l of live){
   if(!l.scopes.includes(s)||!D[l.id])continue;
   if(!(l.weight>0))continue;
+  if(D[l.id].kind!=='memory'&&!(C.layers[l.id]&&C.layers[l.id].pts))continue;
   const d=D[l.id],grid=new Float32Array(GW*GH);
   const put=(x,y,w)=>{
    const gx=Math.floor((x-ext[0][0])/exw*GW),gy=Math.floor((y-ext[0][1])/exh*GH);
@@ -326,12 +347,11 @@ function drawBase(){
   }
  }
  // county tint layers (static base-space bitmaps, faded by layer alpha)
- if(scope==='us'){
-  for(const lT of countyTintLayers()){
+ {
+  for(const lT of regionTintLayers()){
    const aT=alpha[lT.id]||0;
    if(aT<=0.02)continue;
-   ensureCounties(C);
-   const cvT=countyTintFor(C,lT.id);
+   const cvT=regionTintFor(C,lT.id);
    if(!cvT)continue;
    const cmT=compareMode;
    const clipT=cmT&&(lT.id===cmT.a||lT.id===cmT.b);
@@ -346,6 +366,13 @@ function drawBase(){
    ctx.globalAlpha=1;
    if(clipT){ctx.restore();applyT(ctx);}
   }
+ }
+ // raster layers (v0.7 Phase 0.9): a quantized grid as a coloured, alpha-scaled image
+ for(const lR of live){
+  if(!scopeHas(lR.id)||!D[lR.id]||D[lR.id].kind!=='raster')continue;
+  const aR=alpha[lR.id]||0;if(aR<=0.02)continue;
+  const cvR=rasterFor(C,lR.id);if(!cvR)continue;
+  applyT(ctx);ctx.globalAlpha=aR;ctx.drawImage(cvR,0,0,W,H);ctx.globalAlpha=1;
  }
  // desire tint
  const dl=byId['desire-searches'];
@@ -414,6 +441,28 @@ function drawPointsTo(ctx,lid,step){
   const st2=(step>1&&A.n>6000)?step:1;
   ctx.strokeStyle=byId[lid].accent;
   ctx.lineCap='round';
+  if(L.gc){
+   const lz=lens[lid],lzA=lz?d.arcs[lz.field]:null;
+   for(let i=0;i<L.gc.length;i+=st2){
+    const g=L.gc[i];if(!g)continue;
+    if(lzA&&lzA[i]!==lz.v)continue;
+    const f=Math.min(1,hh[i]/am);
+    ctx.globalAlpha=(0.10+0.55*Math.pow(f,0.6))*(st2>1?1.6:1);
+    ctx.lineWidth=0.5+2.2*f;
+    ctx.beginPath();
+    for(let j=0;j<g.length;j+=3){
+     const m=g[j+2];if(!m)continue;
+     const x=g[j]*k+t.x,y=g[j+1]*k+t.y;
+     m===1?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // the landing end glows: where people (or planes) arrive
+    const e=g.length-3;
+    if(g[e+2]){const x=g[e]*k+t.x,y=g[e+1]*k+t.y;ctx.globalAlpha=Math.min(1,.25+.6*f);ctx.beginPath();ctx.arc(x,y,0.8+1.6*f,0,Math.PI*2);ctx.fillStyle=byId[lid].accent;ctx.fill();}
+   }
+   ctx.globalAlpha=1;
+   return;
+  }
   for(let i=0;i<A.n;i+=st2){
    if(!A.keep[i]||!Bf.keep[i])continue;
    const ax=A.xs[i]*k+t.x,ay=A.ys[i]*k+t.y,bx=Bf.xs[i]*k+t.x,by=Bf.ys[i]*k+t.y;
@@ -428,6 +477,7 @@ function drawPointsTo(ctx,lid,step){
   return;
  }
  if(d.kind==='memory'){
+  const era=eraFor(lid);
   const wf=scope==='world'?0.68:1;
   const st2=(step>1&&L.cells.n>30000)?step:1;
   ctx.globalAlpha=Math.min(1,(scope==='world'?0.82:1)*(st2>1?1.7:1));
@@ -443,14 +493,15 @@ function drawPointsTo(ctx,lid,step){
   const S=L.stars,sv=d.stars.v,sb=d.stars.birth;
   for(let i=0;i<S.n;i++){
    if(!S.keep[i])continue;
-   if(era>=0&&!inEra(sb[i]))continue;
+   if(era>=0&&!inEra(sb[i],era))continue;
    draw(SPR.memStar,S.xs[i],S.ys[i],(1.2+sv[i]*.014)*wf);
   }
   ctx.globalAlpha=1;
  }else{
   const P=L.pts;
   const LZ=lens[lid];
-  const lzSkip=LZ?(ii)=>{const arr=d[LZ.field];return arr&&arr[ii]!==LZ.v;}:null;
+  const lz0=LZ?(ii)=>{const arr=d[LZ.field];return arr&&arr[ii]!==LZ.v;}:null,ts0=timeSkip(lid);
+  const lzSkip=lz0&&ts0?(ii=>lz0(ii)||ts0(ii)):(lz0||ts0);
   if(lid==='loss-crashes'){
    const vv=d.v;
    const st2=(step>1&&P.n>30000)?step:1;
@@ -489,9 +540,16 @@ function drawPointsTo(ctx,lid,step){
    }
    ctx.globalAlpha=1;
   }else{
-   // registry-only layer: default voice (sized by value when the pack carries one)
-   const spr=spriteFor(lid),vv=d.v;
-   for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(spr,P.xs[i],P.ys[i],vv?Math.min(1.6+Math.log1p(vv[i])*.55,5):2.0);}
+   // registry-only layer: default voice. `size` scales by a field (log or sqrt);
+   // `colorBy` gives each code of an enum field its own colour.
+   const l=byId[lid],sz=l.size||{},spr=spriteFor(lid),vv=d[sz.field||'v'];
+   const cb=l.colorBy,ca=cb?d[cb.field]:null,core=(VIS[lid]&&VIS[lid].core)||.7;
+   const sprs=ca?cb.colors.map(c=>spriteColor(c||l.accent,core)):null;
+   const mn=sz.min!=null?sz.min:1.6,mx=sz.max!=null?sz.max:5,vmx=sz.vmax||d.vmaxv||(d.vmaxv=vv?vv.reduce((m,x)=>Math.max(m,x||0),1):1);
+   const rad=!vv?(()=>sz.r||2.0):sz.scale==='sqrt'?(i=>mn+Math.sqrt(Math.max(vv[i],0)/vmx)*(mx-mn)):(i=>Math.min(mn+Math.log1p(Math.max(vv[i],0))*(sz.k||.55),mx));
+   if(sz.alpha)ctx.globalAlpha=sz.alpha;
+   for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(sprs?(sprs[ca[i]]||spr):spr,P.xs[i],P.ys[i],rad(i));}
+   ctx.globalAlpha=1;
   }
   if(LZ&&LZ.constellation)drawConstellation(ctx,lid,L,lzSkip);
  }
@@ -691,11 +749,11 @@ function drawLabels(){
  // memory star names
  const ma=alpha['memory-births']||0;
  if(ma>0.5&&scopeHas('memory-births')&&t.k>=2.3){
-  const L=C.layers['memory-births'].stars,d=D['memory-births'].stars;
+  const L=C.layers['memory-births'].stars,d=D['memory-births'].stars,mEra=eraFor('memory-births');
   let shown=0;
   for(let i=0;i<L.n&&shown<26;i++){
    if(!L.keep[i])continue;
-   if(era>=0&&!inEra(d.birth[i]))continue;
+   if(mEra>=0&&!inEra(d.birth[i],mEra))continue;
    const [sx,sy]=S(L.xs[i],L.ys[i]);
    if(sx<padLeft()||sx>W-20||sy<100||sy>H-80)continue;
    if(!free(sx,sy,70))continue;take(sx,sy,70);
@@ -817,6 +875,7 @@ function rebuildQt(){
   const l=byId[lid];if(!l.forms.points)continue;
   const L=C.layers[lid];if(!L)continue;
   if(D[lid].kind==='memory'){
+   const era=eraFor(lid);
    const dd=D[lid],ee=dd.cells.e;
    const P=L.cells;
    for(let i=0;i<P.n;i++){
@@ -828,14 +887,15 @@ function rebuildQt(){
    const St=L.stars,sb=dd.stars.birth;
    for(let i=0;i<St.n;i++){
     if(!St.keep[i])continue;
-    if(era>=0&&!inEra(sb[i]))continue;
+    if(era>=0&&!inEra(sb[i],era))continue;
     items.push({x:St.xs[i],y:St.ys[i],lid,i,kind:'star'});
    }
   }else if(L.pts){
-   const P=L.pts,LZq=lens[lid],arrq=LZq?D[lid][LZq.field]:null;
+   const P=L.pts,LZq=lens[lid],arrq=LZq?D[lid][LZq.field]:null,tsq=timeSkip(lid);
    for(let i=0;i<P.n;i++){
     if(!P.keep[i])continue;
     if(arrq&&arrq[i]!==LZq.v)continue;
+    if(tsq&&tsq(i))continue;
     items.push({x:P.xs[i],y:P.ys[i],lid,i,kind:'pt'});
    }
   }
@@ -846,7 +906,7 @@ function scheduleQt(){clearTimeout(qtTimer);qtTimer=setTimeout(rebuildQt,260);}
 
 const tip=$('#tooltip');
 function tipHTML(f){
- const l=byId[f.lid],d=D[f.lid];
+ const l=byId[f.lid],d=D[f.lid],era=eraFor(f.lid);
  let k=l.title.toUpperCase(),ti='',s='';
  if(f.kind==='star'){
   const st=d.stars;ti='★ '+st.name[f.i];
@@ -877,26 +937,57 @@ function tipHTML(f){
     (cites.length?'<br><span class="tt-cite">receipts · '+cites.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(hostOf(u))+'</a>').join(' · ')+'</span>':'');
   return {k,ti,s,color:l.accent,wide:true};
  }
+ else if(l.tip){
+  ti=tplFill(l.tip.ti||'{name}',d,f.i)||l.title;s=tplFill(l.tip.s||'',d,f.i);
+  const cb=l.colorBy;
+  return {k,ti,s,color:cb&&d[cb.field]?(cb.colors[d[cb.field][f.i]]||l.accent):l.accent,wide:!!l.tip.wide};
+ }
  else{ti=(d.name&&d.name[f.i])||l.title;s=l.unit||'';}
  return {k,ti,s,color:f.lid==='omen-names'&&d.s[f.i]?(byId[f.lid].accent2||'#f2ead8'):l.accent};
 }
+// v0.7 Phase 0.4: registry tooltip templates. "{field}" or "{field|fmt}" with fmt in
+// int, money, mw, month, year, f1, raw. Enum fields print their label. Empty parts drop
+// out with their separator; "\n" breaks the line. Output is always escaped.
+function tplVal(d,field,i,fmt){
+ const arr=d[field];if(!arr)return '';
+ const v=arr[i],codes=d.codes&&d.codes[field];
+ if(codes&&fmt!=='raw')return (v!=null&&v>=0&&codes[v]!=null)?codes[v]:'';
+ if(v==null||v==='')return '';
+ if(fmt==='int')return fmtInt(Math.round(v));
+ if(fmt==='money')return money(v);
+ if(fmt==='mw')return fmtInt(Math.round(v))+' MW';
+ if(fmt==='month')return MONTHS[v]||'';
+ if(fmt==='year')return v?String(v):'';
+ if(fmt==='f1')return Number(v).toFixed(1);
+ return String(v);
+}
+function tplFill(str,d,i){
+ // a ' · ' segment whose placeholders all came back empty drops out with its separator
+ return String(str).split('\n').map(line=>line.split(' · ').map(part=>{
+  let n=0,filled=0;
+  const out=part.replace(/\{(\w+)(?:\|(\w+))?\}/g,(m,f,fmt)=>{n++;const v=tplVal(d,f,i,fmt);if(v!=='')filled++;return v;});
+  return (n&&!filled)?'':esc(out);
+ }).filter(x=>x.trim()).join(' · ')).filter(Boolean).join('<br>');
+}
 function regionTip(qx,qy){
  const C0=SC[scope];
- if(scope==='us'&&C0.countyBoxes){
-  const tls=countyTintLayers().filter(l=>(alpha[l.id]||0)>0.3).reverse();
+ const boxes0=scope==='us'?C0.countyBoxes:C0.countryBoxes;
+ if(boxes0){
+  const tls=regionTintLayers().filter(l=>(alpha[l.id]||0)>0.3).reverse();
   if(tls.length){
    idT(hitCtx);
-   for(const b of C0.countyBoxes){
+   for(const b of boxes0){
     if(qx<b.x0||qx>b.x1||qy<b.y0||qy>b.y1)continue;
     if(hitCtx.isPointInPath(b.p,qx*dpr,qy*dpr)){
      const lines=[];let color=null,anySupp=false;
      for(const lT of tls){
-      const e=D[lT.id].counties[b.fips];
-      if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=lT.accent;}
+      const e=regionMap(D[lT.id])[b.fips],ee=eraFor(lT.id);
+      if(e&&ee>=0&&e.t){const tl=timeOf(lT.id),v=e.t[ee];lines.push(v==null?'no figure for '+tl.labels[ee]:'<b>'+(Math.abs(v)>=100?fmtInt(Math.round(v)):v)+' '+esc(lT.unit||'')+'</b> · '+tl.labels[ee]);if(!color)color=lT.accent;}
+      else if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=D[lT.id].categories&&e.c!=null&&e.c>=0?catColor(D[lT.id],e.c):lT.accent;}
       else if(lT.id==='despair-overdoses'||lT.id==='despair-suicide')anySupp=true;
      }
      if(!lines.length&&anySupp)return {k:'COUNTY',ti:b.name,s:'no reportable rate — suppressed or missing<br>(small counts protect privacy)',color:'#5a6577'};
-     if(lines.length)return {k:'COUNTY — '+tls.map(l=>l.title.toUpperCase()).join(' × '),ti:b.name,s:lines.join('<br>'),color:color||'#c8d2e2'};
+     if(lines.length)return {k:(scope==='us'?'COUNTY — ':'')+tls.map(l=>l.title.toUpperCase()).join(' × '),ti:b.name,s:lines.join('<br>'),color:color||'#c8d2e2'};
      break;
     }
    }
@@ -1025,8 +1116,11 @@ function onClick(ev){
 // ---------- UI ----------
 function updateStatline(){
  const parts=activeIds().map(lid=>{
-  if(lid==='memory-births'&&era>=0&&D[lid].eras)return fmtInt(D[lid].eras.totals[era])+' births, '+D[lid].eras.labels[era];
+  const e=eraFor(lid);
+  if(lid==='memory-births'&&e>=0&&D[lid].eras)return fmtInt(D[lid].eras.totals[e])+' births, '+D[lid].eras.labels[e];
   let s=byId[lid].statline;
+  const tl=timeOf(lid);
+  if(e>=0&&tl)s=(byId[lid].title)+' — '+tl.labels[e]+(tl.counts&&tl.counts[e]!=null?' · '+fmtInt(tl.counts[e]):'');
   if(lens[lid])s=(s?s+' ':'')+'· lens: '+lens[lid].label;
   return s;
  }).filter(Boolean);
@@ -1130,6 +1224,8 @@ function openPlate(lid){
   '<div class="pl-h" style="color:'+l.accent+'">WHY</div><div class="pl-body">'+l.essay.why+'</div>'+
   (l.caveat?'<div class="pl-cav"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
   (srcs?'<div class="pl-h" style="color:'+l.accent+'">SOURCES</div><div class="pl-src">'+srcs+'</div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].categories?'<div class="pl-h" style="color:'+l.accent+'">LEGEND · '+esc((D[l.id].categories.label||'').toUpperCase())+'</div><div class="pl-legend">'+D[l.id].categories.labels.map((lb,i)=>D[l.id].categories.counts[i]?'<span class="lg-item"><i style="background:'+catColor(D[l.id],i)+'"></i>'+esc(lb)+' <b>'+fmtInt(D[l.id].categories.counts[i])+'</b></span>':'').join('')+'</div>':'')+
+  (l.status==='live'&&timeOf(l.id)&&l.id!=='memory-births'?'<div class="pl-h" style="color:'+l.accent+'">TIME · '+esc((timeOf(l.id).label||'').toUpperCase())+'</div><div class="pl-note">'+timeOf(l.id).labels.length+' steps, '+esc(timeOf(l.id).labels[0])+' → '+esc(timeOf(l.id).labels[timeOf(l.id).labels.length-1])+'. Use the bar at the foot of the map, or ▶ to watch it move.</div>':'')+
   (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+(fl.constellation?' · members are drawn as a constellation':'')+(fl.seq?' · ▶ steps through time':'')+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+esc(v[1])+'"'+(fl.constellation?' data-const="1"':'')+'>'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+(fl.seq?'<button class="lz-chip lz-play" data-lid="'+l.id+'" data-field="'+fl.field+'" title="Step through '+esc(fl.label.toLowerCase())+'">'+(lensPlay&&lensPlay.lid===l.id&&lensPlay.field===fl.field?'■':'▶')+'</button>':'')+'</div>').join('')+'</div>':'')+
   (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="'+GH+'data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="'+GH+'data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="'+GH+'registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a> · <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a></div>':'')+
   (l.status==='live'?'<div class="pl-solo">SOLO VIEW — other layers dimmed · the audio follows · close to restore</div>':'<div class="pl-solo">'+(l.pendingNote||'')+'</div>');
@@ -1146,10 +1242,12 @@ function openPlate(lid){
  }));
  inner.querySelectorAll('.lz-play').forEach(b=>b.addEventListener('click',()=>toggleLensPlay(b.dataset.lid,b.dataset.field)));
  if(l.status==='live'){
-  if(!scopeHas(lid)&&l.scopes.includes('us'))switchScope('us');
+  if(!scopeHas(lid))switchScope(l.scopes.includes('us')?'us':'world');
   if(!plateOpen)savedTargets={...target};
   for(const x of live)target[x.id]=(x.id===lid?1:0);
-  chipRefresh();updateStatline();scheduleQt();terrainDirty=true;dirty=true;
+  plateOpen=lid;
+  if(!tipPinned)tip.style.display='none';
+  chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
  }
  plateOpen=lid;
 }
@@ -1159,7 +1257,8 @@ function closePlate(){
  $('#plate').classList.remove('open');
  if(savedTargets){for(const k in savedTargets)target[k]=savedTargets[k];savedTargets=null;}
  plateOpen=null;
- chipRefresh();updateStatline();scheduleQt();terrainDirty=true;dirty=true;
+ if(!tipPinned)tip.style.display='none';
+ chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
 }
 
 function buildHero(){
@@ -1272,11 +1371,15 @@ function memGrid(C,er){
  return out;
 }
 function layerGrid(C,lid){
- if(lid==='memory-births'&&era>=0){const m=memGrid(C,era);return m.grid;}
+ const e=eraFor(lid);
+ if(lid==='memory-births'&&e>=0){const m=memGrid(C,e);return m.grid;}
+ if(e>=0&&byId[lid].time&&D[lid].kind==='points'){const m=timeGrid(C,lid,e);if(m)return m.grid;}
  return C.grids[lid];
 }
 function layerContours(C,lid){
- if(lid==='memory-births'&&era>=0){const m=memGrid(C,era);return m.contours;}
+ const e=eraFor(lid);
+ if(lid==='memory-births'&&e>=0){const m=memGrid(C,e);return m.contours;}
+ if(e>=0&&byId[lid].time&&D[lid].kind==='points'){const m=timeGrid(C,lid,e);if(m)return m.contours;}
  return C.contours[lid];
 }
 
@@ -1293,32 +1396,87 @@ function ensureCounties(C){
   C.countyBoxes.push({fips,p,name:f.properties.name,x0:bb[0][0],y0:bb[0][1],x1:bb[1][0],y1:bb[1][1]});
  }
 }
-function countyTintFor(C,lid){
- C.countyTints=C.countyTints||{};
- if(C.countyTints[lid]!==undefined)return C.countyTints[lid];
- const d=D[lid],l=byId[lid];
- if(!d||!C.countyBoxes){C.countyTints[lid]=null;return null;}
+function ensureCountries(C){
+ if(C.countryBoxes||C.scope!=='world')return;
+ C.countryBoxes=[];
+ for(const f of geo.countries){
+  if(f.id==null)continue;
+  const key=String(f.id).padStart(3,'0');
+  const ds=C.gp(f);if(!ds)continue;
+  const bb=C.gp.bounds(f);
+  C.countryBoxes.push({fips:key,p:new Path2D(ds),name:(f.properties&&f.properties.name)||key,x0:bb[0][0],y0:bb[0][1],x1:bb[1][0],y1:bb[1][1]});
+ }
+}
+// v0.7: one tint engine for counties (U.S. sheet) and countries (world sheet)
+function regionBoxes(C,lid){
+ const rk=byId[lid].forms.regionKind;
+ if(rk==='county'&&C.scope==='us'){ensureCounties(C);return C.countyBoxes;}
+ if(rk==='country'&&C.scope==='world'){ensureCountries(C);return C.countryBoxes;}
+ return null;
+}
+function regionMap(d){return d?(d.counties||d.countries||null):null;}
+function regionVal(lid,e){const ee=eraFor(lid);return (ee>=0&&e.t)?e.t[ee]:e.v;}
+function catColor(d,c){const cs=d.categories&&d.categories.colors;return (cs&&cs[c])||'#8796ad';}
+function regionTintFor(C,lid){
+ C.regionTints=C.regionTints||{};
+ const key=lid+':'+eraFor(lid);
+ if(C.regionTints[key]!==undefined)return C.regionTints[key];
+ const d=D[lid],l=byId[lid],boxes=regionBoxes(C,lid),M=regionMap(d);
+ if(!d||!boxes||!M){C.regionTints[key]=null;return null;}
  const cv=document.createElement('canvas');cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
  const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
  if(d.kind==='flows'){
   const vmax=d.vmax||1;
-  for(const b of C.countyBoxes){
-   const e=d.counties[b.fips];if(!e)continue;
+  for(const b of boxes){
+   const e=M[b.fips];if(!e)continue;
    const norm=Math.min(1,Math.abs(e.v)/vmax);
    x.fillStyle=hexA(e.v>=0?l.accent:(l.accent2||'#c98a7a'),0.04+norm*0.30);
    x.fill(b.p);
   }
+ }else if(d.categories&&eraFor(lid)<0){
+  // categorical: each region wears its category's colour
+  for(const b of boxes){
+   const e=M[b.fips];if(!e||e.c==null||e.c<0)continue;
+   x.fillStyle=hexA(catColor(d,e.c),0.30);
+   x.fill(b.p);
+  }
  }else{
   const vmax=d.vmax||60;
-  for(const b of C.countyBoxes){
-   const e=d.counties[b.fips];if(!e)continue;
-   const norm=Math.min(1,e.v/vmax);
+  for(const b of boxes){
+   const e=M[b.fips];if(!e)continue;
+   const v=regionVal(lid,e);if(v==null)continue;
+   const norm=Math.max(0,Math.min(1,v/vmax));
    x.fillStyle=hexA(l.accent,0.04+norm*0.30);
    x.fill(b.p);
   }
  }
- C.countyTints[lid]=cv;
+ C.regionTints[key]=cv;
  return cv;
+}
+function rasterFor(C,lid){
+ C.rasters=C.rasters||{};
+ if(C.rasters[lid]!==undefined)return C.rasters[lid];
+ const d=D[lid],l=byId[lid];
+ const bin=atob(d.b64),w=d.w,h=d.h,[x0,y0,x1,y1]=d.bbox,dx=(x1-x0)/w,dy=(y1-y0)/h;
+ const cv=document.createElement('canvas');cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+ const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+ const r=parseInt(l.accent.slice(1,3),16),g=parseInt(l.accent.slice(3,5),16),b=parseInt(l.accent.slice(5,7),16);
+ for(let j=0;j<h;j++){
+  const lat=y1-(j+.5)*dy;
+  for(let i=0;i<w;i++){
+   const v=bin.charCodeAt(j*w+i);if(!v)continue;
+   const lon=x0+(i+.5)*dx,p=C.proj([lon,lat]);if(!p)continue;
+   const q=C.proj([lon+dx,lat-dy]);
+   const sx=q?Math.max(.6,Math.abs(q[0]-p[0])):1,sy=q?Math.max(.6,Math.abs(q[1]-p[1])):1;
+   x.fillStyle='rgba('+r+','+g+','+b+','+(Math.pow(v/255,.7)*.85).toFixed(3)+')';
+   x.fillRect(p[0]-sx/2,p[1]-sy/2,sx+.4,sy+.4);
+  }
+ }
+ C.rasters[lid]=cv;
+ return cv;
+}
+function regionTintLayers(){
+ return live.filter(l=>l.forms.tint&&scopeHas(l.id)&&((l.forms.regionKind==='county'&&scope==='us')||(l.forms.regionKind==='country'&&scope==='world')));
 }
 function countyTintLayers(){
  return live.filter(l=>l.forms.tint&&l.forms.regionKind==='county'&&scopeHas(l.id));
@@ -1331,35 +1489,95 @@ function toast(msg,ms){
  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||3400);
 }
 
-// ---------- v2: era scrubber ----------
+// ---------- v0.7: TIME EVERYWHERE ----------
+// Any layer whose registry entry declares `time` gets the scrubber. The bar shows the
+// buckets of the first active timed layer (rail order); `era` indexes those buckets and
+// applies to that layer only. Memory keeps its five eras through the same door.
+function timeOf(lid){
+ const l=byId[lid],d=D[lid];if(!l||!d)return null;
+ if(lid==='memory-births')return d.eras?{labels:d.eras.labels,counts:d.eras.totals,label:'era of birth'}:null;
+ if(!l.time||!l.time.buckets)return null;
+ return {labels:l.time.buckets.map(b=>b[2]),counts:l.time.counts||null,label:l.time.label||'',spec:l.time};
+}
+function timeLid(){const ids=activeIds();for(const id of railOrder)if(ids.indexOf(id)>=0&&timeOf(id))return id;return null;}
+function eraFor(lid){return (era>=0&&timeLid()===lid)?era:-1;}
+function timeSkip(lid){
+ const e=eraFor(lid);if(e<0||lid==='memory-births')return null;
+ const tm=byId[lid].time,arr=D[lid][tm.field];if(!arr||!tm.buckets[e])return null;
+ const lo=tm.buckets[e][0],hi=tm.buckets[e][1];
+ if(tm.mode==='upto'){
+  // standing ground: listed by the bucket's end, and (when an end field exists) not yet gone
+  const endA=tm.endField?D[lid][tm.endField]:null;
+  return endA?(i=>!(arr[i]&&arr[i]<=hi&&!(endA[i]&&endA[i]<=hi))):(i=>!(arr[i]&&arr[i]<=hi));
+ }
+ return i=>!(arr[i]>=lo&&arr[i]<=hi);
+}
+function timeGrid(C,lid,e){
+ C.timeGrids=C.timeGrids||{};
+ const key=lid+':'+e;
+ if(C.timeGrids[key]!==undefined)return C.timeGrids[key];
+ const l=byId[lid],L=C.layers[lid],d=D[lid];
+ if(!L||!L.pts||!(l.weight>0)){C.timeGrids[key]=null;return null;}
+ const ext=C.ext,exw=ext[1][0]-ext[0][0],exh=ext[1][1]-ext[0][1],GW=C.GW,GH=C.GH;
+ const grid=new Float32Array(GW*GH),P=L.pts,vv=d.v,sk=timeSkip(lid);
+ for(let i=0;i<P.n;i++){
+  if(!P.keep[i]||(sk&&sk(i)))continue;
+  const gx=Math.floor((P.xs[i]-ext[0][0])/exw*GW),gy=Math.floor((P.ys[i]-ext[0][1])/exh*GH);
+  if(gx>=0&&gx<GW&&gy>=0&&gy<GH)grid[gy*GW+gx]+=vv?Math.min(vv[i],4):1;
+ }
+ let g=gaussBlur(grid,GW,GH);
+ // normalise against the full layer so the land rises over time instead of re-scaling
+ const full=C.grids[lid];let p=0;
+ if(full){const nz=[];for(let i=0;i<g.length;i++)if(g[i]>0)nz.push(g[i]);nz.sort((a,b)=>a-b);p=nz.length?nz[Math.min(nz.length-1,Math.floor(nz.length*.996))]:1;}
+ for(let i=0;i<g.length;i++)g[i]=Math.min(1,g[i]/(p||1));
+ const out={grid:g,contours:null};
+ if(l.forms.contours){
+  const cs=d3.contours().size([GW,GH]).thresholds(CONTOUR_T)(g);
+  out.contours=cs.map((c,ci)=>{const p2=new Path2D();c.coordinates.forEach(poly=>poly.forEach(ring=>{ring.forEach((pt,j)=>{const x=ext[0][0]+pt[0]/GW*exw,y=ext[0][1]+pt[1]/GH*exh;j?p2.lineTo(x,y):p2.moveTo(x,y);});p2.closePath();}));return {p:p2,i:ci};});
+ }
+ C.timeGrids[key]=out;
+ return out;
+}
+let eraBarLid;   // the layer whose buckets the bar currently shows
 function buildEraBar(){
- const d=D['memory-births'];
- if(!d||!d.eras)return;
  const bar=$('#eraBar');bar.innerHTML='';
- const mk=(label,e)=>{
-  const b=document.createElement('button');b.textContent=label;b.dataset.era=e;
+ const lid=timeLid(),tl=lid?timeOf(lid):null;
+ bar.dataset.lid=lid||'';
+ if(!tl)return;
+ const l=byId[lid];
+ const mk=(label,e,title)=>{
+  const b=document.createElement('button');b.textContent=label;b.dataset.era=e;if(title)b.title=title;
   b.addEventListener('click',()=>setEra(parseInt(b.dataset.era,10)));
   bar.appendChild(b);return b;
  };
+ const tag=document.createElement('span');tag.className='eb-tag';tag.style.color=l.accent;
+ tag.textContent=(tl.label||l.title).toUpperCase();bar.appendChild(tag);
  mk('ALL TIME',-1);
- d.eras.labels.forEach((lb,i)=>mk(lb,i));
- const play=document.createElement('button');play.className='play';play.textContent='▶';
+ tl.labels.forEach((lb,i)=>mk(lb,i,tl.counts&&tl.counts[i]!=null?fmtInt(tl.counts[i]):''));
+ const play=document.createElement('button');play.className='play';play.textContent=eraPlay?'■':'▶';
  play.addEventListener('click',()=>{
   if(eraPlay){clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
   play.textContent='■';let e=era<0?-1:era;
+  const n=tl.labels.length,ms=n>8?1100:2100;
   eraPlay=setInterval(()=>{
    e++;
-   if(e>4){setEra(-1);clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
+   if(e>n-1){setEra(-1);clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
    setEra(e);
-  },2100);
+  },ms);
  });
  bar.appendChild(play);
- eraRefresh();
 }
 function eraRefresh(){
- const d=D['memory-births'];
- const show=d&&d.eras&&activeIds().indexOf('memory-births')>=0;
- $('#eraBar').classList.toggle('show',!!show);
+ const lid=timeLid();
+ if(eraBarLid!==undefined&&lid!==eraBarLid){
+  // the bar now belongs to another layer: its buckets mean something else
+  if(eraPlay){clearInterval(eraPlay);eraPlay=null;}
+  if(era!==-1){era=-1;bakeGlow();scheduleQt();updateStatline();terrainDirty=true;dirty=true;}
+ }
+ if(lid!==eraBarLid||!$('#eraBar').children.length){eraBarLid=lid;buildEraBar();}
+ const tl=lid?timeOf(lid):null;
+ if(tl&&era>=tl.labels.length)era=-1;
+ $('#eraBar').classList.toggle('show',!!tl);
  document.querySelectorAll('#eraBar button[data-era]').forEach(b=>{
   b.classList.toggle('on',parseInt(b.dataset.era,10)===era);
  });
@@ -1628,7 +1846,7 @@ function parseHash(){
   if(q.t){const tr=decodeTour(q.t);if(tr){tour=tr;tourParam=q.t;}}
   if(!q.s||(q.s!=='us'&&q.s!=='world'))return tour?{bits:''}:false;
   scope=q.s;
-  if(q.e!==undefined){const e=parseInt(q.e,10);if(e>=-1&&e<=4)era=e;}
+  if(q.e!==undefined){const e=parseInt(q.e,10);if(e>=-1&&e<=60)era=e;}
   const k=parseFloat(q.k);
   if(q.c){
    const c=q.c.split(',').map(Number);
@@ -2625,6 +2843,9 @@ function init(){
  $('#stage').classList.add('ready');
  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true;bakeGlow();});
  frame();
+ // a read-only window for tests and the curious: where a place lands on screen now
+ window.__SURVEY__={screenOf:(lon,lat)=>{const p=SC[scope]&&SC[scope].proj([lon,lat]);return p?[p[0]*t.k+t.x,p[1]*t.k+t.y]:null;},
+  era:()=>era,timeLayer:()=>timeLid(),scope:()=>scope};
  // a citizen reading that arrived in the link plays itself (the hero is skipped)
  if(tour&&hashHadState)setTimeout(()=>startTour(0),700);
 }

@@ -428,3 +428,12 @@ a.cc-btn{text-decoration:none;display:inline-block}
   .at-colophon .at-colo{position:static;margin-top:.2in}
   .at-cite{font-family:var(--mono);font-size:7.5pt}
 }
+
+/* ---- v0.7: time everywhere, categorical legend ---- */
+#eraBar{max-width:calc(100vw - 32px);overflow-x:auto;scrollbar-width:none}
+#eraBar .eb-tag{font-family:var(--mono);font-size:8px;letter-spacing:.16em;padding:8px 10px;background:rgba(9,12,18,.92);white-space:nowrap;align-self:stretch;display:flex;align-items:center}
+.pl-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin:4px 0 10px}
+.pl-legend .lg-item{font-family:var(--mono);font-size:9px;color:var(--ink-dim);display:inline-flex;align-items:center;gap:6px}
+.pl-legend .lg-item i{width:10px;height:10px;display:inline-block;border-radius:2px;opacity:.9}
+.pl-legend .lg-item b{color:var(--ink);font-weight:400}
+.pl-note{font-family:var(--mono);font-size:9px;color:var(--ink-dim);line-height:1.6;margin:2px 0 10px}
