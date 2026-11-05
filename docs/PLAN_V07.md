@@ -26,6 +26,9 @@ These extend the WANTLIST protocol and the README principles.
    licenses are acceptable; the About panel, DATA_LICENSES.md, and the atlas colophon say
    so. A source whose terms forbid redistribution even non-commercially ships as a
    PENDING slot, with the gate named.
+   **Removal on request:** anything is taken down when a person represented in it or a
+   rights holder asks. The request channel is the issue tracker until a dedicated contact
+   method exists (Phase 5 adds it to About, README, and the atlas).
 2. **The dead are not named unless they are notable.** "Notable" means the person
    already appears in the cross-verified database of notable people (the memory layer)
    or has a Wikidata entry with a Wikipedia article. Every other dataset about deaths

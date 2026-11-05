@@ -1,5 +1,11 @@
 # Data Sources & Licenses
 
+**The Soul Survey is a non-commercial project.** It republishes facts that are already public,
+each traced to a named source with a retrieval date. Data is removed on request: anyone named
+or represented in it, or any rights holder, can ask through the repository's issue tracker (a
+dedicated contact method will be added). Non-commercial licenses such as CC-BY-NC are accepted
+on that basis.
+
 | Layer | Source | License / Terms | Notes |
 |---|---|---|---|
 | memory-births | Laouenan et al., "A cross-verified database of notable people, 3500BC–2018AD", *Scientific Data* (2022), via Sciences Po dataverse (doi:10.21410/7E4/RDAG3O) | **CC-BY-SA 4.0** (share-alike) | 2,291,817 records streamed; aggregated to 0.25° cells; MD5-verified download |
