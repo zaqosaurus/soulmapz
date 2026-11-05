@@ -4,7 +4,7 @@ Packs data/staging/*.json into compact layer payloads, merges era buckets,
 computes stats, and injects registry + data + basemaps + vendored libs into
 a single self-contained dist/index.html. Zero runtime network calls.
 """
-import json, os, sys
+import json, os, sys, gzip, base64
 from collections import Counter, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -504,26 +504,56 @@ def build():
     html = html.replace("{{SITE}}", site).replace("{{REPO}}", repo)
     html = html.replace("/*{{CSS}}*/", read(p("site","styles.css")))
     html = html.replace("//{{VENDOR}}", read(p("site","vendor","d3.v7.min.js")) + "\n" + read(p("site","vendor","topojson-client.min.js")))
-    html = html.replace("//{{DATA}}",
-        "window.__REGISTRY__=" + js_safe(registry) + ";\n" +
-        "window.__LAYERDATA__=" + js_safe(layers_data) + ";\n" +
-        "window.__BASEMAPS__=" + js_safe(basemaps) + ";")
-    html = html.replace("//{{APP}}", read(p("site","app.js")))
+    # ---- v0.7 Phase 0.1: compressed payloads ----
+    # Layer data and basemaps ride as gzip+base64 and are inflated in the browser with
+    # DecompressionStream before the app starts. `--plain` builds the uncompressed page
+    # (for browsers without DecompressionStream, and for debugging).
+    plain = "--plain" in sys.argv
+    def gz64(obj):
+        raw = json.dumps(obj, separators=(",",":"), ensure_ascii=False).encode("utf-8")
+        return base64.b64encode(gzip.compress(raw, 9, mtime=0)).decode("ascii")
+    if plain:
+        data_js = ("window.__LAYERDATA__=" + js_safe(layers_data) + ";\n" +
+                   "window.__BASEMAPS__=" + js_safe(basemaps) + ";")
+    else:
+        data_js = ("window.__PACKED__={ld:\"" + gz64(layers_data) + "\",bm:\"" + gz64(basemaps) + "\"};")
+    html = html.replace("//{{DATA}}", "window.__REGISTRY__=" + js_safe(registry) + ";\n" + data_js)
+    boot = read(p("site","boot.js"))
+    html = html.replace("//{{APP}}", "window.__SOUL_APP__=function(){\n" + read(p("site","app.js")) + "\n};\n" + boot)
 
     os.makedirs(p("dist"), exist_ok=True)
-    out = p("dist","index.html")
+    out = p("dist","index.plain.html" if plain else "index.html")
     with open(out,"w",encoding="utf-8") as f: f.write(html)
-    os.makedirs(p("docs"), exist_ok=True)
-    import shutil
-    shutil.copyfile(out, p("docs","index.html"))
+    if not plain:
+        os.makedirs(p("docs"), exist_ok=True)
+        import shutil
+        shutil.copyfile(out, p("docs","index.html"))
     write_data_api(registry, repo, layers_data)
     size = os.path.getsize(out)
-    print(f"built {out}: {size/1e6:.2f} MB (+ copied to docs/ for GitHub Pages; docs/DATA_API.md regenerated)")
-    if size > 8_000_000:
+    weight_ledger(size, registry, layers_data, basemaps, plain)
+
+def weight_ledger(size, registry, layers_data, basemaps, plain):
+    """Phase 0.2 — the page-weight ledger. Every payload's raw and compressed size and
+    its share of the 8 MB budget; soft warning at 6 MB, hard failure at 8 MB."""
+    BUDGET, SOFT = 8_000_000, 6_000_000
+    def kb(obj):
+        raw = json.dumps(obj, separators=(",",":"), ensure_ascii=False).encode("utf-8")
+        return len(raw), len(base64.b64encode(gzip.compress(raw, 9, mtime=0)))
+    rows = [(lid, *kb(d), d.get("n", len(d.get("us",{}) or d.get("counties",{}) or {}))) for lid, d in layers_data.items()]
+    rows += [("basemap:" + k, *kb(v), "") for k, v in basemaps.items()]
+    rows.sort(key=lambda r: -r[2])
+    print(f"\n  {'payload':<28}{'raw KB':>9}{'shipped KB':>12}{'budget':>8}   n")
+    for name, raw, comp, n in rows:
+        shipped = raw if plain else comp
+        print(f"  {name:<28}{raw/1e3:>9.0f}{shipped/1e3:>12.0f}{shipped/BUDGET*100:>7.1f}%   {n}")
+    other = size - sum((r[1] if plain else r[2]) for r in rows)
+    print(f"  {'(registry, engine, vendor, css)':<28}{'':>9}{other/1e3:>12.0f}{other/BUDGET*100:>7.1f}%")
+    print(f"\nbuilt dist/{'index.plain.html' if plain else 'index.html'}: {size/1e6:.2f} MB of 8 MB ({'plain' if plain else 'compressed'}; copied to docs/; docs/DATA_API.md regenerated)")
+    if size > BUDGET:
         print("  !! PAGE-WEIGHT CEILING BREACHED (8 MB) — aggregate harder before shipping")
-    for lid,d in layers_data.items():
-        n = d.get('n', len(d.get('us',{}) or d.get('counties',{})))
-        print(f"  {lid}: n={n}" + (f" reports={d['reports']}" if 'reports' in d else ""))
+        sys.exit(1)
+    if size > SOFT:
+        print("  !  soft warning: page above 6 MB")
 
 if __name__ == "__main__":
     build()

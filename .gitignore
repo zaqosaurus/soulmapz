@@ -5,3 +5,4 @@ data/ref/world_places.csv
 *.zip
 .DS_Store
 node_modules/
+dist/index.plain.html

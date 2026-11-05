@@ -66,6 +66,16 @@ async function openPlate(page, lid) {
   const browser = await chromium.launch();
   const page = await open(browser, PAGE);
   check('loads without page errors', page._errors.length === 0, page._errors.join(' | '));
+  const digest = p => p.evaluate(() => { const s = JSON.stringify([window.__LAYERDATA__, window.__BASEMAPS__]); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return s.length + ':' + h; });
+  check('the compressed payload unpacks before the survey starts', await page.evaluate(() => window.__SURVEY_UNPACKED__ === true && !!window.__LAYERDATA__));
+  const PLAIN = path.join(ROOT, 'dist', 'index.plain.html');
+  if (fs.existsSync(PLAIN) && fs.statSync(PLAIN).mtimeMs >= fs.statSync(path.join(ROOT, 'dist', 'index.html')).mtimeMs - 600000) {
+    const pp = await open(browser, 'file://' + PLAIN);
+    check('the plain build (fallback path) loads without errors', pp._errors.length === 0 && await pp.evaluate(() => !window.__SURVEY_UNPACKED__ && !!window.__LAYERDATA__), pp._errors.join(' | '));
+    const [a, b] = [await digest(page), await digest(pp)];
+    check('compressed and plain builds carry identical data', a === b, a + ' vs ' + b);
+    await pp.close();
+  } else console.log('(no fresh dist/index.plain.html — run `python3 pipeline/build.py --plain` to test the fallback path)');
   const live = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live').length);
   check('registry has live layers', live >= 15, live + ' live');
   await enter(page);

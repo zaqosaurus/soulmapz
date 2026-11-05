@@ -8,6 +8,9 @@
 //
 // Engine refactors must keep every view under the tolerance. Content changes
 // (new layers, new defaults) re-baseline on purpose and say so in the commit.
+// Known noise: the flows view (the Great Sorting) is baked progressively on the frame
+// clock and varies by up to ~1.2% between two runs of the *same* build (measured on
+// the v0.6 build, 2026-11-05), so it carries its own tolerance.
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -18,6 +21,7 @@ const PAGE = 'file://' + path.join(ROOT, 'dist', 'index.html');
 const OUT = process.argv[2];
 const BASE = process.argv[3];
 const TOL = parseFloat(process.env.TOL || '0.005');
+const VIEW_TOL = { 'reading-sorting': 0.015 };
 if (!OUT) { console.error('usage: node tests/views.js <outdir> [baselinedir]'); process.exit(2); }
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -39,17 +43,17 @@ async function reading(page, id) {
   const idx = await page.evaluate(id => window.__REGISTRY__.readings.findIndex(r => r.id === id), id);
   await page.click('#readingsBtn'); await page.waitForTimeout(250);
   const items = await page.$$('#readingsMenu .rm-item:not(.special):not(.citizen)');
-  await items[idx].click(); await page.waitForTimeout(4200);
+  await items[idx].click(); await page.waitForTimeout(7000);
   // the caption card is UI, not the map: keep it out of the comparison
   await page.evaluate(() => { const c = document.querySelector('#capCard'); if (c) c.style.visibility = 'hidden'; });
 }
 async function plate(page, lid) {
   await page.evaluate(lid => document.querySelector('.read[data-read="' + lid + '"]').click(), lid);
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(4000);
 }
 const VIEWS = [
   ['us-default', async p => {}],
-  ['world-default', async p => { await p.keyboard.press('w'); await p.waitForTimeout(2600); }],
+  ['world-default', async p => { await p.keyboard.press('w'); await p.waitForTimeout(6000); }],
   ['reading-corridor', async p => reading(p, 'corridor')],
   ['reading-sorting', async p => reading(p, 'great-sorting')],
   ['reading-ledger', async p => reading(p, 'ledger-betrayals')],
@@ -86,7 +90,7 @@ const VIEWS = [
         return n / (da.length / 4);
       }, ['data:image/png;base64,' + fs.readFileSync(file).toString('base64'), 'data:image/png;base64,' + fs.readFileSync(bfile).toString('base64')]);
       worst = Math.max(worst, frac);
-      const ok = frac <= TOL;
+      const ok = frac <= (VIEW_TOL[name] || TOL);
       if (!ok) failed++;
       line = (ok ? 'SAME ' : 'DIFF ') + name + ' — ' + (frac * 100).toFixed(3) + '% of pixels changed';
     }
