@@ -9,6 +9,8 @@ const R=window.__REGISTRY__, D=window.__LAYERDATA__, B=window.__BASEMAPS__;
 const live=R.layers.filter(l=>l.status==='live');
 const byId={}; R.layers.forEach(l=>byId[l.id]=l);
 const themeById={}; R.themes.forEach(t=>themeById[t.id]=t);
+R.meta.repo=R.meta.repo||'ansalamalasna/soulmap';R.meta.site=R.meta.site||('https://'+R.meta.repo.split('/')[0]+'.github.io/'+R.meta.repo.split('/')[1]+'/');
+const GH='https://github.com/'+R.meta.repo+'/blob/main/';
 const fmtInt=n=>Number(n||0).toLocaleString('en-US');
 const MONTHS=["","January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATE_POSTAL={"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","District of Columbia":"DC","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY"};
@@ -25,9 +27,14 @@ const VIS={
  'loss-crashes':{r:1.45,core:.38,cA:.42},
  'omen-names':{r:2.0,core:.6},
  'wonder-ufos':{core:.46,cA:.32},
- 'residue-superfund':{core:.66}
+ 'residue-superfund':{core:.66},
+ 'betrayal-ledger':{core:.82}
 };
 const CONTOUR_T=[.10,.18,.30,.45,.62,.82];
+const FIPS_POSTAL={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
+const money=v=>v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+Math.round(v||0);
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return u;}};
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // ---------- geometry ----------
 const topo=window.topojson;
@@ -56,6 +63,12 @@ let zooming=false,zoomEndT=null,needBake=false,lastBakePump=0,bakeRR=0;
 let era=-1,eraPlay=null,reading=null,readingSaved=null,orientTimers=[],hashHadState=false,hashTimer=null;
 let refNames=true,refBounds=true;const refSyncs=[];
 let lens={},pickMode=null;
+// ---- v0.6 state ----
+let tipPinned=null;            // a tooltip held in place by a click or tap: {content,x,y}
+let rec=null;                  // the recorder: {title,stops:[],pin:[lon,lat]|null,seedTitle}
+let tour=null,tourIdx=null,tourParam=null; // a citizen reading loaded from the link, its cursor, its encoded form
+let lensPlay=null;             // a lens stepping through time: {lid,field,idx,timer}
+let pendingGeo=null;           // permalink camera waiting for the projection to exist
 function hasGlow(l){return !!(l.forms.points||l.forms.flows);}
 
 const cvs={base:$('#cvBase'),terr:$('#cvTerrain'),glow:$('#cvGlow'),lab:$('#cvLabel')};
@@ -97,6 +110,13 @@ function buildSprites(){
  SPR.omenL=makeSprite(byId['omen-names'].accent2||'#f2ead8',VIS['omen-names'].core);
  if(byId['wonder-ufos'])SPR.ufo=makeSprite(byId['wonder-ufos'].accent,VIS['wonder-ufos'].core);
  if(byId['residue-superfund'])SPR.sf=makeSprite(byId['residue-superfund'].accent,VIS['residue-superfund'].core);
+ if(byId['betrayal-ledger'])SPR.coin=makeSprite(byId['betrayal-ledger'].accent,VIS['betrayal-ledger'].core);
+}
+// Any point layer the registry declares gets a sprite in its own accent, even if no
+// hand-tuned voice exists for it yet — a new layer must never render invisible.
+function spriteFor(lid){
+ if(!SPR['_'+lid])SPR['_'+lid]=makeSprite(byId[lid].accent,(VIS[lid]&&VIS[lid].core)||.62);
+ return SPR['_'+lid];
 }
 function inEra(b){
  if(b==null||isNaN(b))return false;
@@ -131,7 +151,7 @@ function buildScope(s){
    ? d3.geoAlbersUsa().fitExtent(ext,geo.nation)
    : d3.geoEqualEarth().fitExtent([[ext[0][0],ext[0][1]+8],[ext[1][0],ext[1][1]-8]],{type:'Sphere'});
  const gp=d3.geoPath(proj);
- const C={proj,ext,gp,paths:{},layers:{},grids:{},contours:{},statePaths:{},stateCent:{},countryPaths:{},countryCent:{}};
+ const C={scope:s,proj,ext,gp,paths:{},layers:{},grids:{},contours:{},statePaths:{},stateCent:{},countryPaths:{},countryCent:{}};
  // base paths
  if(s==='world'){
   C.paths.sphere=new Path2D(gp({type:'Sphere'}));
@@ -455,8 +475,69 @@ function drawPointsTo(ctx,lid,step){
    ctx.globalAlpha=1;
   }else if(lid==='residue-superfund'){
    for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(SPR.sf,P.xs[i],P.ys[i],2.0);}
+  }else if(lid==='betrayal-ledger'){
+   // coins: area follows the amount stolen; a crisp ring makes each one a receipt, not a star
+   const vv=d.v,vmax=d.vmaxv||(d.vmaxv=vv.reduce((m,x)=>Math.max(m,x),1));
+   ctx.strokeStyle=byId[lid].accent;ctx.lineWidth=1;
+   for(let i=0;i<P.n;i++){
+    if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;
+    const r=2.4+Math.sqrt(Math.max(vv[i],0)/vmax)*7.5;
+    draw(SPR.coin,P.xs[i],P.ys[i],r);
+    const sx=P.xs[i]*k+t.x,sy=P.ys[i]*k+t.y,rr=r*kk*.5;
+    if(sx<-60||sx>W+60||sy<-60||sy>H+60)continue;
+    ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(sx,sy,Math.max(1.6,rr),0,Math.PI*2);ctx.stroke();
+   }
+   ctx.globalAlpha=1;
+  }else{
+   // registry-only layer: default voice (sized by value when the pack carries one)
+   const spr=spriteFor(lid),vv=d.v;
+   for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(spr,P.xs[i],P.ys[i],vv?Math.min(1.6+Math.log1p(vv[i])*.55,5):2.0);}
+  }
+  if(LZ&&LZ.constellation)drawConstellation(ctx,lid,L,lzSkip);
+ }
+}
+// ---------- v0.6: constellations ----------
+// With an entity lens active (one operator, one facility class), the filtered members are
+// linked into a nearest-neighbour web: the network made visible. Edges are cached per scope.
+function constellationEdges(C,lid,LZ,P,lzSkip){
+ C.constel=C.constel||{};
+ const key=lid+'|'+LZ.field+'|'+LZ.v;
+ if(C.constel[key])return C.constel[key];
+ const idx=[];
+ for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;idx.push(i);}
+ const edges=[];
+ if(idx.length>=2&&idx.length<=700){
+  const ext=C.ext,maxD=(ext[1][0]-ext[0][0])*0.24,maxD2=maxD*maxD,seen=new Set();
+  for(let a=0;a<idx.length;a++){
+   const i=idx[a],x=P.xs[i],y=P.ys[i];
+   let b1=-1,d1=Infinity,b2=-1,d2=Infinity;
+   for(let b=0;b<idx.length;b++){
+    if(b===a)continue;const j=idx[b],dx=P.xs[j]-x,dy=P.ys[j]-y,dd=dx*dx+dy*dy;
+    if(dd<d1){b2=b1;d2=d1;b1=j;d1=dd;}else if(dd<d2){b2=j;d2=dd;}
+   }
+   for(const [j,dd] of [[b1,d1],[b2,d2]]){
+    if(j<0||dd>maxD2)continue;
+    const kk=i<j?i+','+j:j+','+i;if(seen.has(kk))continue;seen.add(kk);
+    edges.push([x,y,P.xs[j],P.ys[j],Math.sqrt(dd)/maxD]);
+   }
   }
  }
+ C.constel[key]=edges;
+ return edges;
+}
+function drawConstellation(ctx,lid,L,lzSkip){
+ const C=SC[scope],LZ=lens[lid],P=L.pts;if(!LZ||!P)return;
+ const edges=constellationEdges(C,lid,LZ,P,lzSkip);if(!edges.length)return;
+ const k=t.k;
+ ctx.strokeStyle=byId[lid].accent;ctx.lineCap='round';
+ for(const e of edges){
+  const ax=e[0]*k+t.x,ay=e[1]*k+t.y,bx=e[2]*k+t.x,by=e[3]*k+t.y;
+  if((ax<-80&&bx<-80)||(ax>W+80&&bx>W+80)||(ay<-80&&by<-80)||(ay>H+80&&by>H+80))continue;
+  ctx.globalAlpha=.34*(1-e[4]*.6);ctx.lineWidth=.8;
+  const mx=(ax+bx)/2,my=(ay+by)/2,ddx=bx-ax,ddy=by-ay;
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(mx-ddy*0.12,my+ddx*0.12,bx,by);ctx.stroke();
+ }
+ ctx.globalAlpha=1;
 }
 
 function bufFor(lid){
@@ -650,12 +731,44 @@ function drawLabels(){
     shown++;
    }}
  }
+ // ledger labels: the archetypes always, the rest as you approach
+ const ba=alpha['betrayal-ledger']||0;
+ if(ba>0.5&&scopeHas('betrayal-ledger')&&C.layers['betrayal-ledger']){
+  const L=C.layers['betrayal-ledger'].pts,d=D['betrayal-ledger'];
+  const budget=t.k<1.8?5:t.k<3.2?14:40;let shown=0;
+  const ac=byId['betrayal-ledger'].accent;
+  for(let i=0;i<L.n&&shown<budget;i++){ // packed in descending amount
+   if(!L.keep[i])continue;
+   const [sx,sy]=S(L.xs[i],L.ys[i]);
+   if(sx<padLeft()||sx>W-20||sy<100||sy>H-80)continue;
+   if(!free(sx,sy,70))continue;take(sx,sy,70);
+   haloText(ctx,d.name[i].replace(/\s*\(.*\)$/,'')+' · '+money(d.v[i]),sx,sy-11,'500 9px "IBM Plex Mono"',hexA(ac,.92*ba));
+   shown++;
+  }
+ }
+ // benchmarks: the recorder's pending pin, and the pin of the citizen stop being read
+ const marks=[];
+ if(rec&&rec.pin)marks.push({g:rec.pin,label:'STOP '+(rec.stops.length+1)});
+ if(tour&&tourIdx!==null&&tour.s[tourIdx]&&tour.s[tourIdx].p)marks.push({g:tour.s[tourIdx].p,label:(tourIdx+1)+' / '+tour.s.length});
+ for(const m of marks){
+  const p=C.proj(m.g);if(!p)continue;
+  const [sx,sy]=S(p[0],p[1]);
+  if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+  ctx.save();ctx.translate(sx,sy);
+  ctx.strokeStyle='rgba(5,8,13,.9)';ctx.lineWidth=4;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(11,7);ctx.lineTo(-11,7);ctx.closePath();ctx.stroke();
+  ctx.strokeStyle='#e8b34b';ctx.lineWidth=1.6;ctx.stroke();
+  ctx.fillStyle='#e8b34b';ctx.beginPath();ctx.arc(0,1,2.4,0,7);ctx.fill();
+  ctx.restore();
+  haloText(ctx,m.label,sx,sy+20,'500 8.5px "IBM Plex Mono"','rgba(232,179,75,.95)');
+ }
  // hover ring
  if(hoverPt){
   const [sx,sy]=S(hoverPt.x,hoverPt.y);
   ctx.strokeStyle=hoverPt.color;ctx.lineWidth=1;ctx.globalAlpha=.9;
   ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
  }
+ if(tipPinned)placeTip(tipPinned.content,tipPinned.x,tipPinned.y);
 }
 
 // ---------- tween/frame ----------
@@ -746,6 +859,16 @@ function tipHTML(f){
  else if(f.lid==='omen-names'){ti=d.name[f.i];s=(d.s[f.i]?'light':'dark')+' name · '+d.cls[f.i]+', '+d.st[f.i];}
  else if(f.lid==='wonder-ufos'){const v=d.v?d.v[f.i]:1;ti=v>1?fmtInt(v)+' sightings reported here':'A sighting reported here';const DECS=['1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2010s'];const dc2=d.dec?d.dec[f.i]:-1;s=(dc2>=0?'latest in the '+DECS[dc2]+' · ':'')+'NUFORC testimony';}
  else if(f.lid==='residue-superfund'){ti=d.name[f.i];s=['proposed for the NPL','on the National Priorities List','deleted from the NPL — cleaned enough to leave'][d.st2[f.i]]+' · '+d.state[f.i];}
+ else if(f.lid==='betrayal-ledger'){
+  ti=money(d.v[f.i])+' — '+esc(d.name[f.i]);
+  const cites=(d.cites&&d.cites[f.i])||[];
+  s='<b>'+esc(d.who[f.i])+'</b>'+(d.years[f.i]?' · '+esc(d.years[f.i]):'')+
+    (d.scheme[f.i]?'<br>'+esc(d.scheme[f.i]):'')+
+    (d.outcome[f.i]?'<br><i>'+esc(d.outcome[f.i])+'</i>':'')+
+    (cites.length?'<br><span class="tt-cite">receipts · '+cites.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(hostOf(u))+'</a>').join(' · ')+'</span>':'');
+  return {k,ti,s,color:l.accent,wide:true};
+ }
+ else{ti=(d.name&&d.name[f.i])||l.title;s=l.unit||'';}
  return {k,ti,s,color:f.lid==='omen-names'&&d.s[f.i]?(byId[f.lid].accent2||'#f2ead8'):l.accent};
 }
 function regionTip(qx,qy){
@@ -824,19 +947,70 @@ function onMove(ev){
     $('#datum').textContent=txt;
    }
   }catch(e){}
+  if(tipPinned){
+   // a pinned tooltip holds until the mouse wanders off it; touch never wanders
+   if(ev.pointerType==='touch')return;
+   const psx=tipPinned.x*t.k+t.x,psy=tipPinned.y*t.k+t.y;
+   if(Math.hypot(mx-psx,my-psy)<70)return;
+   unpinTip();
+  }
   let f=qt?qt.find(qx,qy,14/Math.max(1,t.k)):null;
   let content=f?tipHTML(f):regionTip(qx,qy);
   if(f){hoverPt={x:f.x,y:f.y,color:content.color};dirty=true;}
   else if(hoverPt){hoverPt=null;dirty=true;}
   if(content){
-   tip.style.display='block';
-   tip.style.borderLeftColor=content.color;
-   tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
+   renderTip(content,false);
    const tw=tip.offsetWidth,th=tip.offsetHeight;
    tip.style.left=Math.min(mx+16,W-tw-14)+'px';
    tip.style.top=Math.min(my+16,H-th-14)+'px';
-  }else tip.style.display='none';
+  }else{tip.style.display='none';tip._c=null;}
  });
+}
+// ---------- v0.6: tooltips you can hold ----------
+function renderTip(content,pinned){
+ tip.style.display='block';
+ tip.style.borderLeftColor=content.color;
+ tip.classList.toggle('wide',!!content.wide);
+ tip.classList.toggle('pinned',!!pinned);
+ tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+(pinned?'<span class="tt-pin">PINNED · click away to release</span>':'')+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
+ tip._c=content;tip._p=!!pinned;
+}
+function placeTip(content,x,y,pinned){
+ // x,y in base (projected) space; the tooltip rides with the map. The HTML is only
+ // rebuilt when the content changes, so links inside a pinned tip stay clickable.
+ const sx=x*t.k+t.x,sy=y*t.k+t.y;
+ const pin=pinned===undefined?!!tipPinned:pinned;
+ if(tip._c!==content||tip._p!==pin)renderTip(content,pin);
+ tip.style.display='block';
+ const tw=tip.offsetWidth,th=tip.offsetHeight;
+ tip.style.left=Math.max(8,Math.min(sx+16,W-tw-14))+'px';
+ tip.style.top=Math.max(8,Math.min(sy+14,H-th-14))+'px';
+}
+function pinTip(content,x,y){
+ tipPinned={content,x,y};
+ hoverPt={x,y,color:content.color};
+ placeTip(content,x,y,true);
+ dirty=true;
+}
+function unpinTip(){
+ if(!tipPinned)return;
+ tipPinned=null;hoverPt=null;tip.classList.remove('pinned');tip.style.display='none';tip._c=null;dirty=true;
+}
+function onClick(ev){
+ if(ev.target!==undefined&&ev.target.closest&&ev.target.closest('#tooltip'))return;
+ const mx=ev.clientX,my=ev.clientY;
+ const qx=(mx-t.x)/t.k,qy=(my-t.y)/t.k;
+ if(rec){ // composing: a click sets the benchmark for the next stop
+  const C=SC[scope];
+  const g=C.proj.invert?C.proj.invert([qx,qy]):null;
+  if(g&&isFinite(g[0])&&isFinite(g[1])){rec.pin=[+g[0].toFixed(4),+g[1].toFixed(4)];recRender();dirty=true;toast('Benchmark set — it rides with the next captured stop.');}
+  return;
+ }
+ const f=qt?qt.find(qx,qy,(ev.pointerType==='touch'?22:14)/Math.max(1,t.k)):null;
+ if(f){pinTip(tipHTML(f),f.x,f.y);return;}
+ const rt=regionTip(qx,qy);
+ if(rt&&ev.pointerType==='touch'){pinTip(rt,qx,qy);return;}
+ unpinTip();
 }
 
 // ---------- UI ----------
@@ -947,19 +1121,21 @@ function openPlate(lid){
   '<div class="pl-h" style="color:'+l.accent+'">WHY</div><div class="pl-body">'+l.essay.why+'</div>'+
   (l.caveat?'<div class="pl-cav"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
   (srcs?'<div class="pl-h" style="color:'+l.accent+'">SOURCES</div><div class="pl-src">'+srcs+'</div>':'')+
-  (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+v[1]+'">'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+'</div>').join('')+'</div>':'')+
-  (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="https://github.com/ansalamalasna/soulmap/blob/main/data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="https://github.com/ansalamalasna/soulmap/blob/main/data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="https://github.com/ansalamalasna/soulmap/blob/main/registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a></div>':'')+
-  (l.status==='live'?'<div class="pl-solo">SOLO VIEW — other layers dimmed · close to restore</div>':'<div class="pl-solo">'+(l.pendingNote||'')+'</div>');
+  (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+(fl.constellation?' · members are drawn as a constellation':'')+(fl.seq?' · ▶ steps through time':'')+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+esc(v[1])+'"'+(fl.constellation?' data-const="1"':'')+'>'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+(fl.seq?'<button class="lz-chip lz-play" data-lid="'+l.id+'" data-field="'+fl.field+'" title="Step through '+esc(fl.label.toLowerCase())+'">'+(lensPlay&&lensPlay.lid===l.id&&lensPlay.field===fl.field?'■':'▶')+'</button>':'')+'</div>').join('')+'</div>':'')+
+  (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="'+GH+'data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="'+GH+'data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="'+GH+'registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a> · <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a></div>':'')+
+  (l.status==='live'?'<div class="pl-solo">SOLO VIEW — other layers dimmed · the audio follows · close to restore</div>':'<div class="pl-solo">'+(l.pendingNote||'')+'</div>');
  $('#plate').style.borderTopColor=l.accent;
  $('#plate').classList.add('open');
  $('#plateClose').addEventListener('click',closePlate);
- inner.querySelectorAll('.lz-chip').forEach(b=>b.addEventListener('click',()=>{
+ inner.querySelectorAll('.lz-chip:not(.lz-play)').forEach(b=>b.addEventListener('click',()=>{
   const bl=b.dataset.lid;
+  stopLensPlay();
   if(b.dataset.clear)delete lens[bl];
-  else lens[bl]={field:b.dataset.field,v:parseInt(b.dataset.v,10),label:b.dataset.label};
-  bakeLayer(bl,true);scheduleQt();updateStatline();dirty=true;
+  else lens[bl]={field:b.dataset.field,v:parseInt(b.dataset.v,10),label:b.dataset.label,constellation:!!b.dataset.const};
+  applyLens(bl);
   openPlate(bl);
  }));
+ inner.querySelectorAll('.lz-play').forEach(b=>b.addEventListener('click',()=>toggleLensPlay(b.dataset.lid,b.dataset.field)));
  if(l.status==='live'){
   if(!scopeHas(lid)&&l.scopes.includes('us'))switchScope('us');
   if(!plateOpen)savedTargets={...target};
@@ -970,6 +1146,7 @@ function openPlate(lid){
 }
 function closePlate(){
  if(!plateOpen)return;
+ stopLensPlay();
  $('#plate').classList.remove('open');
  if(savedTargets){for(const k in savedTargets)target[k]=savedTargets[k];savedTargets=null;}
  plateOpen=null;
@@ -985,7 +1162,7 @@ function buildHero(){
   '<p class="hero-man">'+R.meta.manifesto+'</p>'+
   '<div class="hero-stats">'+live.length+' LAYERS LIVE · '+fmtInt(total)+' COORDINATES OF HUMAN ACTIVITY · ZERO RUNTIME NETWORK CALLS</div>'+
   '<button id="heroEnter">ENTER THE SURVEY</button>'+
-  '<div class="hero-hint">hover anything · '+(railOrder.length>9?'1–9, 0':'1–'+railOrder.length)+' layers · R readings · F findings · G place names · E everything · C curated · ♪ audio · U / W sheets</div>'+
+  '<div class="hero-hint">hover or tap anything · '+(railOrder.length>9?'1–9, 0':'1–'+railOrder.length)+' layers · R readings · F findings · ? plunge · G place names · E everything · C curated · ♪ audio · U / W sheets</div>'+
   '</div>';
  const go=()=>{
   if($('#hero').classList.contains('gone'))return;
@@ -1004,21 +1181,24 @@ function buildAbout(){
   '<div class="pl-over">'+R.meta.sheet+'</div>'+
   '<div class="ab-title">About the Survey</div>'+
   '<div class="ab-body">'+R.meta.manifesto+'</div>'+
-  '<div class="ab-body">Each layer answers three questions — <i>what</i> the data is, <i>how</i> it was measured, and <i>why</i> it says something about us. Density becomes elevation: the hillshade and contour lines are computed from the active layers, so the topography you see is literally the shape of the data. Nothing here is invented; every point traces to a named source with a retrieval date, and one layer (mass layoffs) is deliberately shown as pending rather than faked.</div>'+
+  '<div class="ab-body">Each layer answers three questions — <i>what</i> the data is, <i>how</i> it was measured, and <i>why</i> it says something about us. Density becomes elevation: the hillshade and contour lines are computed from the active layers, so the topography you see is literally the shape of the data. Nothing here is invented; every point traces to a named source with a retrieval date, and two layers (the arsenal, mass layoffs) are deliberately shown as pending rather than faked.</div>'+
   '<div class="ab-h">METHOD</div>'+
   '<div class="ab-body" style="font-size:13px">Point layers render as additive light — where records overlap, the map burns brighter. Weighted density fields drive the shared relief. The page is fully self-contained: basemaps, data, and libraries are baked in at build time and it makes zero runtime network calls (fonts degrade gracefully). Built on a registry architecture: adding a future layer is one data file and one registry entry.</div>'+
   '<div class="ab-h">SOURCES & LICENSES</div><div class="ab-src">'+rows+
   '<div style="margin-top:10px">Basemaps: Natural Earth (public domain). Geocoding &amp; reference places: GeoNames (CC-BY 4.0). Notable-people data: Laouenan et al. (CC-BY-SA 4.0). Map data © OpenStreetMap contributors (ODbL). FARS &amp; GNIS: U.S. public domain.</div></div>'+
   '<div class="ab-h">METHODS</div>'+
-  '<div class="ab-body" style="font-size:13px">Each layer is fetched by its own pipeline script into a staging file with a provenance sidecar (method, counts, caveats), then packed — coordinates quantized to ~110 m, giant datasets aggregated to cells — and baked into this single page. Terrain is computed here in your browser: density grids from the active layers, Gaussian-smoothed, contoured, and hillshaded; nothing is pre-rendered. Findings are computed at build time by pipeline/correlate.py (county joins, cell-grid log–log correlations), hand-reviewed, and shipped with their method notes; one deliberately spurious correlation is included as the control. Known limitations live on each plate as a FIELD NOTE. Full pipeline, data, and provenance: <a href="https://github.com/ansalamalasna/soulmap" target="_blank" rel="noopener noreferrer">github.com/ansalamalasna/soulmap</a>.</div>'+
+  '<div class="ab-body" style="font-size:13px">Each layer is fetched by its own pipeline script into a staging file with a provenance sidecar (method, counts, caveats), then packed — coordinates quantized to ~110 m, giant datasets aggregated to cells — and baked into this single page. Terrain is computed here in your browser: density grids from the active layers, Gaussian-smoothed, contoured, and hillshaded; nothing is pre-rendered. Findings are computed at build time by pipeline/correlate.py (county joins, cell-grid log–log correlations), hand-reviewed, and shipped with their method notes; one deliberately spurious correlation is included as the control. Known limitations live on each plate as a FIELD NOTE. Full pipeline, data, and provenance: <a href="https://github.com/'+R.meta.repo+'" target="_blank" rel="noopener noreferrer">github.com/'+R.meta.repo+'</a> · the raw endpoints are documented as a <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a>.</div>'+
+  '<div class="ab-h">CITIZEN READINGS</div>'+
+  '<div class="ab-body" style="font-size:13px">Readings are no longer author-only. From READINGS, <i>compose a reading</i>: frame a view, write a line, capture a stop, set a benchmark by clicking the map, and finish — the whole tour is encoded into the link itself. No server, no account. Anyone who opens the link can answer with a counter-reading. Citizen readings are marked as a reader\'s, never as the survey\'s canon.</div>'+
   '<div class="ab-h">CITE THIS SURVEY</div>'+
-  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. https://ansalamalasna.github.io/soulmap/ — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · Laouenan et al. 2022 (CC-BY-SA).</div>'+
+  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. '+R.meta.site+' — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · IRS SOI 2022–23 · NCHS/CHR&amp;R 2018–22 · Social Capital Atlas 2022 · U.S. Religion Census 2020 · Laouenan et al. 2022 (CC-BY-SA).</div>'+
   '<button class="ab-copy" id="abCopy">COPY CITATION</button>'+
   '<div class="ab-h">SURVEY LOG</div>'+
   '<table class="ab-log">'+live.map(l=>'<tr><td>'+l.title+'</td><td>'+(l.retrieved?String(l.retrieved).slice(0,10):'—')+'</td><td>'+(l.statline||l.unit)+'</td></tr>').join('')+
-  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v'+R.meta.version+' the sorting, the ledger, lenses &amp; bios</td></tr></table>'+
+  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v0.5 the sorting, the ledger, lenses &amp; bios · v'+R.meta.version+' the ledger lit, citizen readings, constellations, the plunge, the living log</td></tr></table>'+
+  (R.meta.log&&R.meta.log.length?'<div class="ab-h">THE LIVING LOG</div><div class="ab-body" style="font-size:12px;margin-bottom:6px">The survey\'s memory of itself, straight from its history: every refresh, every correction, in public.</div><div class="ab-livelog">'+R.meta.log.map(r=>'<div><span>'+esc(r[0])+'</span>'+esc(r[1])+'</div>').join('')+'</div>':'')+
   '<div class="ab-h">CONTROLS</div>'+
-  '<div class="ab-kbd"><b>/</b> search the Index &nbsp; <b>1–'+railOrder.length+'</b> toggle layers &nbsp; <b>G</b> place names &nbsp; <b>R</b> readings &nbsp; <b>F</b> findings &nbsp; <b>E</b> everything &nbsp; <b>C</b> curated &nbsp; <b>U</b>/<b>W</b> sheets &nbsp; <b>scroll</b> zoom &nbsp; <b>ESC</b> close</div>';
+  '<div class="ab-kbd"><b>/</b> search the Index &nbsp; <b>?</b> random plunge &nbsp; <b>1–'+Math.min(10,railOrder.length)+'</b> toggle layers &nbsp; <b>click</b> hold a tooltip &nbsp; <b>G</b> place names &nbsp; <b>R</b> readings &nbsp; <b>F</b> findings &nbsp; <b>E</b> everything &nbsp; <b>C</b> curated &nbsp; <b>U</b>/<b>W</b> sheets &nbsp; <b>scroll</b> zoom &nbsp; <b>ESC</b> close</div>';
  const cp=$('#abCopy');
  if(cp)cp.addEventListener('click',()=>{
   const txt=$('#abCiteText').textContent;
@@ -1031,6 +1211,7 @@ function buildAbout(){
 function switchScope(s){
  if(s===scope)return;
  scope=s;
+ unpinTip();
  buildScope(s);
  resetGlowFades();
  t=d3.zoomIdentity;
@@ -1090,9 +1271,8 @@ function layerContours(C,lid){
 
 // ---------- v2: counties ----------
 function ensureCounties(C){
- if(C.countyBoxes||scope!=='us'||!B.counties)return;
+ if(C.countyBoxes||C.scope!=='us'||!B.counties)return;
  if(!geo.counties)geo.counties=topo.feature(B.counties,B.counties.objects.counties).features;
- const dd=D['despair-overdoses'];
  C.countyBoxes=[];
  for(const f of geo.counties){
   const fips=String(f.id).padStart(5,'0');
@@ -1183,20 +1363,45 @@ function setEra(e){
 
 // ---------- v2: camera flights ----------
 function flyTo(bbox,ms,done){
+ // Albers USA returns null for anything off the composite (an ocean corner of a
+ // country-wide box), so the box is sampled, not cornered: whatever projects, we fit.
  const C=SC[scope];
- const pts=[[bbox[0][0],bbox[0][1]],[bbox[1][0],bbox[1][1]],[bbox[0][0],bbox[1][1]],[bbox[1][0],bbox[0][1]]];
+ const N=7,pts=[];
+ for(let i=0;i<=N;i++)for(let j=0;j<=N;j++)pts.push([bbox[0][0]+(bbox[1][0]-bbox[0][0])*i/N,bbox[0][1]+(bbox[1][1]-bbox[0][1])*j/N]);
  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,ok=false;
  for(const g of pts){
-  const p=C.proj(g);if(!p)continue;ok=true;
+  const p=C.proj(g);if(!p||!isFinite(p[0])||!isFinite(p[1]))continue;ok=true;
   x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);
  }
- if(!ok){done&&done();return;}
  const ext=C.ext,aw=ext[1][0]-ext[0][0],ah=ext[1][1]-ext[0][1];
- const k=Math.max(1,Math.min(26,0.85*Math.min(aw/Math.max(x1-x0,1),ah/Math.max(y1-y0,1))));
- const cx=(x0+x1)/2,cy=(y0+y1)/2,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
- const target=d3.zoomIdentity.translate(ecx-k*cx,ecy-k*cy).scale(k);
+ let target;
+ if(!ok)target=d3.zoomIdentity;
+ else{
+  const k=Math.max(1,Math.min(26,0.85*Math.min(aw/Math.max(x1-x0,1),ah/Math.max(y1-y0,1))));
+  const cx=(x0+x1)/2,cy=(y0+y1)/2,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+  target=k<=1.02?d3.zoomIdentity:d3.zoomIdentity.translate(ecx-k*cx,ecy-k*cy).scale(k);
+ }
  d3.select('#stage').transition('fly').duration(REDUCED?0:(ms||2500)).ease(d3.easeCubicInOut)
   .call(zoomB.transform,target).on('end interrupt',()=>{done&&done();});
+}
+// camera as geography: a centre and a zoom survive any screen size
+function camFor(lon,lat,k){
+ const C=SC[scope],p=C.proj([lon,lat]);
+ if(!p||!isFinite(p[0]))return d3.zoomIdentity;
+ k=Math.max(1,Math.min(26,k||1));
+ const ext=C.ext,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+ return k<=1.02?d3.zoomIdentity:d3.zoomIdentity.translate(ecx-k*p[0],ecy-k*p[1]).scale(k);
+}
+function camNow(){
+ const C=SC[scope];if(!C||!C.proj.invert)return null;
+ const ext=C.ext,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+ const g=C.proj.invert([(ecx-t.x)/t.k,(ecy-t.y)/t.k]);
+ if(!g||!isFinite(g[0])||!isFinite(g[1]))return null;
+ return {lon:+g[0].toFixed(4),lat:+g[1].toFixed(4),k:+t.k.toFixed(3)};
+}
+function flyToCam(lon,lat,k,ms,done){
+ d3.select('#stage').transition('fly').duration(REDUCED?0:(ms||2200)).ease(d3.easeCubicInOut)
+  .call(zoomB.transform,camFor(lon,lat,k)).on('end interrupt',()=>{done&&done();});
 }
 
 // ---------- v2: readings ----------
@@ -1237,10 +1442,13 @@ function startReading(i){
  wireCapNav();
 }
 function stepReading(dir){
+ if(tourIdx!==null&&tour){startTour((tourIdx+dir+tour.s.length)%tour.s.length);return;}
  if(reading===null)return;
  let j=(reading+dir+R.readings.length)%R.readings.length;
  startReading(j);
 }
+const NUMWORDS=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+function numWord(n){const w=NUMWORDS[n]||String(n);return w.charAt(0).toUpperCase()+w.slice(1);}
 function runOrientation(){
  if(scope!=='us')switchScope('us');
  for(const l of live)target[l.id]=0;
@@ -1248,7 +1456,7 @@ function runOrientation(){
  chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
  d3.select('#stage').transition('fly').duration(900).call(zoomB.transform,d3.zoomIdentity);
  const skipRow='<div class="cc-row"><span class="cc-step">ORIENTATION</span><span class="cc-nav"><button class="cc-btn" id="ccEnd">SKIP ▸</button></span></div>';
- showCap(capBase('HOW TO READ THIS MAP','Orientation',R.readings[0].text)+skipRow);
+ showCap(capBase('HOW TO READ THIS MAP','Orientation',R.readings[0].text.replace('{n}',numWord(railOrder.length)))+skipRow);
  wireCapNav();
  railOrder.forEach((lid,ix)=>{
   orientTimers.push(setTimeout(()=>{
@@ -1277,23 +1485,33 @@ function endReading(){
   d3.select('#stage').transition('fly').duration(1500).ease(d3.easeCubicInOut)
    .call(zoomB.transform,d3.zoomIdentity.translate(s.x,s.y).scale(s.k));
  }
- reading=null;readingSaved=null;findingOpen=null;setCompare(null);
+ reading=null;readingSaved=null;findingOpen=null;tourIdx=null;setCompare(null);
  hideCap();
  chipRefresh();updateStatline();eraRefresh();scheduleQt();
  terrainDirty=true;dirty=true;writeHash();
 }
 function maybeOrientation(){
+ if(tour){startTour(0);return;}
  if(hashHadState)return;
  startReading(0);
 }
 function buildReadingsMenu(){
  const m=$('#readingsMenu');m.innerHTML='';
+ if(tour){
+  const it=document.createElement('div');it.className='rm-item citizen';
+  it.innerHTML='<div class="rk">A CITIZEN READING · '+tour.s.length+' STOP'+(tour.s.length>1?'S':'')+' · FROM THE LINK</div><div class="rt">'+esc(tour.t)+'</div>';
+  it.addEventListener('click',()=>startTour(0));
+  m.appendChild(it);
+ }
  R.readings.forEach((r,i)=>{
   const it=document.createElement('div');it.className='rm-item';
   it.innerHTML='<div class="rk">'+r.kicker+'</div><div class="rt">'+r.title+'</div>';
   it.addEventListener('click',()=>startReading(i));
   m.appendChild(it);
  });
+ const mk=(k,tt,fn)=>{const it=document.createElement('div');it.className='rm-item special';it.innerHTML='<div class="rk">'+k+'</div><div class="rt">'+tt+'</div>';it.addEventListener('click',fn);m.appendChild(it);};
+ mk('COMPOSE · NO SERVER, NO ACCOUNT','✎ Record your own reading',()=>startRecording(null));
+ mk('SERENDIPITY · PRESS ?','⚄ Random plunge',plunge);
 }
 
 // ---------- v2: locate ----------
@@ -1373,30 +1591,54 @@ function exportSheet(){
 }
 
 // ---------- v2: permalinks ----------
+// codec v2: the camera is geography (c=lon,lat & k), so a link opens on the same place
+// on any screen; a lens rides along (z=); a citizen reading rides along (t=).
+// v1 links (pixel x/y) still open.
+function currentHash(noTour){
+ const l=railOrder.map(id=>target[id]>0?1:0).join('');
+ const cam=camNow();
+ let h='#s='+scope+'&l='+l+'&e='+era+'&k='+t.k.toFixed(3);
+ if(cam)h+='&c='+cam.lon+','+cam.lat; else h+='&x='+t.x.toFixed(1)+'&y='+t.y.toFixed(1);
+ const zl=Object.keys(lens).find(id=>lens[id]&&scopeHas(id)&&target[id]>0);
+ if(zl)h+='&z='+encodeURIComponent(zl+':'+lens[zl].field+':'+lens[zl].v);
+ if(tourParam&&!noTour)h+='&t='+tourParam;
+ return h;
+}
 function writeHash(){
  clearTimeout(hashTimer);
- hashTimer=setTimeout(()=>{
-  try{
-   const l=railOrder.map(id=>target[id]>0?1:0).join('');
-   history.replaceState(null,'','#s='+scope+'&l='+l+'&e='+era+'&k='+t.k.toFixed(3)+'&x='+t.x.toFixed(1)+'&y='+t.y.toFixed(1));
-  }catch(e){}
- },300);
+ hashTimer=setTimeout(()=>{try{history.replaceState(null,'',currentHash());}catch(e){}},300);
 }
-let pendingHashT=null;
+let pendingHashT=null,pendingLens=null;
 function parseHash(){
  try{
   const h=location.hash.replace(/^#/,'');
   if(!h)return false;
-  const q={};h.split('&').forEach(kv=>{const p=kv.split('=');q[p[0]]=decodeURIComponent(p[1]||'');});
-  if(!q.s||(q.s!=='us'&&q.s!=='world'))return false;
+  const q={};h.split('&').forEach(kv=>{const i=kv.indexOf('=');const k=i<0?kv:kv.slice(0,i);q[k]=decodeURIComponent(i<0?'':kv.slice(i+1));});
+  if(q.t){const tr=decodeTour(q.t);if(tr){tour=tr;tourParam=q.t;}}
+  if(!q.s||(q.s!=='us'&&q.s!=='world'))return tour?{bits:''}:false;
   scope=q.s;
   if(q.e!==undefined){const e=parseInt(q.e,10);if(e>=-1&&e<=4)era=e;}
-  if(q.k){
-   const k=parseFloat(q.k),xx=parseFloat(q.x),yy=parseFloat(q.y);
+  const k=parseFloat(q.k);
+  if(q.c){
+   const c=q.c.split(',').map(Number);
+   if(c.length===2&&isFinite(c[0])&&isFinite(c[1]))pendingGeo={lon:c[0],lat:c[1],k:isFinite(k)?k:1};
+  }else if(q.k){
+   const xx=parseFloat(q.x),yy=parseFloat(q.y);
    if(isFinite(k)&&isFinite(xx)&&isFinite(yy))pendingHashT=d3.zoomIdentity.translate(xx,yy).scale(Math.max(1,Math.min(26,k)));
   }
+  if(q.z){const z=q.z.split(':');if(z.length===3)pendingLens={lid:z[0],field:z[1],v:parseInt(z[2],10)};}
   return {bits:q.l||''};
  }catch(e){return false;}
+}
+function applyPendingLens(){
+ if(!pendingLens)return;
+ const l=byId[pendingLens.lid];
+ if(l&&l.status==='live'&&l.filters){
+  const fl=l.filters.find(f=>f.field===pendingLens.field);
+  const val=fl&&fl.values.find(v=>v[0]===pendingLens.v);
+  if(fl&&val)lens[l.id]={field:fl.field,v:val[0],label:val[1],constellation:!!fl.constellation};
+ }
+ pendingLens=null;
 }
 
 // ---------- v3: findings + split compare ----------
@@ -1450,7 +1692,13 @@ function applyFinding(f){
 
 // ---------- v3: audio ----------
 let AU=null,audioOn=false,audioTimer=null,omenTimer=null;
-const AUDIO_BASE={'memory-births':.17,'loss-crashes':.2,'power-datacenters':.09,'motion-fulfillment':.07,'power-fortune500':.05,'wonder-ufos':.05,'despair-overdoses':.08,'desire-searches':.06,'residue-superfund':.05,'omen-names':.6};
+const AUDIO_BASE={'memory-births':.17,'loss-crashes':.2,'power-datacenters':.09,'motion-fulfillment':.07,'power-fortune500':.05,'wonder-ufos':.05,'despair-overdoses':.08,'desire-searches':.06,'residue-superfund':.05,'omen-names':.6,
+ 'motion-sorting':.07,'company-socialcapital':.05,'faith-altar':.06,'despair-suicide':.045,'betrayal-ledger':.5};
+// plucked voices: short events whose rate follows the density under the viewport
+const PLUCKS={
+ 'omen-names':{p:.22,freqs:[220,261.63,329.63,392,523.25],type:'triangle',dec:1.25,ratio:0},          // the names, as bells
+ 'betrayal-ledger':{p:.10,freqs:[880,987.77,1174.66,1318.51,1760],type:'sine',dec:.85,ratio:2.76}     // coins, inharmonic
+};
 function mkNoise(ctx){
  const len=ctx.sampleRate*2,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);
  let last=0;
@@ -1484,6 +1732,12 @@ function buildAudio(){
  V['desire-searches']=voice(g=>{const n=mkNoise(ctx);const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=520;f.Q.value=3.5;n.connect(f);f.connect(g);const l=osc(.06);const lg=ctx.createGain();lg.gain.value=320;l.connect(lg);lg.connect(f.frequency);n.start();});
  V['residue-superfund']=voice(g=>{const o=osc(311.13,'triangle');const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=900;o.connect(f);f.connect(g);});
  V['omen-names']=voice(g=>{});
+ // v0.6 voices
+ V['motion-sorting']=voice(g=>{const n=mkNoise(ctx);const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=240;const gg=ctx.createGain();n.connect(f);f.connect(gg);gg.connect(g);lfoGain(gg,.11,.45,.5);n.start();});   // the country breathing in and out
+ V['company-socialcapital']=voice(g=>{const a=osc(261.63),b=osc(329.63),c=osc(392);const gg=ctx.createGain();gg.gain.value=.33;a.connect(gg);b.connect(gg);c.connect(gg);gg.connect(g);lfoGain(gg,.05,.1,.33);}); // a warm triad: company
+ V['faith-altar']=voice(g=>{const a=osc(130.81),b=osc(196),c=osc(261.63);const gg=ctx.createGain();gg.gain.value=.3;a.connect(gg);b.connect(gg);c.connect(gg);const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=700;gg.connect(f);f.connect(g);lfoGain(gg,.16,.08,.3);}); // an organ, far off
+ V['despair-suicide']=voice(g=>{const o=osc(41.2);const gg=ctx.createGain();o.connect(gg);gg.connect(g);lfoGain(gg,.045,.35,.45);});   // the quiet hours: barely there
+ V['betrayal-ledger']=voice(g=>{});
  return {ctx,master,V};
 }
 function viewportDensity(lid){
@@ -1519,23 +1773,24 @@ function updateAudio(){
   }catch(e){}
  }
 }
-function omenPluck(){
+function pluckTick(){
  if(!AU||!audioOn)return;
- const a=alpha['omen-names']||0;
- if(a<=0.05||!scopeHas('omen-names'))return;
- const r=viewportDensity('omen-names');
- const dens=typeof r==='number'?r:r.mean;
- if(Math.random()>0.22+dens*0.6)return;
- const ctx=AU.ctx,v=AU.V['omen-names'];
- const freqs=[220,261.63,329.63,392,523.25];
- const o=ctx.createOscillator();o.type='triangle';
- o.frequency.value=freqs[Math.floor(Math.random()*freqs.length)];
- const g=ctx.createGain();
- g.gain.setValueAtTime(0.0001,ctx.currentTime);
- g.gain.exponentialRampToValueAtTime(.9,ctx.currentTime+.02);
- g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+1.25);
- o.connect(g);g.connect(v.g);
- o.start();o.stop(ctx.currentTime+1.35);
+ for(const lid in PLUCKS){
+  const cfg=PLUCKS[lid],a=alpha[lid]||0;
+  if(a<=0.05||!byId[lid]||!scopeHas(lid))continue;
+  const r=viewportDensity(lid);
+  const dens=typeof r==='number'?r:r.mean;
+  if(Math.random()>cfg.p+dens*0.6)continue;
+  const ctx=AU.ctx,v=AU.V[lid];if(!v)continue;
+  const f0=cfg.freqs[Math.floor(Math.random()*cfg.freqs.length)];
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.0001,ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.9,ctx.currentTime+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+cfg.dec);
+  g.connect(v.g);
+  const o=ctx.createOscillator();o.type=cfg.type;o.frequency.value=f0;o.connect(g);o.start();o.stop(ctx.currentTime+cfg.dec+.1);
+  if(cfg.ratio){const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=f0*cfg.ratio;const g2=ctx.createGain();g2.gain.value=.3;o2.connect(g2);g2.connect(g);o2.start();o2.stop(ctx.currentTime+cfg.dec+.1);}
+ }
 }
 function audioToggle(){
  if(!AU){
@@ -1547,7 +1802,7 @@ function audioToggle(){
   try{AU.ctx.resume();}catch(e){}
   AU.master.gain.setTargetAtTime(.6,AU.ctx.currentTime,.5);
   if(!audioTimer)audioTimer=setInterval(updateAudio,300);
-  if(!omenTimer)omenTimer=setInterval(omenPluck,620);
+  if(!omenTimer)omenTimer=setInterval(pluckTick,620);
   updateAudio();
   toast('The survey is singing — pan the map, toggle layers, change eras.');
  }else{
@@ -1577,6 +1832,34 @@ function buildIndex(){
  if(am)for(let i=0;i<am.name.length;i++)push(am.name[i],(am.typeNames[am.t[i]]||'')+' · '+am.loc[i],{type:'pt',lid:'motion-fulfillment',i,scope:'us',la:am.lat[i],lo:am.lon[i],pop:100000});
  const om=D['omen-names'];
  if(om)for(let i=0;i<om.name.length;i++)push(om.name[i],(om.s[i]?'light':'dark')+' omen · '+om.st[i],{type:'pt',lid:'omen-names',i,scope:'us',la:om.lat[i],lo:om.lon[i],pop:80000});
+ const bl=D['betrayal-ledger'];
+ if(bl)for(let i=0;i<bl.name.length;i++){
+  push(bl.name[i],money(bl.v[i])+' · '+(bl.who[i]||'').split(';')[0].split(',')[0]+' · ledger',{type:'pt',lid:'betrayal-ledger',i,scope:'us',la:bl.lat[i],lo:bl.lon[i],pop:900000+bl.v[i]/40});
+  const who=(bl.who[i]||'').split(';')[0].split(',')[0].trim();
+  if(who)push(who,bl.name[i]+' · '+money(bl.v[i])+' · convicted',{type:'pt',lid:'betrayal-ledger',i,scope:'us',la:bl.lat[i],lo:bl.lon[i],pop:900000});
+ }
+ const dc=D['power-datacenters'];
+ if(dc)for(let i=0;i<dc.name.length;i++)if(dc.name[i])push(dc.name[i],'data center',{type:'pt',lid:'power-datacenters',i,scope:'any',la:dc.lat[i],lo:dc.lon[i],pop:30000});
+ const uf=D['wonder-ufos'];
+ if(uf&&uf.v){
+  const Cu=buildScope('us'),top=[];
+  for(let i=0;i<uf.v.length;i++)if(uf.v[i]>=60)top.push(i);
+  top.sort((a,b)=>uf.v[b]-uf.v[a]);
+  for(const i of top.slice(0,60)){
+   let near='';
+   if(Cu.places){let bd=1e9;for(let j=0;j<Math.min(Cu.places.length,600);j++){const pl=Cu.places[j];if(Math.abs(pl.la-uf.lat[i])>1.5||Math.abs(pl.lo-uf.lon[i])>1.8)continue;const dd=havKm(uf.lat[i],uf.lon[i],pl.la,pl.lo);if(dd<bd){bd=dd;near=pl.name+', '+pl.st;}}}
+   push(fmtInt(uf.v[i])+' sightings'+(near?' near '+near:''),'densest sky · NUFORC',{type:'pt',lid:'wonder-ufos',i,scope:'any',la:uf.lat[i],lo:uf.lon[i],pop:200000+uf.v[i]*300});
+  }
+ }
+ try{
+  // counties by spherical centroid: no projection, no outlines, no wait
+  if(!geo.counties)geo.counties=topo.feature(B.counties,B.counties.objects.counties).features;
+  for(const f of geo.counties){
+   const fips=String(f.id).padStart(5,'0'),st=FIPS_POSTAL[fips.slice(0,2)];if(!st)continue;
+   const g=d3.geoCentroid(f);if(!g||!isFinite(g[0])||!isFinite(g[1]))continue;
+   push(f.properties.name+', '+st,'county',{type:'county',scope:'us',fips,la:g[1],lo:g[0],pop:150000});
+  }
+ }catch(e){}
  for(const st in STATE_NAME)push(STATE_NAME[st],'state',{type:'state',st,scope:'us',pop:5000000});
  for(const l of live)push(l.title,'layer · '+themeById[l.theme].name,{type:'layer',lid:l.id,pop:3000000});
  R.readings.forEach((r,i)=>push(r.title,'reading',{type:'reading',ri:i,pop:3000000}));
@@ -1598,12 +1881,8 @@ function searchIndex(q){
  return out.slice(0,8).map(x=>x[1]);
 }
 function showTipAt(content,p){
- const sx=p[0]*t.k+t.x,sy=p[1]*t.k+t.y;
- tip.style.display='block';
- tip.style.borderLeftColor=content.color;
- tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
- tip.style.left=Math.min(sx+16,W-300)+'px';
- tip.style.top=Math.min(sy+14,H-130)+'px';
+ // arrivals from the Index, the plunge, and the tour hold their tooltip in place
+ pinTip(content,p[0],p[1]);
 }
 function selectEntry(e){
  if(pickMode&&e.la!=null){
@@ -1642,18 +1921,18 @@ function selectEntry(e){
    showTipAt(content,p);
   }else{
    hoverPt={x:p[0],y:p[1],color:'#c8d2e2'};dirty=true;
-   showTipAt({k:e.type==='state'?'REFERENCE — STATE':'REFERENCE',ti:e.label,s:e.sub,color:'#c8d2e2'},p);
+   showTipAt({k:e.type==='state'?'REFERENCE — STATE':e.type==='county'?'REFERENCE — COUNTY':'REFERENCE',ti:esc(e.label),s:esc(e.sub),color:'#c8d2e2'},p);
   }
  });
 }
 function renderIdx(res){
  idxResults=res;idxSel=0;
  const box=$('#idxResults');
- box.innerHTML=res.length?'':'<div class="ix-empty">Type a town, a person, a company, a facility code, a buried site, an omen, a state, a layer, a reading, a finding. Everything named in the survey is indexed — 13,000 entries, all local.</div>';
+ box.innerHTML=res.length?'':'<div class="ix-empty">Type a town, a county, a person, a company, a facility code, a buried site, an omen, a betrayal, a state, a layer, a reading, a finding. Everything named in the survey is indexed — '+fmtInt(buildIndex().length)+' entries, all local.</div>';
  res.forEach((e,i)=>{
   const d=document.createElement('div');
   d.className='ix-row'+(i===idxSel?' sel':'');
-  d.innerHTML='<span class="ix-l">'+e.label+'</span><span class="ix-s">'+e.sub+'</span>'+(e.type==='place'?'<button class="ix-dossier" title="Open field dossier" aria-label="Open field dossier">▤</button>':'');
+  d.innerHTML='<span class="ix-l">'+esc(e.label)+'</span><span class="ix-s">'+esc(e.sub)+'</span>'+(e.type==='place'||e.type==='county'?'<button class="ix-dossier" title="Open field dossier" aria-label="Open field dossier">▤</button>':'');
   d.addEventListener('click',ev=>{
    if(ev.target.closest('.ix-dossier')){closeIndex();openDossier(e.la,e.lo,e.label);return;}
    selectEntry(e);
@@ -1665,11 +1944,12 @@ function idxHighlight(){
  document.querySelectorAll('.ix-row').forEach((r,i)=>r.classList.toggle('sel',i===idxSel));
 }
 function openIndex(){
- buildIndex();
+ // focus first, build second: keystrokes typed during the first build queue into the
+ // input instead of landing on the map as layer hotkeys
  $('#indexOverlay').classList.add('open');
  const inp=$('#idxInput');inp.value='';
+ inp.focus();
  renderIdx([]);
- setTimeout(()=>inp.focus(),30);
 }
 function closeIndex(){
  $('#indexOverlay').classList.remove('open');
@@ -1729,9 +2009,24 @@ function computeDossier(la,lo,label){
    const rr=getRateRank();
    if(e)ground=doRow('despair-overdoses','Overdose mortality: <b>'+e.v+' per 100k (2024)</b> — rank '+(rr[countyFips]||'—')+' of '+fmtInt(rr.__n||0)+' counties')+ground;
    else ground=doRow('despair-overdoses','Overdose mortality: <b>suppressed</b> (small counts protect privacy)')+ground;
+   // v0.6: the quiet layers answer too — rates for a place, never points for people
+   const ds=D['despair-suicide'];
+   if(ds){const e2=ds.counties[countyFips];ground+=doRow('despair-suicide','Suicide mortality: <b>'+(e2?esc(e2.label.split(' — ')[0])+' (2018–2022, age-adjusted)':'suppressed — kept dark by law and by principle')+'</b> · if you need it, call or text <b>988</b>');}
+   const ec=D['company-socialcapital'];
+   if(ec){const e2=ec.counties[countyFips];if(e2)ground+=doRow('company-socialcapital','Economic connectedness: <b>'+esc(e2.label.split(' — ')[0].replace(/^EC /,''))+'</b> (1.0 = class-blind friendship)');}
+   const fa=D['faith-altar'];
+   if(fa){const e2=fa.counties[countyFips];if(e2){const parts=e2.label.split(' — ');ground+=doRow('faith-altar','The altar: <b>'+esc(parts[0])+'</b>'+(parts[2]?' · '+esc(parts[2]):''));}}
+   const ms=D['motion-sorting'];
+   if(ms){const e2=ms.counties[countyFips];if(e2)ground+=doRow('motion-sorting','The sorting: <b>'+esc(e2.label.split(' — ')[0].replace(' hh',' households'))+'</b> (2022–23, tax filers)');}
   }
  }
  if(ground)secs.push(['THE GROUND',ground]);
+ // THE LEDGER
+ const blg=D['betrayal-ledger'];
+ if(blg&&usOk){
+  const n=nearestOf(la,lo,blg.lat,blg.lon);
+  if(n.i>=0)secs.push(['THE LEDGER',doRow('betrayal-ledger','Nearest betrayal on the ledger: <b>'+esc(blg.name[n.i])+' — '+money(blg.v[n.i])+'</b> · '+esc((blg.who[n.i]||'').split(';')[0])+' · '+Math.round(n.km)+' km')]);
+ }
  // THE LIGHT
  let light='';
  const dm=D['memory-births'];
@@ -1875,8 +2170,219 @@ function exportDossier(){
  },'image/png');
 }
 
+// ======================================================================
+// ---------- v0.6: CITIZEN READINGS — the survey becomes a medium ----------
+// A reading is a sequence of stops. A stop is a camera, a sheet, the layer bits, an
+// era, a lens, an optional benchmark, and a caption. The whole thing is encoded into
+// the link: no server, no account, nothing to moderate, nothing to lose.
+// ======================================================================
+function b64uEncode(str){
+ const b=new TextEncoder().encode(str);let s='';
+ for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);
+ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64uDecode(s){
+ s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';
+ const bin=atob(s),b=new Uint8Array(bin.length);
+ for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+ return new TextDecoder().decode(b);
+}
+function encodeTour(tr){return b64uEncode(JSON.stringify(tr));}
+function decodeTour(str){
+ // everything from the link is untrusted: clamp, coerce, drop what does not parse
+ try{
+  const o=JSON.parse(b64uDecode(str));
+  if(!o||!Array.isArray(o.s)||!o.s.length||o.s.length>60)return null;
+  const stops=[];
+  for(const st of o.s){
+   if(!st||!Array.isArray(st.c)||st.c.length!==2)continue;
+   const lon=+st.c[0],lat=+st.c[1];if(!isFinite(lon)||!isFinite(lat)||Math.abs(lat)>90||Math.abs(lon)>180)continue;
+   stops.push({c:[lon,lat],k:Math.max(1,Math.min(26,+st.k||1)),s:st.s==='world'?'world':'us',
+    l:String(st.l||'').replace(/[^01]/g,'').slice(0,64),e:(st.e>=-1&&st.e<=4)?Math.round(+st.e):-1,
+    z:(st.z&&typeof st.z==='object'&&st.z.lid&&st.z.field!=null)?{lid:String(st.z.lid).slice(0,40),field:String(st.z.field).slice(0,20),v:Math.round(+st.z.v)}:null,
+    p:(Array.isArray(st.p)&&st.p.length===2&&isFinite(+st.p[0])&&isFinite(+st.p[1]))?[+st.p[0],+st.p[1]]:null,
+    x:String(st.x||'').slice(0,600)});
+  }
+  if(!stops.length)return null;
+  return {v:1,t:String(o.t||'').slice(0,120),s:stops};
+ }catch(e){return null;}
+}
+function captureStop(caption,keepPin){
+ const cam=camNow()||{lon:0,lat:0,k:1};
+ const zl=Object.keys(lens).find(id=>lens[id]&&scopeHas(id)&&target[id]>0);
+ return {c:[cam.lon,cam.lat],k:cam.k,s:scope,l:railOrder.map(id=>target[id]>0?1:0).join(''),e:era,
+  z:zl?{lid:zl,field:lens[zl].field,v:lens[zl].v}:null,
+  p:(rec&&rec.pin)?rec.pin.slice():(keepPin||null),x:(caption||'').slice(0,600)};
+}
+function applyStop(st,ms,done){
+ if(st.s!==scope)switchScope(st.s);
+ for(let i=0;i<railOrder.length;i++)target[railOrder[i]]=(st.l&&st.l[i]==='1'&&scopeHas(railOrder[i]))?1:0;
+ era=st.e;
+ for(const id in lens)delete lens[id];
+ if(st.z&&byId[st.z.lid]&&byId[st.z.lid].filters){
+  const fl=byId[st.z.lid].filters.find(f=>f.field===st.z.field);
+  const val=fl&&fl.values.find(v=>v[0]===st.z.v);
+  if(fl&&val)lens[st.z.lid]={field:fl.field,v:val[0],label:val[1],constellation:!!fl.constellation};
+ }
+ chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
+ bakeGlow(true);
+ flyToCam(st.c[0],st.c[1],st.k,ms,done);
+}
+// ---- the recorder ----
+function startRecording(seed){
+ if(reading!==null||tourIdx!==null)endReading();
+ if(plateOpen)closePlate();
+ unpinTip();
+ $('#readingsMenu').classList.remove('open');
+ rec={title:seed?('Re: '+(seed.t||'a citizen reading')).slice(0,120):'',stops:seed?seed.s.map(s=>Object.assign({},s)):[],pin:null,cur:-1,draft:''};
+ recRender();
+ $('#recCard').classList.add('open');
+ toast(seed?'Counter-reading: the stops are yours to keep, cut, or answer.':'Composing. Frame a view, write a line, capture it. Click the map to set a benchmark.',5200);
+}
+function stopRecording(){rec=null;$('#recCard').classList.remove('open');dirty=true;}
+function recRender(){
+ if(!rec)return;
+ const c=$('#recCard');
+ const prev=$('#recCap');if(prev)rec.draft=prev.value;
+ const editing=rec.cur>=0;
+ const chips=rec.stops.map((s,i)=>'<span class="rc-stop'+(i===rec.cur?' cur':'')+'" data-i="'+i+'" title="'+esc(s.x||'(no caption)')+'">'+(i+1)+(s.p?' ▲':'')+'<button class="rc-x" data-del="'+i+'" aria-label="Remove stop '+(i+1)+'">✕</button></span>').join('');
+ c.innerHTML='<div class="rc-head"><span class="rc-dot"></span><span class="rc-k">COMPOSING A CITIZEN READING · '+(editing?'EDITING STOP '+(rec.cur+1):'STOP '+(rec.stops.length+1))+(rec.pin?' · BENCHMARK SET ▲':'')+'</span><button class="cc-btn rc-discard" id="recDiscard">✕ DISCARD</button></div>'+
+  '<input id="recTitle" class="rc-title" maxlength="120" placeholder="Name this reading" value="'+esc(rec.title)+'">'+
+  '<textarea id="recCap" class="rc-cap" maxlength="600" rows="2" placeholder="What should the reader see here? Frame the view — layers, era, lens, zoom — then capture.">'+esc(rec.draft)+'</textarea>'+
+  '<div class="rc-row"><div class="rc-stops">'+(chips||'<span class="rc-empty">no stops yet · a reading needs at least one</span>')+'</div>'+
+  '<span class="cc-nav"><button class="cc-btn" id="recPin" title="A benchmark marks one exact spot for the reader">'+(rec.pin?'▲ CLEAR BENCHMARK':'▲ BENCHMARK · CLICK THE MAP')+'</button>'+
+  (editing?'<button class="cc-btn" id="recNew">+ NEW STOP INSTEAD</button>':'')+
+  '<button class="cc-btn rc-cap-btn" id="recCapture">'+(editing?'⊕ UPDATE STOP '+(rec.cur+1):'⊕ CAPTURE THIS VIEW')+'</button>'+
+  '<button class="cc-btn rc-finish" id="recFinish"'+(rec.stops.length?'':' disabled')+'>▣ FINISH &amp; SHARE</button></span></div>';
+ $('#recTitle').addEventListener('input',ev=>{rec.title=ev.target.value;});
+ $('#recDiscard').addEventListener('click',()=>{if(rec.stops.length&&!window.confirm('Discard this reading and its '+rec.stops.length+' stop'+(rec.stops.length>1?'s':'')+'?'))return;stopRecording();toast('Discarded.');});
+ $('#recPin').addEventListener('click',()=>{if(rec.pin){rec.pin=null;recRender();dirty=true;}else toast('Click anywhere on the map to set the benchmark.');});
+ const nb=$('#recNew');if(nb)nb.addEventListener('click',()=>{rec.cur=-1;rec.draft='';recRender();});
+ $('#recCapture').addEventListener('click',()=>{
+  const cap=$('#recCap').value.trim();
+  if(rec.cur>=0){const old=rec.stops[rec.cur];rec.stops[rec.cur]=captureStop(cap,old.p);toast('Stop '+(rec.cur+1)+' updated.');}
+  else{rec.stops.push(captureStop(cap,null));toast('Stop '+rec.stops.length+' captured.');}
+  rec.pin=null;rec.cur=-1;rec.draft='';
+  const ta=$('#recCap');if(ta)ta.value='';
+  recRender();dirty=true;
+ });
+ $('#recFinish').addEventListener('click',recFinish);
+ c.querySelectorAll('.rc-x').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();rec.stops.splice(parseInt(b.dataset.del,10),1);rec.cur=-1;recRender();dirty=true;}));
+ c.querySelectorAll('.rc-stop').forEach(s=>s.addEventListener('click',()=>{
+  const i=parseInt(s.dataset.i,10);rec.cur=i;rec.draft=rec.stops[i].x||'';rec.pin=null;
+  const ta=$('#recCap');if(ta)ta.value=rec.draft;
+  applyStop(rec.stops[i],1400);recRender();
+ }));
+}
+function recFinish(){
+ if(!rec||!rec.stops.length)return;
+ const tr={v:1,t:(rec.title||'').trim().slice(0,120)||'A citizen reading',s:rec.stops.map(s=>Object.assign({},s))};
+ const enc=encodeTour(tr);
+ tour=tr;tourParam=enc;tourIdx=null;
+ stopRecording();
+ buildReadingsMenu();
+ try{history.replaceState(null,'',currentHash());}catch(e){}
+ openShare(location.href.split('#')[0]+currentHash(),tr);
+}
+// ---- the share card (the embed kit) ----
+function openShare(url,tr){
+ const sc=$('#shareCard');
+ const embed='<iframe src="'+url+'" width="100%" height="720" style="border:0;background:#070a10" loading="lazy" title="THE SOUL SURVEY'+(tr?' — '+tr.t.replace(/"/g,'\''):'')+'"></iframe>';
+ sc.innerHTML='<div id="shareInner"><button class="pl-x" id="shareClose">✕ ESC</button>'+
+  '<div class="pl-over">'+(tr?'A CITIZEN READING · '+tr.s.length+' STOP'+(tr.s.length>1?'S':''):'THIS EXACT VIEW')+' — SHARE</div>'+
+  '<div class="ab-title" style="font-size:24px">'+(tr?esc(tr.t):'Link to exactly this')+'</div>'+
+  '<div class="ab-body" style="font-size:13px">No server, no account. '+(tr?'The whole reading — every stop, caption, and benchmark — lives inside this link.':'The sheet, camera, layers, era, and lens live inside this link; it opens on the same place on any screen.')+' Anyone who opens it can answer with a counter-reading.</div>'+
+  '<input class="sh-url" id="shareUrl" readonly value="'+esc(url)+'" aria-label="Share link">'+
+  '<div class="do-actions" style="justify-content:flex-start"><button class="cc-btn" id="shareCopy">⧉ COPY LINK</button><button class="cc-btn" id="shareEmbed">⧉ COPY EMBED</button><a class="cc-btn" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">↗ OPEN IN ITS OWN TAB</a></div>'+
+  '<div class="pl-h" style="color:var(--gold)">EMBED</div><textarea class="sh-embed" id="shareEmbedText" readonly rows="3" aria-label="Embed snippet">'+esc(embed)+'</textarea>'+
+  '<div class="pl-cav"><b>ATTRIBUTION</b> — an embed carries the survey\'s own masthead, sources, and licenses; keep them visible. '+(url.length>1800?'This link is long ('+fmtInt(url.length)+' characters) — fine for browsers and most chat apps; shorten captions if a platform truncates it.':'')+'</div></div>';
+ sc.classList.add('open');
+ const copy=(txt,msg)=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast(msg),()=>toast('Select the text to copy it.'));else toast('Select the text to copy it.');};
+ $('#shareClose').addEventListener('click',()=>sc.classList.remove('open'));
+ $('#shareCopy').addEventListener('click',()=>copy(url,'Link copied.'));
+ $('#shareEmbed').addEventListener('click',()=>copy(embed,'Embed snippet copied.'));
+ $('#shareUrl').addEventListener('focus',ev=>ev.target.select());
+ $('#shareEmbedText').addEventListener('focus',ev=>ev.target.select());
+}
+// ---- playback ----
+function startTour(i){
+ if(!tour||!tour.s[i])return;
+ clearOrient();
+ if(plateOpen)closePlate();
+ if(rec)stopRecording();
+ $('#readingsMenu').classList.remove('open');
+ if(reading===null&&tourIdx===null&&!findingOpen)readingSaved={scope:scope,targets:{...target},t:{k:t.k,x:t.x,y:t.y},era:era};
+ reading=null;findingOpen=null;setCompare(null);
+ tourIdx=i;
+ unpinTip();
+ applyStop(tour.s[i],2400);
+ showCap(tourCap(i));
+ wireCapNav();
+ const fk=$('#ccFork');if(fk)fk.addEventListener('click',()=>{const seed=tour;endReading();startRecording(seed);});
+ writeHash();
+}
+function tourCap(i){
+ const st=tour.s[i],n=tour.s.length;
+ const body=st.x?esc(st.x).replace(/\n/g,'<br>'):'<i style="opacity:.6">no caption for this stop</i>';
+ return '<div class="cc-k" style="color:#e8b34b">A CITIZEN READING · STOP '+(i+1)+' OF '+n+(st.p?' · ▲ BENCHMARK':'')+'</div>'+
+  '<div class="cc-t">'+esc(tour.t)+'</div><div class="cc-x">'+body+'</div>'+
+  '<div class="cc-row"><span class="cc-step">RECORDED BY A READER · NOT THE SURVEY\'S CANON</span>'+
+  '<span class="cc-nav"><button class="cc-btn" id="ccPrev">◀ PREV</button><button class="cc-btn" id="ccNext">NEXT ▶</button><button class="cc-btn" id="ccFork" title="Load these stops into the recorder and answer">✎ COUNTER-READING</button><button class="cc-btn" id="ccEnd">✕ END</button></span></div>';
+}
+// ---------- v0.6: THE PLUNGE ----------
+let plungeN=0;
+function plunge(){
+ const E=buildIndex(),pools={};
+ for(const e of E){if(!e.lid||(e.type!=='pt'&&e.type!=='star'))continue;(pools[e.lid]=pools[e.lid]||[]).push(e);}
+ const keys=Object.keys(pools);if(!keys.length)return;
+ const lid=keys[Math.floor(Math.random()*keys.length)];
+ let arr=pools[lid];
+ if(lid==='memory-births')arr=arr.slice().sort((a,b)=>b.pop-a.pop).slice(0,250);
+ if(lid==='power-fortune500')arr=arr.slice().sort((a,b)=>b.pop-a.pop).slice(0,80);
+ if(lid==='power-datacenters')arr=arr.filter(e=>!/^(unnamed|data center)$/i.test(e.label));
+ const e=arr[Math.floor(Math.random()*arr.length)];if(!e)return;
+ plungeN++;
+ if(reading!==null||tourIdx!==null||findingOpen)endReading();
+ if(plateOpen)closePlate();
+ $('#readingsMenu').classList.remove('open');$('#findingsMenu').classList.remove('open');
+ selectEntry(e);
+ toast('PLUNGE № '+plungeN+' — '+byId[lid].title.toUpperCase()+' · press ? again',3800);
+}
+// ---------- v0.6: lenses that step through time ----------
+function refreshLensChips(lid){
+ const L=lens[lid];
+ document.querySelectorAll('.lz-chip[data-lid="'+lid+'"]').forEach(b=>{
+  if(b.classList.contains('lz-play'))return;
+  const on=b.dataset.clear?(!L||L.field!==b.dataset.field):(!!L&&L.field===b.dataset.field&&L.v===parseInt(b.dataset.v,10));
+  b.classList.toggle('on',on);
+ });
+}
+function applyLens(lid){bakeLayer(lid,true);scheduleQt();updateStatline();refreshLensChips(lid);writeHash();dirty=true;}
+function stopLensPlay(){
+ if(!lensPlay)return;
+ clearInterval(lensPlay.timer);
+ const b=document.querySelector('.lz-play[data-lid="'+lensPlay.lid+'"][data-field="'+lensPlay.field+'"]');if(b)b.textContent='▶';
+ lensPlay=null;
+}
+function toggleLensPlay(lid,field){
+ if(lensPlay&&lensPlay.lid===lid&&lensPlay.field===field){stopLensPlay();return;}
+ stopLensPlay();
+ const fl=(byId[lid].filters||[]).find(f=>f.field===field);if(!fl)return;
+ const b=document.querySelector('.lz-play[data-lid="'+lid+'"][data-field="'+field+'"]');if(b)b.textContent='■';
+ let idx=-1;
+ const step=()=>{
+  idx++;
+  if(idx>=fl.values.length){delete lens[lid];applyLens(lid);stopLensPlay();toast(fl.label+' — the whole span, restored.');return;}
+  const v=fl.values[idx];
+  lens[lid]={field,v:v[0],label:v[1],constellation:!!fl.constellation};
+  applyLens(lid);
+ };
+ lensPlay={lid,field,timer:setInterval(step,1150)};
+ step();
+}
+
 // ---------- zoom ----------
-const zoomB=d3.zoom().scaleExtent([1,26]).on('zoom',ev=>{
+const zoomB=d3.zoom().scaleExtent([1,26]).clickDistance(6).on('zoom',ev=>{
  t=ev.transform;dirty=true;needBake=true;zooming=true;
  clearTimeout(zoomEndT);
  zoomEndT=setTimeout(()=>{zooming=false;bakeGlow(true);},170);
@@ -1890,6 +2396,7 @@ function init(){
  const hp=parseHash();
  if(hp){hashHadState=true;}
  buildScope(scope);
+ applyPendingLens();
  buildHero();
  buildAbout();
  buildEraBar();
@@ -1911,6 +2418,8 @@ function init(){
  $('#exportBtn').addEventListener('click',exportSheet);
  $('#audioBtn').addEventListener('click',audioToggle);
  $('#indexBtn').addEventListener('click',openIndex);
+ $('#shareBtn').addEventListener('click',()=>openShare(location.href.split('#')[0]+currentHash(true),null));
+ $('#shareCard').addEventListener('click',ev=>{if(ev.target.id==='shareCard')$('#shareCard').classList.remove('open');});
  $('#indexOverlay').addEventListener('click',ev=>{if(ev.target.id==='indexOverlay')closeIndex();});
  $('#dossier').addEventListener('click',ev=>{if(ev.target.id==='dossier')$('#dossier').classList.remove('open');});
  const idxInp=$('#idxInput');
@@ -1933,25 +2442,31 @@ function init(){
  const stage=$('#stage');
  d3.select(stage).call(zoomB).on('dblclick.zoom',null);
  if(pendingHashT)d3.select(stage).call(zoomB.transform,pendingHashT);
+ else if(pendingGeo){d3.select(stage).call(zoomB.transform,camFor(pendingGeo.lon,pendingGeo.lat,pendingGeo.k));pendingGeo=null;}
  stage.addEventListener('pointermove',onMove);
+ stage.addEventListener('click',onClick);
  stage.addEventListener('pointerdown',()=>{
   if(reading!==null&&R.readings[reading]&&R.readings[reading].special){
    clearOrient();
    endReading();
   }
  });
- stage.addEventListener('pointerleave',()=>{tip.style.display='none';hoverPt=null;updateDatumDefault();dirty=true;});
+ stage.addEventListener('pointerleave',()=>{if(!tipPinned){tip.style.display='none';hoverPt=null;dirty=true;}updateDatumDefault();});
  window.addEventListener('keydown',ev=>{
   if(ev.target&&(ev.target.tagName==='INPUT'||ev.target.tagName==='TEXTAREA')){
    if(ev.key==='Escape')closeIndex();
    return;
   }
   if(ev.key==='/'){ev.preventDefault();openIndex();return;}
+  if(ev.key==='?'){ev.preventDefault();plunge();return;}
   if(ev.key==='Escape'){
-   if($('#indexOverlay').classList.contains('open'))closeIndex();
+   // the recorder is deliberately NOT closed by ESC: a composed reading is work
+   if($('#shareCard').classList.contains('open'))$('#shareCard').classList.remove('open');
+   else if($('#indexOverlay').classList.contains('open'))closeIndex();
    else if($('#dossier').classList.contains('open'))$('#dossier').classList.remove('open');
    else if($('#about').classList.contains('open'))$('#about').classList.remove('open');
-   else if(reading!==null||findingOpen)endReading();
+   else if(tipPinned)unpinTip();
+   else if(reading!==null||findingOpen||tourIdx!==null)endReading();
    else if($('#capCard').classList.contains('open'))hideCap();
    else if(plateOpen)closePlate();
    else{$('#hero').classList.add('gone');}
@@ -1989,6 +2504,8 @@ function init(){
  $('#stage').classList.add('ready');
  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true;bakeGlow();});
  frame();
+ // a citizen reading that arrived in the link plays itself (the hero is skipped)
+ if(tour&&hashHadState)setTimeout(()=>startTour(0),700);
 }
 try{init();}catch(e){err(e);}
 })();

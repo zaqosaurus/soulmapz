@@ -316,3 +316,58 @@ button:focus-visible,.chip:focus-visible{outline:1px solid var(--gold);outline-o
 .lz-chip.on{background:rgba(232,228,216,.12);color:var(--ink);border-color:var(--line-strong)}
 .dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media (max-width:700px){.dd-grid{grid-template-columns:1fr}}
+
+/* ============ V0.6: ledger receipts, pinned tips, citizen readings, share ============ */
+#tooltip.wide{max-width:360px}
+#tooltip.pinned{pointer-events:auto;box-shadow:0 0 0 1px rgba(232,179,75,.18),0 8px 30px rgba(0,0,0,.6)}
+#tooltip .tt-pin{float:right;font-size:7px;letter-spacing:.14em;color:var(--ink-faint);margin-left:10px}
+#tooltip .tt-s i{color:var(--ink);font-style:normal;opacity:.85}
+#tooltip .tt-cite{display:block;margin-top:5px;padding-top:5px;border-top:1px dashed var(--line);color:var(--ink-faint)}
+#tooltip .tt-cite a{color:var(--gold);text-decoration:underline;text-decoration-color:rgba(232,179,75,.35)}
+#shareBtn{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;padding:9px 12px;color:var(--ink-dim);border:1px solid var(--line-strong);transition:all .2s}
+#shareBtn:hover{background:rgba(232,228,216,.08);color:var(--ink)}
+.rm-item.special{border-top:1px dashed var(--line)}
+.rm-item.special .rt{font-style:normal;font-family:var(--sans);font-size:13px}
+.rm-item.citizen{border:1px solid rgba(232,179,75,.35);background:rgba(232,179,75,.06);margin-bottom:4px}
+.lz-chip.lz-play{color:var(--gold);border-color:rgba(232,179,75,.4);min-width:28px}
+.ab-livelog{font-family:var(--mono);font-size:9px;line-height:1.85;color:var(--ink-dim);max-height:220px;overflow-y:auto;border:1px solid var(--line);padding:8px 12px}
+.ab-livelog span{color:var(--ink-faint);margin-right:12px}
+/* the recorder */
+#recCard{position:fixed;left:50%;bottom:64px;transform:translate(-50%,24px);z-index:46;width:min(680px,calc(100vw - 48px));
+  background:rgba(9,12,18,.96);border:1px solid var(--line-strong);border-left:2px solid #ff4f5e;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:12px 16px 12px;
+  opacity:0;pointer-events:none;transition:opacity .4s,transform .4s cubic-bezier(.22,1,.28,1)}
+#recCard.open{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.rc-head{display:flex;align-items:center;gap:8px}
+.rc-dot{width:8px;height:8px;border-radius:50%;background:#ff4f5e;box-shadow:0 0 10px #ff4f5e;animation:rcpulse 1.6s ease-in-out infinite;flex:none}
+@keyframes rcpulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.rc-dot{animation:none}}
+.rc-k{font-family:var(--mono);font-size:8px;letter-spacing:.24em;color:var(--ink-dim);flex:1}
+.rc-title,.rc-cap{width:100%;background:rgba(232,228,216,.03);border:1px solid var(--line);color:var(--ink);outline:none;margin-top:8px;padding:7px 9px}
+.rc-title{font-family:var(--serif);font-style:italic;font-size:16px}
+.rc-cap{font-family:var(--serif);font-size:13px;line-height:1.5;resize:vertical;min-height:44px}
+.rc-title:focus,.rc-cap:focus{border-color:var(--line-strong)}
+.rc-row{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:9px;flex-wrap:wrap}
+.rc-stops{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.rc-stop{font-family:var(--mono);font-size:9px;color:var(--ink);border:1px solid var(--line-strong);padding:3px 4px 3px 7px;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+.rc-stop.cur{border-color:var(--gold);color:var(--gold)}
+.rc-x{font-size:8px;color:var(--ink-faint);padding:0 3px}
+.rc-x:hover{color:#ff6b5e}
+.rc-empty{font-family:var(--mono);font-size:8.5px;color:var(--ink-faint);letter-spacing:.06em}
+.cc-btn.rc-cap-btn{color:var(--ink);border-color:var(--line-strong)}
+.cc-btn.rc-finish{color:#0a0d13;background:var(--gold);border-color:var(--gold)}
+.cc-btn[disabled]{opacity:.35;pointer-events:none}
+/* the share card (embed kit) */
+#shareCard{position:fixed;inset:0;z-index:72;display:none;background:rgba(4,7,11,.78);backdrop-filter:blur(10px)}
+#shareCard.open{display:block}
+#shareInner{max-width:640px;margin:10vh auto;max-height:80vh;overflow-y:auto;background:var(--panel-solid);
+  border:1px solid var(--line-strong);border-top:2px solid var(--gold);padding:30px 34px;position:relative}
+.sh-url,.sh-embed{width:100%;background:rgba(232,228,216,.03);border:1px solid var(--line);color:var(--ink-dim);outline:none;
+  font-family:var(--mono);font-size:9.5px;line-height:1.6;padding:9px 10px;margin-top:10px}
+.sh-embed{resize:none}
+a.cc-btn{text-decoration:none;display:inline-block}
+@media (max-width:760px){
+  #recCard{bottom:56px;padding:10px 12px}
+  #shareBtn{padding:7px 8px;font-size:8.5px}
+  #shareInner{margin:6vh 12px;padding:22px 18px}
+}

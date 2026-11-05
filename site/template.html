@@ -7,12 +7,12 @@
 <meta name="description" content="One map, many strange datasets: where the remembered were born, where desire points, where the cloud touches ground, where the crashes happened, what we named the land, what we see in the sky, where the pain settles, what we buried. Toggle the layers. The terrain is us.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23070a10'/><path d='M16 6 L26 24 L6 24 Z' fill='none' stroke='%23e8b34b' stroke-width='2'/><circle cx='16' cy='18' r='2.4' fill='%23e8b34b'/></svg>">
 <meta property="og:title" content="THE SOUL SURVEY">
-<meta property="og:description" content="A topographic survey of the collective soul, conducted in objective data. Ten real datasets, one living map. Density becomes elevation; overlap becomes light.">
+<meta property="og:description" content="A topographic survey of the collective soul, conducted in objective data. Fifteen real datasets, one living map. Density becomes elevation; overlap becomes light.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://ansalamalasna.github.io/soulmap/">
-<meta property="og:image" content="https://ansalamalasna.github.io/soulmap/og.png">
+<meta property="og:url" content="{{SITE}}">
+<meta property="og:image" content="{{SITE}}og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://ansalamalasna.github.io/soulmap/og.png">
+<meta name="twitter:image" content="{{SITE}}og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
@@ -49,6 +49,7 @@
     </div>
     <button id="locateBtn" title="Zoom to your location and compose your local reading">⌖&nbsp;LOCATE</button>
     <button id="exportBtn" title="Render this view as a poster PNG">⤓&nbsp;SHEET</button>
+    <button id="shareBtn" title="Link or embed exactly this view — it opens on the same place on any screen">⤴&nbsp;SHARE</button>
     <button id="audioBtn" title="Opt-in: the survey sings; density under your viewport drives the mix">♪&nbsp;AUDIO</button>
     <button id="aboutBtn">ABOUT</button>
   </div>
@@ -66,6 +67,7 @@
 </footer>
 
 <div id="capCard"></div>
+<div id="recCard" role="dialog" aria-label="Compose a citizen reading"></div>
 <div id="toast"></div>
 <div id="splitHandle"><div class="sh-line"></div><div class="sh-grip">⇆</div></div>
 
@@ -79,6 +81,7 @@
   </div>
 </div>
 <div id="dossier" role="dialog" aria-label="Field dossier"><div id="dossierInner"></div></div>
+<div id="shareCard" role="dialog" aria-label="Share this view or reading"></div>
 <div id="hero"></div>
 <div id="neatline"></div>
 <div id="errbox"></div>
