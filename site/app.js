@@ -791,6 +791,15 @@ function frame(){
   const ids=activeIds().filter(id=>hasGlow(byId[id]));
   if(ids.length){bakeRR=(bakeRR+1)%ids.length;bakeLayer(ids[bakeRR],!zooming);}
  }
+ // a layer switched on by any path (toggle, plate, reading, tour, plunge) that has
+ // never been painted is painted now — one per frame, so a big switch stays smooth
+ if(!zooming){
+  for(const lid of activeIds()){
+   if(!hasGlow(byId[lid]))continue;
+   const bm=glowBMs[lid];
+   if(!bm||!bm.curT){bakeLayer(lid,true);break;}
+  }
+ }
  let fading=false;
  for(const lid in glowBMs){
   const bm=glowBMs[lid];
