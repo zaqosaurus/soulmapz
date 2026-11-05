@@ -3,8 +3,10 @@
     "title": "THE SOUL SURVEY",
     "tagline": "A topographic survey of the collective soul, conducted in objective data.",
     "sheet": "SHEET NO. 1 — THE HUMAN SIGNAL",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "surveyed": "JULY 2026",
+    "repo": "",
+    "site": "",
     "manifesto": "Every act leaves a coordinate. A birth, a search, a warehouse, a crash — each one lands somewhere, and the landing is recorded. Alone, each record is trivia. Stacked, they become relief: ridgelines of genius, basins of grief, the bright grid of the machines we serve and that serve us. This is not a map of the land. It is a map of what we do on it. Toggle the layers. Watch the country change shape. The terrain is us."
   },
   "themes": [
@@ -26,7 +28,7 @@
     {
       "id": "orientation", "special": "orientation",
       "title": "Orientation", "kicker": "HOW TO READ THIS MAP", "scope": "us",
-      "text": "Seven instruments, one terrain. Each layer is a real dataset with coordinates. Density becomes elevation; overlap becomes light. Watch them arrive."
+      "text": "{n} instruments, one terrain. Each layer is a real dataset with coordinates. Density becomes elevation; overlap becomes light. Watch them arrive."
     },
     {
       "id": "corridor", "title": "The Corridor of Grief", "kicker": "MOTION × LOSS", "scope": "us",

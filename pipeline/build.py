@@ -46,11 +46,104 @@ def load_staging(layer_id):
     fp = p("data","staging",f"{layer_id}.json")
     return load(fp) if os.path.exists(fp) else None
 
+# ---------- v0.6: the survey knows where it lives ----------
+def _git(*args):
+    import subprocess
+    try:
+        out = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=20)
+        return out.stdout.strip() if out.returncode == 0 else ""
+    except Exception:
+        return ""
+
+def repo_info(meta):
+    """owner/repo and the Pages URL. registry meta.repo wins when set (the original
+    author's home); otherwise derived from the git remote so forks link to themselves."""
+    repo = (meta.get("repo") or "").strip()
+    if not repo:
+        url = _git("remote", "get-url", "origin")
+        m = re.search(r"github\.com[:/]([^/]+)/([^/\s]+?)(?:\.git)?$", url)
+        if m: repo = f"{m.group(1)}/{m.group(2)}"
+    if not repo:
+        repo = "ansalamalasna/soulmap"
+    owner, name = repo.split("/", 1)
+    site = (meta.get("site") or "").strip() or f"https://{owner}.github.io/{name}/"
+    return repo, site
+
+def living_log(limit=80):
+    """THE LIVING LOG — the survey's memory of itself, straight from git history.
+    Subjects only; trailers never reach the page."""
+    raw = _git("log", "--date=short", "--pretty=%ad%x09%s", "-n", str(limit), "--no-merges")
+    rows = []
+    for line in raw.splitlines():
+        if "\t" not in line: continue
+        d, s = line.split("\t", 1)
+        s = s.strip()
+        if not s or s.lower().startswith("merge "): continue
+        rows.append([d, s[:140]])
+    return rows
+
+def write_data_api(registry, repo, layers_data):
+    """docs/DATA_API.md — the Data API that already exists: every staging file as a
+    stable raw endpoint, one curl line each. Regenerated every build so counts and
+    vintages never drift from the page."""
+    raw = f"https://raw.githubusercontent.com/{repo}/main"
+    lines = ["# THE DATA API", "",
+             "*Every staging file is a stable, versioned endpoint. Zero infrastructure; total legitimacy.*", "",
+             "The survey's data lives in `data/staging/` as plain JSON with a provenance sidecar beside",
+             "every file. GitHub serves them raw. Pin a release tag instead of `main` for a frozen vintage",
+             f"(`{raw.replace('/main', '/v' + registry['meta']['version'])}/...`). Licenses per layer are in",
+             "[DATA_LICENSES.md](../DATA_LICENSES.md) — several require attribution and one is share-alike.", "",
+             "## Shapes", "",
+             "| Shape | Keys | Used by |", "|---|---|---|",
+             "| points | `records[]` of `{lat, lon, v, name?, meta{}}` | crashes, data centers, thrones, fulfillment, omens, Superfund, sightings, the ledger |",
+             "| regions | `regions[]` of `{key, value, label, meta?}` — key is a 5-digit county FIPS or `US-XX` state | overdoses, suicide, connectedness, adherence, desire |",
+             "| cells | `cells[]` of `{lat, lon, v, top?[]}` on a 0.25° grid | memory, eras |",
+             "| flows | `counties[]` of `{fips, in, out, net}` + `flows[]` of `{a, b, hh}` | the sorting |", "",
+             "## Endpoints", "",
+             "| Layer | Vintage | Records | Staging | Provenance |", "|---|---|---|---|---|"]
+    for lay in registry["layers"]:
+        lid = lay["id"]
+        if lay.get("status") != "live": continue
+        st_path = p("data","staging",f"{lid}.json")
+        if not os.path.exists(st_path): continue
+        vint = str(lay.get("vintage") or (lay.get("retrieved") or "")[:10])
+        d = layers_data.get(lid, {})
+        n = d.get("n", len(d.get("counties", {}) or d.get("us", {}) or {}))
+        lines.append(f"| {lay['title']} | {vint} | {n:,} | [`{lid}.json`]({raw}/data/staging/{lid}.json) | [sidecar]({raw}/data/staging/{lid}.provenance.json) |")
+    for extra in ("memory-eras", "memory-bios"):
+        if os.path.exists(p("data","staging",f"{extra}.json")):
+            lines.append(f"| {extra} (enrichment) | — | — | [`{extra}.json`]({raw}/data/staging/{extra}.json) | [sidecar]({raw}/data/staging/{extra}.provenance.json) |")
+    lines += ["", "## One-liners", "", "```bash",
+              f"# the registry — every layer's contract, essay, and caveat",
+              f"curl -sL {raw}/registry/registry.json | python3 -m json.tool | head -60", "",
+              f"# the findings, with their method notes and the spurious control",
+              f"curl -sL {raw}/data/findings.json", "",
+              f"# one layer and its provenance",
+              f"curl -sL {raw}/data/staging/betrayal-ledger.json | python3 -c \"import json,sys; d=json.load(sys.stdin); print(len(d['records']), 'records;', d['retrieved'])\"",
+              f"curl -sL {raw}/data/staging/betrayal-ledger.provenance.json | head -c 600", "",
+              f"# the packed payloads the page itself renders (quantized, cell-aggregated)",
+              f"curl -sL {raw}/data/layers/loss-crashes.json | head -c 300",
+              "```", "",
+              "## Rules of the road", "",
+              "- **Cite the source, not the survey.** Each file names its source and retrieval date; pass them on.",
+              "- **The dark stays dark.** Suppressed counties are absent on purpose. Do not interpolate them.",
+              "- **Protocol layers stay heat.** Suicide data ships as county rates only — never re-join it to points.",
+              "- **Where, not why.** Correlations you compute inherit the standing disclaimer.", "",
+              f"*Generated by `pipeline/build.py` at build time for `{repo}`.*", ""]
+    os.makedirs(p("docs"), exist_ok=True)
+    with open(p("docs","DATA_API.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
 def build():
     registry = load(p("registry","registry.json"))
     fpath = p("data","findings.json")
     if os.path.exists(fpath):
         registry["findings"] = load(fpath)
+    repo, site = repo_info(registry["meta"])
+    registry["meta"]["repo"] = repo
+    registry["meta"]["site"] = site
+    registry["meta"]["log"] = living_log()
+    print(f"  home: {repo} → {site}  ·  living log: {len(registry['meta']['log'])} entries")
     layers_data = {}
     for lay in registry["layers"]:
         lid = lay["id"]
@@ -276,8 +369,10 @@ def build():
                   "v":[int(r.get("v") or 0) for r in recs],
                   "who":[((r.get("meta") or {}).get("who") or "")[:70] for r in recs],
                   "years":[((r.get("meta") or {}).get("years") or "")[:20] for r in recs],
-                  "scheme":[((r.get("meta") or {}).get("scheme") or "")[:120] for r in recs],
-                  "outcome":[((r.get("meta") or {}).get("outcome") or "")[:80] for r in recs]}
+                  "scheme":[((r.get("meta") or {}).get("scheme") or "")[:220] for r in recs],
+                  "outcome":[((r.get("meta") or {}).get("outcome") or "")[:220] for r in recs],
+                  # the receipts ride with the point: up to three citations per entry (URLs only)
+                  "cites":[[str(c)[:160] for c in ((r.get("meta") or {}).get("cites") or [])[:3]] for r in recs]}
             total = sum(pk["v"])
             layers_data[lid] = {"kind":"points","n":len(recs),"stolen":total, **pk}
             lay["count"] = len(recs)
@@ -335,7 +430,10 @@ def build():
         lay["statline"] = sl
 
     # ---- entity lens filters (declared from packed fields) ----
-    def mk_filter(lid, field, label, code_labels):
+    def mk_filter(lid, field, label, code_labels, seq=False, constellation=False):
+        """A lens is data. `seq` lenses are ordered in time and get a play control;
+        `constellation` lenses select one real network (an operator, a facility class)
+        and get their members drawn as a constellation — never for unrelated things."""
         d = layers_data.get(lid)
         if not d or field not in d: return
         counts = Counter(d[field])
@@ -343,7 +441,10 @@ def build():
         if len(values) < 2: return
         for lay in registry["layers"]:
             if lay["id"] == lid:
-                lay.setdefault("filters", []).append({"field": field, "label": label, "values": values})
+                fl = {"field": field, "label": label, "values": values}
+                if seq: fl["seq"] = True
+                if constellation: fl["constellation"] = True
+                lay.setdefault("filters", []).append(fl)
     if "power-datacenters" in layers_data:
         d = layers_data["power-datacenters"]
         OPS = [("meta",0,"Meta"),("facebook",0,"Meta"),("aws",1,"AWS"),("amazon",1,"AWS"),("google",2,"Google"),
@@ -355,18 +456,18 @@ def build():
                 if pat in low: code = c; break
             op.append(code)
         d["op"] = op
-        mk_filter("power-datacenters","op","Operator",[(0,"Meta"),(1,"AWS"),(2,"Google"),(3,"Microsoft"),(4,"Equinix"),(5,"Digital Realty")])
+        mk_filter("power-datacenters","op","Operator",[(0,"Meta"),(1,"AWS"),(2,"Google"),(3,"Microsoft"),(4,"Equinix"),(5,"Digital Realty")], constellation=True)
     if "wonder-ufos" in layers_data:
-        mk_filter("wonder-ufos","dec","Decade (latest report)",[(0,"1940s"),(1,"1950s"),(2,"1960s"),(3,"1970s"),(4,"1980s"),(5,"1990s"),(6,"2000s"),(7,"2010s")])
+        mk_filter("wonder-ufos","dec","Decade (latest report)",[(0,"1940s"),(1,"1950s"),(2,"1960s"),(3,"1970s"),(4,"1980s"),(5,"1990s"),(6,"2000s"),(7,"2010s")], seq=True)
     if "motion-fulfillment" in layers_data:
-        mk_filter("motion-fulfillment","t","Facility type",[(0,"Fulfillment"),(1,"Sortation"),(2,"Cross-dock")])
+        mk_filter("motion-fulfillment","t","Facility type",[(0,"Fulfillment"),(1,"Sortation"),(2,"Cross-dock")], constellation=True)
     if "omen-names" in layers_data:
         mk_filter("omen-names","s","Side",[(0,"Devils & hells"),(1,"Angels & paradises")])
     if "residue-superfund" in layers_data:
         mk_filter("residue-superfund","st2","Status",[(0,"Proposed"),(1,"On the list"),(2,"Deleted (cleaned)")])
     if "loss-crashes" in layers_data:
         MNL = [(i, m) for i, m in enumerate(["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]) if i]
-        mk_filter("loss-crashes","m","Month",MNL)
+        mk_filter("loss-crashes","m","Month",MNL, seq=True)
 
     # readings only run when all their layers are live
     live_ids = {l["id"] for l in registry["layers"] if l.get("status") == "live"}
@@ -398,6 +499,7 @@ def build():
         return s.replace("</", "<\\/")
 
     html = read(p("site","template.html"))
+    html = html.replace("{{SITE}}", site).replace("{{REPO}}", repo)
     html = html.replace("/*{{CSS}}*/", read(p("site","styles.css")))
     html = html.replace("//{{VENDOR}}", read(p("site","vendor","d3.v7.min.js")) + "\n" + read(p("site","vendor","topojson-client.min.js")))
     html = html.replace("//{{DATA}}",
@@ -412,7 +514,11 @@ def build():
     os.makedirs(p("docs"), exist_ok=True)
     import shutil
     shutil.copyfile(out, p("docs","index.html"))
-    print(f"built {out}: {os.path.getsize(out)/1e6:.2f} MB (+ copied to docs/ for GitHub Pages)")
+    write_data_api(registry, repo, layers_data)
+    size = os.path.getsize(out)
+    print(f"built {out}: {size/1e6:.2f} MB (+ copied to docs/ for GitHub Pages; docs/DATA_API.md regenerated)")
+    if size > 8_000_000:
+        print("  !! PAGE-WEIGHT CEILING BREACHED (8 MB) — aggregate harder before shipping")
     for lid,d in layers_data.items():
         n = d.get('n', len(d.get('us',{}) or d.get('counties',{})))
         print(f"  {lid}: n={n}" + (f" reports={d['reports']}" if 'reports' in d else ""))
