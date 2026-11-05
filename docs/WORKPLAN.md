@@ -203,3 +203,6 @@ phone composes small plates. Fonts in print are the ones the page already loaded
 **Rule for test failures:** a headless failure says where to look. Code changes only when the
 cause is visible in the code or reproducible on the original build.
 
+---
+
+**v0.6 is feature-complete for this branch's purposes. The next plan is [PLAN_V07.md](PLAN_V07.md)** — the diverse map: compressed payloads, registry-declared packing, unlocking unused fields, world layers, and the network unlock, with its QC loops.
