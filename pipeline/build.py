@@ -36,6 +36,19 @@ def pack_county_regions(st):
 
 STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"]
 ERA_LABELS = ["≤ 500", "501–1500", "1501–1800", "1801–1900", "1901–2018"]
+STAR_GROUPS = ["Screen", "Music", "Letters", "Art", "Thought & science", "Sport", "Power", "Faith", "Other callings"]
+STAR_GROUP = {}
+for _g, _ds in enumerate([
+    "actor film screenwriter comedian producer model director actress",
+    "singer composer guitar rapper music conductor pianist opera musician drummer",
+    "writer poet novelist playwright author journalist historian",
+    "painter artist sculptor architect photographer designer",
+    "philosopher mathematician physicist economist biologist chemist anthropologist astronomer psychologist inventor engineer physician theologian scientist",
+    "football player basket wrestler driver boxer baseball tennis cyclist athlete",
+    "politician king emperor monarch queen sovereign sultan statesman aristocrat political officer militar soldier entrepreneur business lawyer pharaoh",
+    "priest prophet religious cleric pope saint"]):
+    for _d in _ds.split(): STAR_GROUP[_d] = _g
+STAR_GROUP["martial art"] = 5
 
 def load(path):
     with open(path, encoding="utf-8") as f: return json.load(f)
@@ -207,6 +220,8 @@ def build():
                 "v":[rnd(r.get("v") or 0,1) for r in stars], "name":[(r.get("name") or "")[:48] for r in stars],
                 "birth":[(r.get("meta") or {}).get("birth") for r in stars],
                 "dom":[((r.get("meta") or {}).get("domain") or "")[:24] for r in stars]}
+            # v0.7 Phase 1.5: the remembered, by calling — Pantheon domains folded into nine groups
+            s_pack["dg"] = [STAR_GROUP.get(((r.get("meta") or {}).get("domain") or "").lower(), 8) for r in stars]
             bios = load_staging("memory-bios")
             if bios:
                 bmap = {(b["name"], b.get("birth")): b for b in bios.get("bios", [])}
@@ -276,15 +291,6 @@ def build():
             if not any(s.get("label")=="deadliest month" for s in lay["plateStats"]):
                 lay["plateStats"].append({"label":"deadliest month","value":f"{MN[peak[0]]} — {fmt_int(peak[1])} deaths"})
 
-        elif lid == "power-datacenters":
-            def nm(r):
-                n = r.get("name") or (r.get("meta") or {}).get("operator") or ""
-                return str(n)[:42]
-            recs = st["records"]
-            pk = {"lat":[rnd(r["lat"]) for r in recs],"lon":[rnd(r["lon"]) for r in recs],"name":[nm(r) for r in recs]}
-            layers_data[lid] = {"kind":"points","n":len(recs), **pk}
-            lay["count"] = len(recs)
-
         elif lid == "power-fortune500":
             recs = sorted(st["records"], key=lambda r: (r.get("meta") or {}).get("rank") or 999)
             pk = {"lat":[rnd(r["lat"]) for r in recs],"lon":[rnd(r["lon"]) for r in recs],
@@ -312,31 +318,6 @@ def build():
             lay["count"] = len(recs)
             if not any(s.get("label")=="top states" for s in lay["plateStats"]):
                 lay["plateStats"].append({"label":"top states","value":top3})
-
-        elif lid == "wonder-ufos":
-            # group identical rounded coords; coarsen if still huge
-            groups = defaultdict(lambda: [0, 0])   # v, max yr
-            for r in st["records"]:
-                key = (rnd(r["lat"]), rnd(r["lon"]))
-                g = groups[key]
-                g[0] += int(r.get("v") or 1)
-                yr = (r.get("meta") or {}).get("yr")
-                if yr and yr > g[1]: g[1] = yr
-            if len(groups) > 48000:
-                coarse = defaultdict(lambda: [0, 0])
-                for (la, lo), (v, yr) in groups.items():
-                    key = (round(la*20)/20, round(lo*20)/20)
-                    c = coarse[key]; c[0] += v
-                    if yr > c[1]: c[1] = yr
-                groups = coarse
-            keys = sorted(groups.keys())
-            pk = {"lat":[k[0] for k in keys], "lon":[k[1] for k in keys],
-                  "v":[groups[k][0] for k in keys],
-                  "dec":[(-1 if not groups[k][1] else min(max((groups[k][1]-1940)//10,0),8)) for k in keys]}
-            total_reports = sum(pk["v"])
-            layers_data[lid] = {"kind":"points","n":len(keys),"reports":total_reports, **pk}
-            lay["count"] = total_reports
-            lay["vintage"] = st.get("vintage","")
 
         elif lid == "control-arsenal":
             recs = st["records"]
@@ -387,10 +368,11 @@ def build():
                 stp = STATE_FIPS.get(f[:2],"")
                 sign = "+" if c["net"]>=0 else "−"
                 counties[f] = {"v": c["net"], "label": f"net {sign}{abs(c['net']):,} hh — {nm}, {stp}"}
+                if c.get("people") is not None: counties[f]["p"] = c["people"]   # v0.7 1.8: the same sorting, in people
                 vals.append(abs(c["net"]))
             vals.sort()
             vmax = vals[int(len(vals)*0.95)] if vals else 1
-            alat,alon,blat,blon,hh = [],[],[],[],[]
+            alat,alon,blat,blon,hh,pp = [],[],[],[],[],[]
             skipped = 0
             for fl in st["flows"]:
                 if fl["hh"] < 120: continue   # page-weight cutoff, disclosed on the plate
@@ -398,13 +380,15 @@ def build():
                 if not a or not b: skipped += 1; continue
                 alat.append(rnd(a[0],2)); alon.append(rnd(a[1],2))
                 blat.append(rnd(b[0],2)); blon.append(rnd(b[1],2))
-                hh.append(int(fl["hh"]))
+                hh.append(int(fl["hh"])); pp.append(int(fl.get("people") or 0))
             hs = sorted(hh)
             arcmax = hs[int(len(hs)*0.95)] if hs else 1
+            ps = sorted(pp); arcmaxp = ps[int(len(ps)*0.95)] if ps else 1
+            pv = sorted(abs(c.get("people") or 0) for c in st["counties"]); vmaxp = pv[int(len(pv)*0.95)] if pv else 1
             layers_data[lid] = {"kind":"flows","n":len(counties),
                                 "counties":counties,"vmax":vmax,
-                                "arcs":{"alat":alat,"alon":alon,"blat":blat,"blon":blon,"hh":hh},
-                                "arcmax":arcmax,"vintage":st.get("vintage","")}
+                                "arcs":{"alat":alat,"alon":alon,"blat":blat,"blon":blon,"hh":hh,"pp":pp},
+                                "arcmax":arcmax,"arcmaxp":arcmaxp,"vmaxp":vmaxp,"vintage":st.get("vintage","")}
             lay["count"] = len(counties); lay["arcs"] = len(hh)
             gain = sorted(st["counties"], key=lambda c: -c["net"])[:2]
             lose = sorted(st["counties"], key=lambda c: c["net"])[:2]
@@ -439,20 +423,13 @@ def build():
                 if seq: fl["seq"] = True
                 if constellation: fl["constellation"] = True
                 lay.setdefault("filters", []).append(fl)
-    if "power-datacenters" in layers_data:
-        d = layers_data["power-datacenters"]
-        OPS = [("meta",0,"Meta"),("facebook",0,"Meta"),("aws",1,"AWS"),("amazon",1,"AWS"),("google",2,"Google"),
-               ("microsoft",3,"Microsoft"),("azure",3,"Microsoft"),("equinix",4,"Equinix"),("digital realty",5,"Digital Realty")]
-        op = []
-        for nm in d["name"]:
-            low = (nm or "").lower(); code = -1
-            for pat, c, _ in OPS:
-                if pat in low: code = c; break
-            op.append(code)
-        d["op"] = op
-        mk_filter("power-datacenters","op","Operator",[(0,"Meta"),(1,"AWS"),(2,"Google"),(3,"Microsoft"),(4,"Equinix"),(5,"Digital Realty")], constellation=True)
-    if "wonder-ufos" in layers_data:
-        mk_filter("wonder-ufos","dec","Decade (latest report)",[(0,"1940s"),(1,"1950s"),(2,"1960s"),(3,"1970s"),(4,"1980s"),(5,"1990s"),(6,"2000s"),(7,"2010s")], seq=True)
+    if "memory-births" in layers_data:
+        dg = layers_data["memory-births"]["stars"]["dg"]
+        cnt = Counter(dg)
+        for lay in registry["layers"]:
+            if lay["id"] == "memory-births":
+                lay.setdefault("filters", []).append({"field": "dg", "label": "The 5,000 brightest, by calling", "stars": True,
+                    "values": [[i, g, cnt.get(i, 0)] for i, g in enumerate(STAR_GROUPS) if cnt.get(i, 0)]})
     if "motion-fulfillment" in layers_data:
         mk_filter("motion-fulfillment","t","Facility type",[(0,"Fulfillment"),(1,"Sortation"),(2,"Cross-dock")], constellation=True)
     if "loss-crashes" in layers_data:

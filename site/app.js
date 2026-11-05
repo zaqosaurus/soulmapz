@@ -437,7 +437,7 @@ function drawPointsTo(ctx,lid,step){
  const k=t.k,kk=Math.pow(k,.42);
  const draw=(spr,x,y,r)=>{const sx=x*k+t.x,sy=y*k+t.y;if(sx<-60||sx>W+60||sy<-60||sy>H+60)return;const rr=r*kk;ctx.drawImage(spr,sx-rr,sy-rr,rr*2,rr*2);};
  if(d.kind==='flows'){
-  const A=L.fa,Bf=L.fb,hh=d.arcs.hh,am=d.arcmax||1;
+  const A=L.fa,Bf=L.fb,fw=flowW(lid),hh=fw.a,am=fw.m;
   const st2=(step>1&&A.n>6000)?step:1;
   ctx.strokeStyle=byId[lid].accent;
   ctx.lineCap='round';
@@ -482,7 +482,9 @@ function drawPointsTo(ctx,lid,step){
   const st2=(step>1&&L.cells.n>30000)?step:1;
   ctx.globalAlpha=Math.min(1,(scope==='world'?0.82:1)*(st2>1?1.7:1));
   const P=L.cells,vv=d.cells.v,ee=d.cells.e;
-  for(let i=0;i<P.n;i+=st2){
+  // a calling lens (stars only) quiets the cells: the reader asked for people, not crowds
+  const SL=lens[lid],slA=SL?d.stars[SL.field]:null;
+  for(let i=0;i<P.n&&!SL;i+=st2){
    if(!P.keep[i])continue;
    const val=era<0?vv[i]:(ee&&ee[i]?ee[i][era]:0);
    if(!val)continue;
@@ -494,6 +496,7 @@ function drawPointsTo(ctx,lid,step){
   for(let i=0;i<S.n;i++){
    if(!S.keep[i])continue;
    if(era>=0&&!inEra(sb[i],era))continue;
+   if(slA&&slA[i]!==SL.v)continue;
    draw(SPR.memStar,S.xs[i],S.ys[i],(1.2+sv[i]*.014)*wf);
   }
   ctx.globalAlpha=1;
@@ -748,12 +751,13 @@ function drawLabels(){
  }
  // memory star names
  const ma=alpha['memory-births']||0;
- if(ma>0.5&&scopeHas('memory-births')&&t.k>=2.3){
+ if(ma>0.5&&scopeHas('memory-births')&&t.k>=(lens['memory-births']?1.4:2.3)){
   const L=C.layers['memory-births'].stars,d=D['memory-births'].stars,mEra=eraFor('memory-births');
   let shown=0;
   for(let i=0;i<L.n&&shown<26;i++){
    if(!L.keep[i])continue;
    if(mEra>=0&&!inEra(d.birth[i],mEra))continue;
+   if(lens['memory-births']&&d[lens['memory-births'].field]&&d[lens['memory-births'].field][i]!==lens['memory-births'].v)continue;
    const [sx,sy]=S(L.xs[i],L.ys[i]);
    if(sx<padLeft()||sx>W-20||sy<100||sy>H-80)continue;
    if(!free(sx,sy,70))continue;take(sx,sy,70);
@@ -876,9 +880,9 @@ function rebuildQt(){
   const L=C.layers[lid];if(!L)continue;
   if(D[lid].kind==='memory'){
    const era=eraFor(lid);
-   const dd=D[lid],ee=dd.cells.e;
+   const dd=D[lid],ee=dd.cells.e,SLq=lens[lid],slq=SLq?dd.stars[SLq.field]:null;
    const P=L.cells;
-   for(let i=0;i<P.n;i++){
+   for(let i=0;i<P.n&&!SLq;i++){
     if(!P.keep[i])continue;
     const val=era<0?dd.cells.v[i]:(ee&&ee[i]?ee[i][era]:0);
     if(!val)continue;
@@ -888,6 +892,7 @@ function rebuildQt(){
    for(let i=0;i<St.n;i++){
     if(!St.keep[i])continue;
     if(era>=0&&!inEra(sb[i],era))continue;
+    if(slq&&slq[i]!==SLq.v)continue;
     items.push({x:St.xs[i],y:St.ys[i],lid,i,kind:'star'});
    }
   }else if(L.pts){
@@ -922,11 +927,10 @@ function tipHTML(f){
   const lab=d.cells.lab[String(f.i)];if(lab)s='brightest: '+lab;
  }
  else if(f.lid==='loss-crashes'){const v=d.v[f.i];ti=v===1?'One person died here':v+' people died here';s=MONTHS[d.m[f.i]]+' 2023 · fatal crash';}
- else if(f.lid==='power-datacenters'){ti=d.name[f.i]||'Unnamed facility';s='data center';}
  else if(f.lid==='power-fortune500'){const v=d.v[f.i];ti='#'+d.rank[f.i]+' '+d.name[f.i];s=d.loc[f.i]+' · $'+(v>=1e6?(v/1e6).toFixed(2)+'T':v>=1000?(v/1000).toFixed(1)+'B':v+'M')+' revenue';}
  else if(f.lid==='motion-fulfillment'){ti=d.name[f.i]||'Amazon facility';s=(d.typeNames[d.t[f.i]]||'')+' · '+d.loc[f.i];}
  else if(f.lid==='omen-names'){ti=d.name[f.i];s=(d.s[f.i]?'light':'dark')+' name · '+d.cls[f.i]+', '+d.st[f.i];}
- else if(f.lid==='wonder-ufos'){const v=d.v?d.v[f.i]:1;ti=v>1?fmtInt(v)+' sightings reported here':'A sighting reported here';const DECS=['1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2010s'];const dc2=d.dec?d.dec[f.i]:-1;s=(dc2>=0?'latest in the '+DECS[dc2]+' · ':'')+'NUFORC testimony';}
+ else if(f.lid==='wonder-ufos'){const v=d.v?d.v[f.i]:1,sh=d.codes&&d.codes.sh?d.codes.sh[d.sh[f.i]]:'',dc=d.dec?d.dec[f.i]:0;ti=v>1?fmtInt(v)+' sightings reported here':'A sighting reported here';s=(sh?esc(sh.toLowerCase())+' · ':'')+(dc?(dc<1960?'before 1960':dc+'s')+' · ':'')+'NUFORC testimony';}
  else if(f.lid==='residue-superfund'){ti=d.name[f.i];s=['proposed for the NPL','on the National Priorities List','deleted from the NPL — cleaned enough to leave'][d.st2[f.i]]+' · '+d.state[f.i];}
  else if(f.lid==='betrayal-ledger'){
   ti=money(d.v[f.i])+' — '+esc(d.name[f.i]);
@@ -983,7 +987,8 @@ function regionTip(qx,qy){
      for(const lT of tls){
       const e=regionMap(D[lT.id])[b.fips],ee=eraFor(lT.id);
       if(e&&ee>=0&&e.t){const tl=timeOf(lT.id),v=e.t[ee];lines.push(v==null?'no figure for '+tl.labels[ee]:'<b>'+(Math.abs(v)>=100?fmtInt(Math.round(v)):v)+' '+esc(lT.unit||'')+'</b> · '+tl.labels[ee]);if(!color)color=lT.accent;}
-      else if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=D[lT.id].categories&&e.c!=null&&e.c>=0?catColor(D[lT.id],e.c):lT.accent;}
+      else if(e&&inPeople[lT.id]&&e.p!=null){lines.push('<b>net '+(e.p>=0?'+':'−')+fmtInt(Math.abs(e.p))+' people</b>'+esc(e.label.replace(/^[^—]*/,' ')));if(!color)color=lT.accent;}
+      else if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=catOn(lT.id)&&e.c!=null&&e.c>=0?catColor(D[lT.id],e.c):lT.accent;}
       else if(lT.id==='despair-overdoses'||lT.id==='despair-suicide')anySupp=true;
      }
      if(!lines.length&&anySupp)return {k:'COUNTY',ti:b.name,s:'no reportable rate — suppressed or missing<br>(small counts protect privacy)',color:'#5a6577'};
@@ -1224,7 +1229,9 @@ function openPlate(lid){
   '<div class="pl-h" style="color:'+l.accent+'">WHY</div><div class="pl-body">'+l.essay.why+'</div>'+
   (l.caveat?'<div class="pl-cav"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
   (srcs?'<div class="pl-h" style="color:'+l.accent+'">SOURCES</div><div class="pl-src">'+srcs+'</div>':'')+
-  (l.status==='live'&&D[l.id]&&D[l.id].categories?'<div class="pl-h" style="color:'+l.accent+'">LEGEND · '+esc((D[l.id].categories.label||'').toUpperCase())+'</div><div class="pl-legend">'+D[l.id].categories.labels.map((lb,i)=>D[l.id].categories.counts[i]?'<span class="lg-item"><i style="background:'+catColor(D[l.id],i)+'"></i>'+esc(lb)+' <b>'+fmtInt(D[l.id].categories.counts[i])+'</b></span>':'').join('')+'</div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].kind==='flows'&&D[l.id].arcs&&D[l.id].arcs.pp?'<div class="pl-h" style="color:'+l.accent+'">COUNT</div><div class="pl-lensrow"><button class="lz-chip ppl-mode'+(inPeople[l.id]?'':' on')+'" data-lid="'+l.id+'" data-p="0">HOUSEHOLDS (TAX RETURNS)</button><button class="lz-chip ppl-mode'+(inPeople[l.id]?' on':'')+'" data-lid="'+l.id+'" data-p="1">PEOPLE (EXEMPTIONS)</button></div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].categories&&D[l.id].categories.toggle?'<div class="pl-h" style="color:'+l.accent+'">SHADE BY</div><div class="pl-lensrow"><button class="lz-chip cat-mode'+(catOn(l.id)?'':' on')+'" data-lid="'+l.id+'" data-cat="0">'+esc((l.unit||'value').toUpperCase())+'</button><button class="lz-chip cat-mode'+(catOn(l.id)?' on':'')+'" data-lid="'+l.id+'" data-cat="1">'+esc((D[l.id].categories.label||'category').toUpperCase())+'</button></div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].categories&&catOn(l.id)?'<div class="pl-h" style="color:'+l.accent+'">LEGEND · '+esc((D[l.id].categories.label||'').toUpperCase())+'</div><div class="pl-legend">'+D[l.id].categories.labels.map((lb,i)=>D[l.id].categories.counts[i]?'<span class="lg-item"><i style="background:'+catColor(D[l.id],i)+'"></i>'+esc(lb)+' <b>'+fmtInt(D[l.id].categories.counts[i])+'</b></span>':'').join('')+'</div>':'')+
   (l.status==='live'&&timeOf(l.id)&&l.id!=='memory-births'?'<div class="pl-h" style="color:'+l.accent+'">TIME · '+esc((timeOf(l.id).label||'').toUpperCase())+'</div><div class="pl-note">'+timeOf(l.id).labels.length+' steps, '+esc(timeOf(l.id).labels[0])+' → '+esc(timeOf(l.id).labels[timeOf(l.id).labels.length-1])+'. Use the bar at the foot of the map, or ▶ to watch it move.</div>':'')+
   (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+(fl.constellation?' · members are drawn as a constellation':'')+(fl.seq?' · ▶ steps through time':'')+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+esc(v[1])+'"'+(fl.constellation?' data-const="1"':'')+'>'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+(fl.seq?'<button class="lz-chip lz-play" data-lid="'+l.id+'" data-field="'+fl.field+'" title="Step through '+esc(fl.label.toLowerCase())+'">'+(lensPlay&&lensPlay.lid===l.id&&lensPlay.field===fl.field?'■':'▶')+'</button>':'')+'</div>').join('')+'</div>':'')+
   (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="'+GH+'data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="'+GH+'data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="'+GH+'registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a> · <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a></div>':'')+
@@ -1232,7 +1239,13 @@ function openPlate(lid){
  $('#plate').style.borderTopColor=l.accent;
  $('#plate').classList.add('open');
  $('#plateClose').addEventListener('click',closePlate);
- inner.querySelectorAll('.lz-chip:not(.lz-play)').forEach(b=>b.addEventListener('click',()=>{
+ inner.querySelectorAll('.cat-mode').forEach(b=>b.addEventListener('click',ev=>{
+  ev.stopPropagation();catMode[b.dataset.lid]=b.dataset.cat==='1';dirty=true;openPlate(b.dataset.lid);
+ }));
+ inner.querySelectorAll('.ppl-mode').forEach(b=>b.addEventListener('click',ev=>{
+  ev.stopPropagation();inPeople[b.dataset.lid]=b.dataset.p==='1';bakeLayer(b.dataset.lid,true);dirty=true;openPlate(b.dataset.lid);
+ }));
+ inner.querySelectorAll('.lz-chip:not(.lz-play):not(.cat-mode):not(.ppl-mode)').forEach(b=>b.addEventListener('click',()=>{
   const bl=b.dataset.lid;
   stopLensPlay();
   if(b.dataset.clear)delete lens[bl];
@@ -1416,24 +1429,29 @@ function regionBoxes(C,lid){
 }
 function regionMap(d){return d?(d.counties||d.countries||null):null;}
 function regionVal(lid,e){const ee=eraFor(lid);return (ee>=0&&e.t)?e.t[ee]:e.v;}
+const catMode={};
+const inPeople={};  // lid -> true when the sorting is counted in people, not households
+function flowW(lid){const d=D[lid];return inPeople[lid]&&d.arcs.pp?{a:d.arcs.pp,m:d.arcmaxp||1}:{a:d.arcs.hh,m:d.arcmax||1};}   // lid -> true when a toggled categorical layer shows its categories
+function catOn(lid){const d=D[lid];return !!(d&&d.categories&&(d.categories.toggle?catMode[lid]:true));}
 function catColor(d,c){const cs=d.categories&&d.categories.colors;return (cs&&cs[c])||'#8796ad';}
 function regionTintFor(C,lid){
  C.regionTints=C.regionTints||{};
- const key=lid+':'+eraFor(lid);
+ const key=lid+':'+eraFor(lid)+':'+(catOn(lid)?1:0)+(inPeople[lid]?':p':'');
  if(C.regionTints[key]!==undefined)return C.regionTints[key];
  const d=D[lid],l=byId[lid],boxes=regionBoxes(C,lid),M=regionMap(d);
  if(!d||!boxes||!M){C.regionTints[key]=null;return null;}
  const cv=document.createElement('canvas');cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
  const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
  if(d.kind==='flows'){
-  const vmax=d.vmax||1;
+  const pe=inPeople[lid],vmax=(pe?d.vmaxp:d.vmax)||1;
   for(const b of boxes){
    const e=M[b.fips];if(!e)continue;
-   const norm=Math.min(1,Math.abs(e.v)/vmax);
-   x.fillStyle=hexA(e.v>=0?l.accent:(l.accent2||'#c98a7a'),0.04+norm*0.30);
+   const ev=pe&&e.p!=null?e.p:e.v;
+   const norm=Math.min(1,Math.abs(ev)/vmax);
+   x.fillStyle=hexA(ev>=0?l.accent:(l.accent2||'#c98a7a'),0.04+norm*0.30);
    x.fill(b.p);
   }
- }else if(d.categories&&eraFor(lid)<0){
+ }else if(catOn(lid)&&eraFor(lid)<0){
   // categorical: each region wears its category's colour
   for(const b of boxes){
    const e=M[b.fips];if(!e||e.c==null||e.c<0)continue;

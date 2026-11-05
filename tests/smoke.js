@@ -153,6 +153,38 @@ async function openPlate(page, lid) {
   }
   await page.keyboard.press('Escape'); await page.waitForTimeout(500);
 
+  // --- v0.7 Phase 1: unlocked fields ---
+  for (const lid of await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live' && l.time && l.time.buckets && l.scopes.includes('us')).map(l => l.id))) {
+    await openPlate(page, lid);
+    const last = await page.$$eval('#eraBar button[data-era]', bs => bs.length - 2);
+    await page.click('#eraBar button[data-era="' + last + '"]'); await page.waitForTimeout(900);
+    const st = await page.$eval('#statline', s => s.textContent);
+    const lab = await page.evaluate(([lid, i]) => window.__REGISTRY__.layers.find(l => l.id === lid).time.buckets[i][2], [lid, last]);
+    check(`time: "${lid}" scrubs to ${lab}`, st.includes(lab) && (await litSamples(page)) > 0, st.slice(0, 90));
+    await page.click('#eraBar button[data-era="-1"]'); await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  }
+  await openPlate(page, 'faith-altar');
+  await page.click('.cat-mode[data-cat="1"]'); await page.waitForTimeout(700);
+  check('faith: the families map has a 9-colour legend', (await page.$$eval('#plateInner .pl-legend .lg-item', a => a.length)) === 9);
+  await shot(page, 'faith-families');
+  await page.click('.cat-mode[data-cat="0"]'); await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  await openPlate(page, 'motion-sorting');
+  await page.click('.ppl-mode[data-p="1"]'); await page.waitForTimeout(900);
+  check('sorting: counts in people on request', await page.$eval('.ppl-mode[data-p="1"]', b => b.classList.contains('on')) && (await litSamples(page)) > 50);
+  await page.click('.ppl-mode[data-p="0"]'); await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  await openPlate(page, 'memory-births');
+  const scr = await page.$('.lz-chip[data-lid="memory-births"][data-label="Thought & science"]');
+  if (scr) { await scr.click(); await page.waitForTimeout(1000); }
+  check('memory: the calling lens shows only those stars', !!scr && (await litSamples(page)) > 5 && /lens: Thought/.test(await page.$eval('#statline', s => s.textContent)));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  for (const [lid, lab] of [['omen-names', 'Summits'], ['power-datacenters', 'AI campus, under construction'], ['wonder-ufos', 'Triangle']]) {
+    await openPlate(page, lid);
+    const ch = await page.$(`.lz-chip[data-lid="${lid}"][data-label="${lab}"]`);
+    if (ch) { await ch.click(); await page.waitForTimeout(900); }
+    check(`lens: ${lid} → ${lab} draws`, !!ch && (await litSamples(page)) > 0);
+    await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  }
+
   // --- citizen readings: record, share, reopen, play, fork ---
   await page.click('#readingsBtn'); await page.waitForTimeout(250);
   await page.click('#readingsMenu .rm-item.special');

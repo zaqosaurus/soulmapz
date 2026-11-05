@@ -89,11 +89,7 @@
       "statline": "{n} remembered births",
       "status": "live",
       "caveat": "visibility scoring favors the recently famous; 25.6% of source records lack coordinates",
-      "essay": {
-        "what": "The birthplaces of 1,704,189 notable humans — everyone with a verified Wikipedia/Wikidata footprint born between 3500 BC and 2018 AD, from the cross-verified database of notable people (Laouenan et al., Scientific Data, 2022). Every golden grain is a place that produced someone the world still remembers. The 12,000 most visible burn as distinct stars.",
-        "how": "2,291,817 records streamed and aggregated to 0.25° cells; 74.4% carry verified birth coordinates. Brightness follows log density. Star selection uses the database's composite visibility score across five criteria — which favors the recently famous, and we disclose it: memory's spotlight is aimed at the present. Use the era scrubber to walk the nebula through five thousand years.",
-        "why": "Memory has a geography. It pools where rivers meet, where ports open, where empires kept their books — Paris alone holds 28,055 remembered births, more than most nations. Genius is not sown evenly; it is watered by cities. The nebula argues something uncomfortable: the world remembers people from places that were already powerful."
-      },
+      "essay": {"what": "The birthplaces of 1,704,189 notable humans — everyone with a verified Wikipedia/Wikidata footprint born between 3500 BC and 2018 AD, from the cross-verified database of notable people (Laouenan et al., Scientific Data, 2022). Every golden grain is a place that produced someone the world still remembers. The 12,000 most visible burn as distinct stars.", "how": "2,291,817 records streamed and aggregated to 0.25° cells; 74.4% carry verified birth coordinates. Brightness follows log density. Star selection uses the database's composite visibility score across five criteria — which favors the recently famous, and we disclose it: memory's spotlight is aimed at the present. Use the era scrubber to walk the nebula through five thousand years. A calling lens sorts the 5,000 brightest into nine groups folded from their Pantheon domains (screen, music, letters, art, thought and science, sport, power, faith, other); the fold is the survey's own and is listed in pipeline/build.py.", "why": "Memory has a geography. It pools where rivers meet, where ports open, where empires kept their books — Paris alone holds 28,055 remembered births, more than most nations. Genius is not sown evenly; it is watered by cities. The nebula argues something uncomfortable: the world remembers people from places that were already powerful."},
       "plateStats": [
         { "label": "records processed", "value": "2,291,817" },
         { "label": "located births", "value": "1,704,189" },
@@ -132,16 +128,14 @@
       "accent": "#38e1ff",
       "scopes": ["us", "world"],
       "forms": { "points": true, "contours": true, "tint": false },
+      "tip": {"ti": "{name}", "s": "{opn} · {ai} · data center"},
+      "pack": {"kind": "points", "fields": [{"name": "name", "from": "name|meta.operator", "type": "str", "max": 42}, {"name": "op", "from": "meta.operator", "type": "enum", "values": ["Meta", "AWS", "Google", "Microsoft", "Equinix", "Digital Realty", "NTT", "QTS", "Oracle", "Apple", "xAI", "CoreWeave"], "contains": [["xai", "xAI"], ["coreweave", "CoreWeave"], ["oracle", "Oracle"], ["openai", "Oracle"], ["amazon", "AWS"], ["aws", "AWS"], ["facebook", "Meta"], ["meta", "Meta"], ["google", "Google"], ["microsoft", "Microsoft"], ["azure", "Microsoft"], ["equinix", "Equinix"], ["digital realty", "Digital Realty"], ["ntt", "NTT"], ["quality technology", "QTS"], ["qts", "QTS"], ["apple", "Apple"]], "default": -1}, {"name": "opn", "from": "meta.operator", "type": "str", "max": 48}, {"name": "ai", "from": "meta.status", "type": "enum", "values": ["operational", "construction"], "labels": ["AI campus, operating", "AI campus, under construction"], "default": -1}], "lenses": [{"field": "op", "label": "Operator", "constellation": true, "min": 3}, {"field": "ai", "label": "The AI build-out (Brockovich records)"}]},
       "weight": 1.0,
       "unit": "data centers",
       "statline": "{n} data centers",
       "status": "live",
       "caveat": "OpenStreetMap completeness follows mapping effort; centroids, not entrances",
-      "essay": {
-        "what": "4,342 data centers with ground coordinates, worldwide: 4,244 mapped by OpenStreetMap contributors, plus 98 of the newest US hyperscale and AI campuses — xAI Colossus, Stargate sites — from the Brockovich accountability map, which tracks what OSM hasn't surveyed yet.",
-        "how": "Overpass API over telecom=data_center and building=data_center, nodes, ways and relations, deduplicated within 200 meters. Community-mapped data inherits community bias: coverage follows mapping effort, so Europe and North America are sharpest. © OpenStreetMap contributors, ODbL.",
-        "why": "The cloud is a place. It hums in Northern Virginia — Ashburn is the true capital of the internet — and clusters wherever power is cheap, land is flat, and fiber is thick. Every question you ask online is answered somewhere on this map. Notice the new AI campuses landing in the same basins: the machines settle like sediment, in layers, along the same rivers of electricity."
-      },
+      "essay": {"what": "4,342 data centers with ground coordinates, worldwide: 4,244 mapped by OpenStreetMap contributors, plus 98 of the newest US hyperscale and AI campuses — xAI Colossus, Stargate sites — from the Brockovich accountability map, which tracks what OSM hasn't surveyed yet.", "how": "Overpass API over telecom=data_center and building=data_center, nodes, ways and relations, deduplicated within 200 meters. Community-mapped data inherits community bias: coverage follows mapping effort, so Europe and North America are sharpest. © OpenStreetMap contributors, ODbL. The operator lens reads OpenStreetMap's own operator tag (2,634 of 4,342 facilities carry one) rather than guessing from names; joint ventures are filed under one named partner (the OpenAI campuses under Oracle) and shown in full on hover. A second lens isolates the 98 AI campuses from the Brockovich records: 33 operating, 65 under construction.", "why": "The cloud is a place. It hums in Northern Virginia — Ashburn is the true capital of the internet — and clusters wherever power is cheap, land is flat, and fiber is thick. Every question you ask online is answered somewhere on this map. Notice the new AI campuses landing in the same basins: the machines settle like sediment, in layers, along the same rivers of electricity."},
       "plateStats": [
         { "label": "total mapped", "value": "4,342" },
         { "label": "in the United States", "value": "1,673 (38.5%)" },
@@ -229,17 +223,13 @@
       "accent2": "#f2ead8",
       "scopes": ["us"],
       "forms": { "points": true, "contours": false, "tint": false },
-      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 40}, {"name": "s", "from": "meta.side", "type": "enum", "values": ["dark", "light"], "labels": ["Devils & hells", "Angels & paradises"], "default": 1}, {"name": "cls", "from": "meta.class", "type": "str", "max": 18}, {"name": "st", "from": "meta.state", "type": "str", "max": 2}], "lenses": [{"field": "s", "label": "Side"}]},
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 40}, {"name": "s", "from": "meta.side", "type": "enum", "values": ["dark", "light"], "labels": ["Devils & hells", "Angels & paradises"], "default": 1}, {"name": "cls", "from": "meta.class", "type": "str", "max": 18}, {"name": "st", "from": "meta.state", "type": "str", "max": 2}, {"name": "cl", "from": "meta.class", "type": "enum", "values": ["Valley", "Stream", "Summit", "Populated Place", "Lake", "Basin", "Ridge", "Gap", "Spring"], "labels": ["Valleys", "Streams", "Summits", "Towns", "Lakes", "Basins", "Ridges", "Gaps", "Springs"], "default": -1}], "lenses": [{"field": "s", "label": "Side"}, {"field": "cl", "label": "Feature"}]},
       "weight": 0.4,
       "unit": "place names",
       "statline": "{dark} devils · {light} angels",
       "status": "live",
       "caveat": "natural features and settlements only; word-boundary matching",
-      "essay": {
-        "what": "Every natural feature and settlement in America officially named for the beyond: 1,922 for devils, hell, and purgatory; 809 for angels, paradise, and Eden. Devils Canyon. Hells Half Acre. Angel Ridge. Paradise Valley.",
-        "how": "Word-boundary search across all 981,698 official names in the USGS Geographic Names Information System, restricted to natural features and populated places — no churches, no schools, nothing self-named. Red points are the dark names; bone-white points are the light ones.",
-        "why": "Surveyors named what they felt. The devils cluster in the hard land — the canyons, buttes, and badlands of the arid West, where the ground itself seemed hostile — while the angels settle in gentler valleys. Fear got the dramatic terrain; hope got the farmland. The final ratio is 2.4 devils for every angel, which may be the most honest theological statement America has ever made."
-      },
+      "essay": {"what": "Every natural feature and settlement in America officially named for the beyond: 1,922 for devils, hell, and purgatory; 809 for angels, paradise, and Eden. Devils Canyon. Hells Half Acre. Angel Ridge. Paradise Valley.", "how": "Word-boundary search across all 981,698 official names in the USGS Geographic Names Information System, restricted to natural features and populated places — no churches, no schools, nothing self-named. Red points are the dark names; bone-white points are the light ones.", "why": "Surveyors named what they felt. The devils cluster in the hard land — the canyons, buttes, and badlands of the arid West, where the ground itself seemed hostile — while the angels settle in gentler valleys. Fear got the dramatic terrain; hope got the farmland. The final ratio is 2.4 devils for every angel, which may be the most honest theological statement America has ever made. Split by feature and the pattern sharpens: 89% of the Gaps and 84% of the Ridges belong to the devil, while 86% of the Towns took an angel's or a paradise's name. We fear the passes and bless the places we live."},
       "plateStats": [
         { "label": "dark names", "value": "1,922" },
         { "label": "light names", "value": "809" },
@@ -254,16 +244,13 @@
       "accent": "#8dffab",
       "scopes": ["us", "world"],
       "forms": { "points": true, "contours": true, "tint": false },
+      "pack": {"kind": "points", "count": "v", "fields": [{"name": "v", "type": "int", "default": 1}, {"name": "sh", "from": "meta.shape", "type": "enum", "values": ["light", "triangle", "circle", "fireball", "sphere", "disk", "oval", "formation", "cigar", "changing", "flash", "unknown"], "labels": ["Light", "Triangle", "Circle", "Fireball", "Sphere", "Disk", "Oval", "Formation", "Cigar", "Changing", "Flash", "Other or unknown"], "alias": {"changed": "changing", "flare": "flash", "round": "circle", "delta": "triangle", "other": "unknown"}, "default": 11}, {"name": "dec", "from": "meta.yr", "type": "decade"}], "aggregate": {"nd": 2, "sum": "v"}, "lenses": [{"field": "sh", "label": "Reported shape"}], "time": {"field": "dec", "label": "Decade reported", "weight": "v", "buckets": [[1900, 1959, "before 1960"], [1960, 1969, "1960s"], [1970, 1979, "1970s"], [1980, 1989, "1980s"], [1990, 1999, "1990s"], [2000, 2009, "2000s"], [2010, 2019, "2010s"]]}},
       "weight": 0.5,
       "unit": "sightings",
       "statline": "{n} sightings reported",
       "status": "pending",
       "caveat": "self-reported testimony, geocoded to towns; corpus frozen mid-2014; reporting bias toward population and internet access",
-      "essay": {
-        "what": "80,331 UFO sightings reported to the National UFO Reporting Center between 1906 and 2014, each with a mappable location — strange lights, discs, triangles, and orbs; every point a moment when somebody looked up and could not explain what they saw. The Phoenix Lights of March 1997 are in here, a tight knot of triangles over Arizona.",
-        "how": "The open community-geocoded NUFORC corpus (consolidated June 2014, checksum-verified). Reports are self-submitted and located to the nearest town. This layer maps testimony, not verified phenomena — which is exactly what makes it a soul measurement.",
-        "why": "Wonder has a geography, and it looks suspiciously like population plus darkness plus loneliness. The sightings trace where people live and where the sky is big enough to watch. The map says less about visitors than about who is looking up — and how badly they want an answer."
-      },
+      "essay": {"what": "80,331 UFO sightings reported to the National UFO Reporting Center between 1906 and 2014, each with a mappable location — strange lights, discs, triangles, and orbs; every point a moment when somebody looked up and could not explain what they saw. The Phoenix Lights of March 1997 are in here, a tight knot of triangles over Arizona.", "how": "The open community-geocoded NUFORC corpus (consolidated June 2014, checksum-verified). Reports are self-submitted and located to the nearest town. This layer maps testimony, not verified phenomena — which is exactly what makes it a soul measurement. Since v0.7 the plate carries a shape lens (light, triangle, circle, fireball, disk…), and the bar at the foot of the map steps through the decades the reports were filed. Reports are grouped by place to 0.01°, so one glow can hold many nights.", "why": "Wonder has a geography, and it looks suspiciously like population plus darkness plus loneliness. The sightings trace where people live and where the sky is big enough to watch. The map says less about visitors than about who is looking up — and how badly they want an answer."},
       "plateStats": [
         { "label": "sightings reported", "value": "80,331" },
         { "label": "span", "value": "1906 – 2014" },
@@ -303,17 +290,13 @@
       "accent": "#d6e055",
       "scopes": ["us"],
       "forms": { "points": true, "contours": false, "tint": false },
-      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 60}, {"name": "st2", "from": "meta.status", "type": "enum", "values": ["proposed", "final", "deleted"], "labels": ["Proposed", "On the list", "Deleted (cleaned)"], "default": 1}, {"name": "state", "from": "meta.state", "type": "str", "max": 2}], "lenses": [{"field": "st2", "label": "Status"}]},
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 60}, {"name": "st2", "from": "meta.status", "type": "enum", "values": ["proposed", "final", "deleted"], "labels": ["Proposed", "On the list", "Deleted (cleaned)"], "default": 1}, {"name": "state", "from": "meta.state", "type": "str", "max": 2}, {"name": "yr", "from": "meta.listing_date", "type": "year"}, {"name": "del", "from": "meta.deletion_date", "type": "year"}], "lenses": [{"field": "st2", "label": "Status"}], "time": {"field": "yr", "endField": "del", "mode": "upto", "label": "On the list as of", "buckets": [[1983, 1983, "1983"], [1990, 1990, "1990"], [2000, 2000, "2000"], [2010, 2010, "2010"], [2020, 2020, "2020"], [2026, 2026, "2026"]]}},
       "weight": 0.4,
       "unit": "contaminated sites",
       "statline": "{n} places we poisoned",
       "status": "pending",
       "caveat": "National Priorities List only — thousands of lesser Superfund-program sites are not shown",
-      "essay": {
-        "what": "All 1,840 sites of the EPA's National Priorities List — the most contaminated ground in America: mines, smelters, chemical plants, landfills, military ranges. Love Canal is here. So is the Butte pit complex, and Hanford four times over.",
-        "how": "EPA's own NPL inventory with coordinates (the dataset behind its Superfund 'Where You Live' map), statuses normalized to proposed (37), final (1,343), and deleted (460) — where deleted means cleaned up enough to leave the list, not erased from the ground.",
-        "why": "Industry leaves a residue that outlives the industry: acid in the aquifer, lead in the yard soil, a fence around a field. The acid-yellow points cluster where America made things and walked away. Stack them on the Thrones of Capital and you are looking at the before and after of the same story."
-      },
+      "essay": {"what": "All 1,840 sites of the EPA's National Priorities List — the most contaminated ground in America: mines, smelters, chemical plants, landfills, military ranges. Love Canal is here. So is the Butte pit complex, and Hanford four times over.", "how": "EPA's own NPL inventory with coordinates (the dataset behind its Superfund 'Where You Live' map), statuses normalized to proposed (37), final (1,343), and deleted (460) — where deleted means cleaned up enough to leave the list, not erased from the ground. The bar replays the list itself: a site appears the year EPA listed it and leaves the map the year it was deleted, so 1983's 406 standing sites become 1,343 today. Forty-two sites have no listing date in the inventory (37 still proposed, 5 deleted) and never appear on the bar.", "why": "Industry leaves a residue that outlives the industry: acid in the aquifer, lead in the yard soil, a fence around a field. The acid-yellow points cluster where America made things and walked away. Stack them on the Thrones of Capital and you are looking at the before and after of the same story."},
       "plateStats": [
         { "label": "NPL sites", "value": "1,840" },
         { "label": "final / deleted / proposed", "value": "1,343 / 460 / 37" },
@@ -355,11 +338,7 @@
       "statline": "{arcs} corridors · {n} counties sorted",
       "status": "pending",
       "caveat": "IRS tax-filer data — the poorest and richest households are undercounted; households, not people, unless noted",
-      "essay": {
-        "what": "County-to-county migration drawn from IRS tax returns: the survey's first flow map. Teal counties gained households on net; ember counties lost them. The arcs are the largest corridors — each one thousands of actual moves.",
-        "how": "IRS Statistics of Income migration files, latest filing-year pair. Same-county and summary rows excluded per the file layout; corridors kept above a disclosed household threshold so the map stays legible. Tax-filer data undercounts the poorest and the richest; that caveat rides on every number.",
-        "why": "This is the country rearranging itself in real time — out of the old cores, into the Sun Belt, following rent and work and weather. Toggle the thrones or the fulfillment network underneath and watch what the movers are moving toward. Every arc is a bet that somewhere else is better."
-      },
+      "essay": {"what": "County-to-county migration drawn from IRS tax returns: the survey's first flow map. Teal counties gained households on net; ember counties lost them. The arcs are the largest corridors — each one thousands of actual moves.", "how": "IRS Statistics of Income migration files, latest filing-year pair. Same-county and summary rows excluded per the file layout; corridors kept above a disclosed household threshold so the map stays legible. Tax-filer data undercounts the poorest and the richest; that caveat rides on every number. COUNT switches between households (tax returns) and people (exemptions claimed): the same IRS rows in a different unit, and only the second counts children and other dependents.", "why": "This is the country rearranging itself in real time — out of the old cores, into the Sun Belt, following rent and work and weather. Toggle the thrones or the fulfillment network underneath and watch what the movers are moving toward. Every arc is a bet that somewhere else is better."},
       "plateStats": []
     },
     {
@@ -409,17 +388,13 @@
       "accent": "#ffe08a",
       "scopes": ["us"],
       "forms": { "points": false, "contours": false, "tint": true, "regionKind": "county" },
-      "pack": {"kind": "regions", "regionKind": "county"},
+      "pack": {"kind": "regions", "regionKind": "county", "category": {"from": "meta.largest_tradition_family", "label": "largest tradition family", "toggle": true, "values": ["Catholic", "Baptist", "Non-denominational", "Lutheran", "Methodist", "Latter-day Saint", "Anabaptist (Mennonite/Amish/Brethren)", "Pentecostal", "\u0000other"], "labels": ["Catholic", "Baptist", "Non-denominational", "Lutheran", "Methodist", "Latter-day Saint", "Anabaptist", "Pentecostal", "Other or unknown"], "colors": ["#d9a441", "#5f9fd8", "#b07ad8", "#59c3a3", "#e0705a", "#9fd36a", "#d88ab5", "#ff9f40", "#8796ad"], "default": 8}},
       "weight": 0.0,
       "unit": "adherents per 1k",
       "statline": "adherence in {n} counties",
       "status": "pending",
       "caveat": "congregation-reported adherence, 2020 census; traditions self-define membership; ~1% of counties exceed 1,000 per 1k where regional congregations draw worshippers across county lines",
-      "essay": {
-        "what": "Religious adherents per thousand residents in every county, from the 2020 U.S. Religion Census — the candle-gold wash of organized belief, with each county's largest tradition on the tooltip.",
-        "how": "Congregation-by-congregation counts assembled by the religion census, published at county level. Adherence is what congregations report; traditions define membership differently, and the unaffiliated are the negative space.",
-        "why": "The altar's geography is older than any other layer here — Utah's wash, the Baptist South, the Lutheran upper plains, the Catholic border counties are all still exactly where the nineteenth century left them. Belief, it turns out, is the slowest-moving thing the survey has ever mapped."
-      },
+      "essay": {"what": "Religious adherents per thousand residents in every county, from the 2020 U.S. Religion Census — the candle-gold wash of organized belief, with each county's largest tradition on the tooltip.", "how": "Congregation-by-congregation counts assembled by the religion census, published at county level. Adherence is what congregations report; traditions define membership differently, and the unaffiliated are the negative space. SHADE BY switches the map from adherents per 1,000 to each county's largest tradition family, drawn in nine colours from the same Religion Census group table.", "why": "The altar's geography is older than any other layer here — Utah's wash, the Baptist South, the Lutheran upper plains, the Catholic border counties are all still exactly where the nineteenth century left them. Belief, it turns out, is the slowest-moving thing the survey has ever mapped."},
       "plateStats": []
     },
     {

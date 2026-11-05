@@ -25,6 +25,11 @@ import re
 from collections import Counter
 
 def get(rec, path):
+    if "|" in path:                      # "name|meta.operator": first non-empty wins
+        for alt in path.split("|"):
+            v = get(rec, alt)
+            if v not in (None, ""): return v
+        return None
     cur = rec
     for part in path.split("."):
         if cur is None: return None
@@ -42,7 +47,13 @@ def _year(v):
 def enum_table(spec, raws):
     """→ (encode(raw) -> code, labels[])"""
     alias = {str(k).lower(): v for k, v in (spec.get("alias") or {}).items()}
-    norm = lambda r: alias.get(str(r).strip().lower(), str(r).strip()) if r not in (None, "") else None
+    contains = [(str(p).lower(), v) for p, v in (spec.get("contains") or [])]
+    def norm(r):
+        if r in (None, ""): return None
+        low = str(r).strip().lower()
+        for pat, v in contains:          # ordered substring rules: first match wins
+            if pat in low: return v
+        return alias.get(low, str(r).strip())
     if "values" in spec:
         values = [str(v) for v in spec["values"]]
         labels = spec.get("labels") or values
@@ -76,6 +87,8 @@ def encoder(spec, recs):
         return (lambda r: int(get(r, src)) if get(r, src) is not None else dflt), None
     if t == "year":
         return (lambda r: _year(get(r, src))), None
+    if t == "decade":
+        return (lambda r: (_year(get(r, src)) // 10) * 10), None
     mx = spec.get("max", 60)
     return (lambda r: str(get(r, src) or "")[:mx]), None
 
@@ -84,14 +97,19 @@ def _sorted(recs, key):
     desc = key.startswith("-"); k = key.lstrip("-")
     return sorted(recs, key=lambda r: (get(r, k) or 0), reverse=desc)
 
-def time_buckets(spec, values):
-    """Per-record bucket index (mode "in") or the record's own value; the page decides
-    visibility from the bucket ranges. Returns counts per bucket for the plate."""
+def time_buckets(spec, values, weights=None, ends=None):
+    """The page decides visibility from the bucket ranges; this returns the count per
+    bucket for the bar and the plate (weighted when records are aggregated). In "upto"
+    mode a record counts from its value onward, until its end value (if any)."""
     b = spec["buckets"]; mode = spec.get("mode", "in")
+    w = weights or [1] * len(values)
     counts = []
     for lo, hi, _ in b:
-        if mode == "upto": counts.append(sum(1 for v in values if v and v <= hi))
-        else: counts.append(sum(1 for v in values if v and lo <= v <= hi))
+        if mode == "upto":
+            counts.append(sum(wi for i, (v, wi) in enumerate(zip(values, w))
+                              if v and v <= hi and not (ends and ends[i] and ends[i] <= hi)))
+        else:
+            counts.append(sum(wi for v, wi in zip(values, w) if v and lo <= v <= hi))
     return counts
 
 def pack_points(lay, st):
@@ -107,10 +125,27 @@ def pack_points(lay, st):
         out[f["name"]] = [enc(r) for r in recs]
         if labels is not None: codes[f["name"]] = labels
     if codes: out["codes"] = codes
+    agg = spec.get("aggregate")
+    if agg:
+        # group records that share a rounded place and every non-summed field; sum `sum`
+        nd, sf = agg.get("nd", 2), agg.get("sum", "v")
+        keys = [k for k in out if isinstance(out[k], list) and k not in ("lat", "lon", sf)]
+        groups = {}
+        for i in range(len(recs)):
+            key = (round(out["lat"][i], nd), round(out["lon"][i], nd)) + tuple(out[k][i] for k in keys)
+            groups[key] = groups.get(key, 0) + (out[sf][i] if sf in out else 1)
+        ordered = sorted(groups)
+        out["lat"] = [k[0] for k in ordered]; out["lon"] = [k[1] for k in ordered]
+        for j, k in enumerate(keys): out[k] = [g[2 + j] for g in ordered]
+        out[sf] = [groups[g] for g in ordered]
+        out["n"] = len(ordered)
     tm = spec.get("time")
     if tm:
         out["time"] = {"field": tm["field"], "mode": tm.get("mode", "in"), "label": tm.get("label", ""),
-                       "buckets": tm["buckets"], "counts": time_buckets(tm, out[tm["field"]])}
+                       "buckets": tm["buckets"],
+                       "counts": time_buckets(tm, out[tm["field"]], out.get(tm["weight"]) if tm.get("weight") else None,
+                                              out.get(tm["endField"]) if tm.get("endField") else None)}
+        if tm.get("endField"): out["time"]["endField"] = tm["endField"]
     return out
 
 def pack_regions(lay, st, shrink_label=lambda s: s):
@@ -139,7 +174,7 @@ def pack_regions(lay, st, shrink_label=lambda s: s):
     out = {"kind": "regions", "regionKind": rk, ("counties" if rk == "county" else "countries"): regions,
            "vmax": round(float(vmax), 3), "vintage": st.get("vintage", "")}
     if cat:
-        out["categories"] = {"field": "c", "label": cat.get("label", ""), "labels": cat_labels,
+        out["categories"] = {"field": "c", "label": cat.get("label", ""), "labels": cat_labels, "toggle": bool(cat.get("toggle")),
                              "colors": cat.get("colors") or [],
                              "counts": [sum(1 for e in regions.values() if e.get("c") == i) for i in range(len(cat_labels))]}
     if tm:
@@ -191,7 +226,10 @@ def lenses_for(lay, d):
         arr = d.get(field)
         if arr is None: continue
         labels = (d.get("codes") or {}).get(field) or ls.get("labels")
-        cnt = Counter(arr)
+        agg = lay["pack"].get("aggregate")
+        wf = d.get(agg.get("sum", "v")) if agg else None
+        cnt = Counter()
+        for i, x in enumerate(arr): cnt[x] += wf[i] if wf else 1
         values = [[i, labels[i], cnt.get(i, 0)] for i in range(len(labels)) if cnt.get(i, 0) >= ls.get("min", 1)]
         if len(values) < 2: continue
         fl = {"field": field, "label": ls["label"], "values": values}
