@@ -286,6 +286,6 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 | 0 · foundations | not started | |
 | 1 · unlock what we have | not started | |
 | 2 · reachable acquisitions | not started | sources verified reachable 2026-11-05 |
-| 3 · network unlock | blocked on host allow-list | hosts listed in §5 |
+| 3 · network unlock | partly unlocked 2026-11-05 | **work:** api.census.gov, ucdp.uu.se, api.unhcr.org. **Still blocked:** www.irs.gov and www.atf.gov (the bare domains redirect to www, which needs its own entry); overpass-api.de resets the connection (mirror overpass.kumi.systems requested); eogdata.mines.edu fails certificate verification (night lights need another source or stay PENDING); darksky.org shows a bot challenge (use query.wikidata.org for dark-sky places instead). |
 | 4 · findings round 2 | not started | |
 | 5 · release v0.7 | not started | |
