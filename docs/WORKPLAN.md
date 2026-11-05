@@ -101,26 +101,62 @@ for layers 11–15.
 
 ## 4. STATUS (update as work lands)
 
-| File | State | What changed |
+**Paused here for plan review.** Engine, styles, template, and pipeline are committed
+(`d87837c` pipeline, `1b6dd20` engine). The build is 7.11 MB. Build outputs
+(`dist/index.html`, `docs/index.html`) are intentionally *not* committed until release;
+run `python3 pipeline/build.py` to see the current state.
+
+### Verified in a headless browser (16 of 16 checks passed, 1600×950 and 1280×760)
+
+| Item | Evidence |
+|---|---|
+| A · the Ledger renders | its reading lands at k=1.00 and the glow canvas has ~400 lit samples (was 0) |
+| A · receipts | Index → "Dixon, IL" flies there and pins a tooltip with all three citation links |
+| B · flyTo sampling | Dark States, Great Sorting, Ledger all land at k=1.00 (were k=26 over the ocean) |
+| C · permalink v2 | hash carries `c=lon,lat`; reopening at a different viewport restores zoom and centre with no errors |
+| C · lens in link | `z=power-datacenters:op:0` appears after picking the Meta lens |
+| D/E/F · citizen readings | recorded two stops (one with a benchmark), finished, opened the `t=` link in a fresh page: it autoplays, NEXT reaches stop 2 with the benchmark |
+| G · plunge | `?` lands on a random entry with a pinned tooltip |
+| I · constellation | Meta lens draws its nearest-neighbour web (screenshot checked) |
+| J · pinning | Index and plunge arrivals pin; ESC releases |
+| — | zero page errors across the whole run |
+
+### Built but not yet exercised by any check
+
+- **H** · the ▶ that steps a seq lens (Month, Decade).
+- **D** · ✎ COUNTER-READING (fork a tour into the recorder).
+- **J** · pinning by a direct map click, and the touch path (`pointerType==='touch'`).
+- **K** · the new dossier rows (suicide with 988, connectedness, adherence, net migration, nearest betrayal).
+- **L** · the living log as rendered in About.
+- **Q** · the five new audio voices and the coin pluck (headless cannot listen).
+- The orientation's "{n} instruments" word substitution.
+- Any phone-width layout check of the recorder and share card.
+
+### Remaining work
+
+| File | State | What remains |
 |---|---|---|
-| `pipeline/build.py` | **done, verified** | `repo_info()`, `living_log()`, `write_data_api()`; packs `cites` for the ledger; `seq`/`constellation` flags on filters; `{{SITE}}`/`{{REPO}}` substitution; 8 MB warning |
-| `site/template.html` | **partial** | og tags use `{{SITE}}`; og:description says fifteen. **TODO:** add `#recCard`, `#shareCard`, `#shareBtn` |
-| `registry/registry.json` | **done** | version 0.6.0; `meta.repo`/`meta.site` (empty = derive); orientation text uses `{n}` |
-| `site/app.js` | **in progress** | DONE: VIS/sprite/`spriteFor`, ledger draw + ring, generic draw fallback, `drawConstellation` + cache, ledger tooltip with receipts, generic tooltip fallback, ledger labels, benchmark glyphs, pinned-tooltip reposition, `flyTo` sampling, `camFor/camNow/flyToCam`, `renderTip/placeTip/pinTip/unpinTip/onClick`, hash codec v2 (`currentHash/writeHash/parseHash/applyPendingLens`). **TODO:** openPlate lens chips (data-const/data-seq, ▶ play, handler sets `constellation`), closePlate stops lens play, plate DATA links from `R.meta.repo`, hero hint, About (repo/site, living log, controls, releases, two pending layers), readings menu (COMPOSE, PLUNGE, citizen entry), orientation `{n}` → word, `endReading` clears tour, `buildIndex` (ledger towns + convicted, named data centers, densest UFO cells, counties with centroids), `renderIdx` dossier button for counties, `computeDossier` rows, audio voices + generic pluck, the v0.6 section (recorder, tour codec/playback, share card, plunge, lens play), `init` wiring (click handler, clickDistance, shareBtn, `?` key, ESC order, `pendingGeo`, `applyPendingLens`, tour start, pointerleave respects pins) |
-| `site/styles.css` | **todo** | `.wide`/`.pinned` tooltip, `.tt-pin`, `.tt-cite`, `#recCard`, `#shareCard`, `.lz-play`, `.rm-item.special`, mobile rules |
-| `docs/DATA_API.md` | **done (generated)** | regenerated on every build |
-| `docs/CLASSROOM.md` | **todo** | three guided readings, five dossier prompts, methods sheet, worksheet keyed to findings incl. the spurious card |
-| `docs/EXPERIENCE.md` | **todo** | mark shipped items (v0.6) |
-| `README.md`, `CONTRIBUTING.md` | **todo** | pipeline path (`pipeline/scratch/` + sidecars), deploy URL, smoke test |
-| `tests/smoke.js` | **todo** | Playwright smoke test |
-| `dist/`, `docs/index.html` | **rebuild last** | `python3 pipeline/build.py`; confirm < 8 MB; screenshots before/after |
+| `docs/CLASSROOM.md` | todo | three guided readings, five dossier prompts, methods sheet, worksheet keyed to findings incl. the spurious card |
+| `docs/EXPERIENCE.md` | todo | mark v0.6 items shipped (#3, #4, #6 partial, #7, #8, #9, #11, #12, #14) |
+| `README.md`, `CONTRIBUTING.md` | todo | pipeline path is `pipeline/scratch/` + sidecars (not `pipeline/layers/`); deploy URL is derived now; mention DATA_API, WORKPLAN, smoke test |
+| `tests/smoke.js` | todo | port the scratch verification (it exists outside the repo; the checks are listed above) and add the untested paths |
+| `dist/`, `docs/index.html` | release | rebuild, confirm < 8 MB, commit as `dist: v0.6 build` and `docs: v0.6 Pages copy` |
+
+### Small issues noticed, not fixed
+
+- The era bar stays visible while a non-memory plate is open. This predates v0.6:
+  `openPlate` and `closePlate` never call `eraRefresh()`. One line each.
+- A plunge or Index jump to a single point zooms to the maximum (k=26). This predates
+  v0.6 (`selectEntry` uses a ±0.55° box). Consider a gentler box for plunges.
+- After a citizen reading is recorded or opened, the URL bar keeps carrying it (`t=`),
+  so a reload replays it. The ⤴ SHARE button deliberately drops it for "this exact view".
 
 ## 5. HOW TO RESUME
 
 ```bash
 git fetch origin claude/trusting-sagan-wkfcpi && git checkout claude/trusting-sagan-wkfcpi
 python3 pipeline/build.py            # must succeed before and after every engine edit
-node tests/smoke.js                  # once it exists; needs playwright + chromium
+node tests/smoke.js                  # once it exists; needs playwright + chromium (pre-installed in cloud sessions)
 ```
 
 Verification that must pass before shipping: build < 8 MB; Playwright reports zero page
