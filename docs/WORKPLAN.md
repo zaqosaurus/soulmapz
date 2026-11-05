@@ -167,3 +167,23 @@ tooltip; a click pins and a click away releases.
 
 Commit plan: (1) pipeline + registry + docs, (2) engine + styles + template,
 (3) `dist:`/`docs:` build copies, (4) tests + README. Push to the designated branch only.
+
+## 6. DECISIONS FROM THE MAINTAINER (after the pause)
+
+- **Keep adding before polishing.** Polish passes repeat as features land, so the
+  cleanup items above wait. Exception: the smoke test goes in first, as a guardrail.
+- **Release commits include the rebuilt page files** (`dist/index.html`, `docs/index.html`).
+- **Page links point to `zaqosaurus/soulmapz`** (derived from the git remote; leave
+  `meta.repo` empty).
+- **The smoke test is a plain script** (`tests/smoke.js`), no `package.json`.
+- Work continues on this branch; [PR #1](https://github.com/zaqosaurus/soulmapz/pull/1) tracks it.
+
+### Next stretch (in order)
+
+1. `tests/smoke.js` — port the scratch verification; run after every engine change.
+2. New findings and readings from the never-correlated v0.5 layers (faith, connectedness,
+   migration). Suicide stays out of the correlator per the protocol. Rejected
+   candidates are recorded in `correlate.py`, as v0.5 did.
+3. The Print Atlas (EXPERIENCE #10): cover, US and World sheets, one plate per layer
+   with its essay and sources, the findings page with methods. Built in the browser
+   from the live engine; no new runtime network calls.
