@@ -1,0 +1,40 @@
+{
+ "layer": "motion-skyroads",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "Open Database License (ODbL) 1.0; contents under the Database Contents License (DbCL)",
+  "statement": "data.php in jpatokal/openflights (read 2026-11-06): '...you are welcome to use the data as you wish, if and only if you both acknowledge the source and license any derived works made available to the public with a free license as well.' Route data from Airline Route Mapper is public domain.",
+  "share_alike": "the derived flows are offered under ODbL (DATA_LICENSES.md)",
+  "note": "openflights.org is not reachable from the build environment (proxy refusal); the licence was read from the site's own source in its repository."
+ },
+ "files": {
+  "airports.dat": {
+   "bytes": 1127225,
+   "sha256": "9387cdb38df5bd664da823f8ccb69fdd9b33a1888f5b7cca09c34a3cd9ff59f9"
+  },
+  "routes.dat": {
+   "bytes": 2377148,
+   "sha256": "bd373706238134f619c624c606dccc74c05c2582a977c489c81de501735f2390"
+  }
+ },
+ "method": "Routes folded into undirected airport pairs; a pair's weight is the number of airlines flying it. Airports from airports.dat.",
+ "counts": {
+  "routes": 67663,
+  "pairs": 18858,
+  "airports": 3214,
+  "dropped": {
+   "airport id missing": 892,
+   "same airport": 1
+  }
+ },
+ "caveats": [
+  "A historic snapshot: OpenFlights' route file is no longer maintained (roughly 2014); routes since opened or closed are not reflected.",
+  "Airline count is not passenger volume."
+ ],
+ "validation": {
+  "known_answers": {
+   "busiest hubs by routes": "[('ATL', 'Atlanta', 1826), ('ORD', 'Chicago', 1108), ('PEK', 'Beijing', 1061), ('LHR', 'London', 1047), ('CDG', 'Paris', 1041)]",
+   "count matches the data page (67,663 routes)": "67663"
+  }
+ }
+}

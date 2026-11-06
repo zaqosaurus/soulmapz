@@ -3,7 +3,7 @@
 Build-time spatial statistics across layers. Emits candidate findings to stdout
 for hand review. Descriptive only: WHERE, not WHY.
 """
-import json, math, os
+import json, math, os, sys
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -163,7 +163,7 @@ def main():
     all_share = sum(1 for f in rates if f[:2] in app_states)/len(rates)
     print(f"F8 appalachia: {share*100:.0f}% of the 100 highest-rate counties are in KY/WV/OH/VA/TN vs {all_share*100:.1f}% baseline share of counties")
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 1:
     main()
 
 # ---- v0.5 additions (run 2026-07-07) ----
@@ -171,3 +171,189 @@ if __name__ == "__main__":
 # F10 net migration vs OD: n=2768  gainers 22.2 vs losers 19.3, r=0.152                   -> REJECTED (too weak)
 # F11 EC vs net migration: n=2816  r=0.045                                                -> REJECTED (null)
 # Suicide data is excluded from the correlator entirely per the WANTLIST safe-messaging protocol.
+
+# ======================================================================
+# v0.6 — the never-correlated layers: faith, company, the sorting.
+# Suicide stays out of the correlator entirely (WANTLIST protocol).
+# Run: python3 pipeline/correlate.py v06
+# ======================================================================
+def spearman(xs, ys):
+    def ranks(v):
+        o = sorted(range(len(v)), key=lambda i: v[i]); r = [0.0]*len(v); i = 0
+        while i < len(o):
+            j = i
+            while j+1 < len(o) and v[o[j+1]] == v[o[i]]: j += 1
+            for k in range(i, j+1): r[o[k]] = (i+j)/2
+            i = j+1
+        return r
+    return pearson(ranks(xs), ranks(ys))
+
+def quintiles(pairs):
+    """pairs of (x, y): mean y in the bottom and top fifth of x."""
+    s = sorted(pairs); n = len(s); q = n//5
+    lo = [y for _, y in s[:q]]; hi = [y for _, y in s[-q:]]
+    return sum(lo)/len(lo), sum(hi)/len(hi), q
+
+def v06():
+    od = {str(r["key"]).zfill(5): r["value"] for r in load(p("data","staging","despair-overdoses.json"))["regions"]}
+    fa_st = load(p("data","staging","faith-altar.json"))["regions"]
+    fa = {str(r["key"]).zfill(5): r["value"] for r in fa_st}
+    pop = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("population_2020") for r in fa_st}
+    trad = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("largest_tradition_family") for r in fa_st}
+    ec = {str(r["key"]).zfill(5): r["value"] for r in load(p("data","staging","company-socialcapital.json"))["regions"]}
+    so = load(p("data","staging","motion-sorting.json"))
+    net = {str(c["fips"]).zfill(5): c["net"] for c in so["counties"]}
+    # net migration per 1,000 residents (households per 1k people — a rate, not a raw count)
+    netr = {f: 1000.0*v/pop[f] for f, v in net.items() if pop.get(f)}
+    capped = {f: v for f, v in fa.items() if v <= 1000}   # >1000/1k = cross-county worshipper draw (documented)
+
+    def pair(a, b, name, la="", lb=""):
+        ks = [k for k in a if k in b]
+        xs = [a[k] for k in ks]; ys = [b[k] for k in ks]
+        r = pearson(xs, ys); rs = spearman(xs, ys)
+        lo, hi, q = quintiles(list(zip(xs, ys)))
+        print(f"{name}: n={len(ks)} pearson={r:.3f} spearman={rs:.3f} | mean {lb} in bottom fifth of {la}={lo:.2f}, top fifth={hi:.2f} (n={q} each)")
+        return ks
+
+    print("\n--- v0.6 candidates ---")
+    pair(capped, od, "F12 adherence x overdose", "adherence", "OD")
+    pair(capped, ec, "F13 adherence x connectedness", "adherence", "EC")
+    pair(netr, ec, "F14 net migration rate x connectedness", "netmig", "EC")
+    pair(netr, capped, "F15 net migration rate x adherence", "netmig", "adherence")
+    pair(netr, od, "F16 net migration rate x overdose", "netmig", "OD")
+    # confound check for F12: does it survive within population bands?
+    ks = [k for k in capped if k in od and pop.get(k)]
+    bands = [(0, 10000), (10000, 50000), (50000, 250000), (250000, 1e9)]
+    for lo_, hi_ in bands:
+        sub = [k for k in ks if lo_ <= pop[k] < hi_]
+        if len(sub) > 30:
+            print(f"   F12 within pop {lo_:>7,}-{hi_:<11,.0f}: n={len(sub)} r={pearson([capped[k] for k in sub],[od[k] for k in sub]):.3f}")
+    for lo_, hi_ in bands:
+        sub = [k for k in capped if k in ec and pop.get(k) and lo_ <= pop[k] < hi_]
+        if len(sub) > 30:
+            print(f"   F13 within pop {lo_:>7,}-{hi_:<11,.0f}: n={len(sub)} r={pearson([capped[k] for k in sub],[ec[k] for k in sub]):.3f}")
+    # tradition: overdose by largest tradition family (descriptive)
+    from collections import defaultdict as dd
+    g = dd(list)
+    for k, t in trad.items():
+        if k in od and t: g[t].append(od[k])
+    print("   OD by largest tradition (n>=40):", ", ".join(f"{t} {sum(v)/len(v):.1f} (n={len(v)})" for t, v in sorted(g.items(), key=lambda kv: -sum(kv[1])/len(kv[1])) if len(v) >= 40))
+    g2 = dd(list)
+    for k, t in trad.items():
+        if k in ec and t: g2[t].append(ec[k])
+    print("   EC by largest tradition (n>=40):", ", ".join(f"{t} {sum(v)/len(v):.2f} (n={len(v)})" for t, v in sorted(g2.items(), key=lambda kv: -sum(kv[1])/len(kv[1])) if len(v) >= 40))
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v06":
+    v06()
+
+# ---- v0.6 review (run 2026-11-05, `python3 pipeline/correlate.py v06`) ----
+# F12 adherence vs OD:          r=-0.186; within-state -0.103; ~0 in counties >50k   -> REJECTED (regional)
+# F13 adherence vs EC:          r=-0.048 overall (-0.31 in big counties: subgroup)   -> REJECTED (forking paths)
+# F14 net-migration rate vs EC: r=0.043                                              -> REJECTED (null, again)
+# F15 net-migration rate vs adherence: r=-0.200, spearman -0.190, within-state -0.202 -> SHIPPED "The Sorting Leaves the Pews Behind"
+# F16 net-migration rate vs OD: r=0.119                                              -> REJECTED (too weak)
+# Tradition x OD: Lutheran 6.2 vs non-denominational 23.8 nationwide, 5.7 vs 7.4 within states
+#                                                                                    -> SHIPPED as a confounding lesson
+
+# ======================= v0.7 Phase 1 findings =======================
+# Pre-stated before running (2026-11-05):
+# H17 "The thrones are exhaling": counties holding a Fortune 500 headquarters lose
+#     households on net more often than counties of the same size without one.
+#     Matching: each HQ county vs the 10 non-HQ counties nearest in 2020 population
+#     (log scale). SHIP only if the HQ share losing exceeds the matched share by >= 10
+#     points AND the mean net-migration rate gap keeps its sign within states
+#     (each HQ county vs matched controls from its own state, where >= 3 exist).
+# H18 "The price per head": median Ledger theft per resident is higher in places
+#     under 25,000 than in places of 25,000+. Descriptive, n is the Ledger itself;
+#     SHIP only if every included entry has a verified denominator and the gap is
+#     at least 5x between the medians.
+
+def county_polygons():
+    topo = load(p("data","ref","counties-10m.json"))
+    sx, sy = topo["transform"]["scale"]; tx, ty = topo["transform"]["translate"]
+    arcs = []
+    for arc in topo["arcs"]:
+        pts, x, y = [], 0, 0
+        for dx, dy in arc:
+            x += dx; y += dy
+            pts.append((x*sx+tx, y*sy+ty))
+        arcs.append(pts)
+    def ring(r):
+        out = []
+        for ai in r:
+            seg = arcs[ai] if ai >= 0 else arcs[~ai][::-1]
+            out.extend(seg if not out else seg[1:])
+        return out
+    polys = {}
+    for g in topo["objects"]["counties"]["geometries"]:
+        fips = str(g["id"]).zfill(5)
+        if g["type"] == "Polygon": rings = [[ring(r) for r in g["arcs"]]]
+        elif g["type"] == "MultiPolygon": rings = [[ring(r) for r in poly] for poly in g["arcs"]]
+        else: continue
+        xs = [q[0] for poly in rings for q in poly[0]]; ys = [q[1] for poly in rings for q in poly[0]]
+        polys[fips] = (min(xs), min(ys), max(xs), max(ys), rings)
+    return polys
+
+def _in_ring(x, y, r):
+    inside = False
+    j = len(r) - 1
+    for i in range(len(r)):
+        xi, yi = r[i]; xj, yj = r[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / ((yj - yi) or 1e-12) + xi: inside = not inside
+        j = i
+    return inside
+
+def county_of(lat, lon, polys):
+    for f, (x0, y0, x1, y1, rings) in polys.items():
+        if not (x0 <= lon <= x1 and y0 <= lat <= y1): continue
+        for poly in rings:
+            if _in_ring(lon, lat, poly[0]) and not any(_in_ring(lon, lat, h) for h in poly[1:]): return f
+    return None
+
+def v07():
+    import statistics
+    fa_st = load(p("data","staging","faith-altar.json"))["regions"]
+    pop = {str(r["key"]).zfill(5): (r.get("meta") or {}).get("population_2020") for r in fa_st}
+    so = load(p("data","staging","motion-sorting.json"))
+    netr = {str(c["fips"]).zfill(5): 1000.0*c["net"]/pop[str(c["fips"]).zfill(5)] for c in so["counties"] if pop.get(str(c["fips"]).zfill(5))}
+    polys = county_polygons()
+    hq = defaultdict(int)
+    miss = 0
+    for r in load(p("data","staging","power-fortune500.json"))["records"]:
+        f = county_of(r["lat"], r["lon"], polys)
+        if f: hq[f] += 1
+        else: miss += 1
+    H = [f for f in hq if f in netr]
+    N = [f for f in netr if f not in hq]
+    lp = lambda f: math.log(pop[f])
+    def matched(f, pool, k=10):
+        return sorted(pool, key=lambda g: abs(lp(g) - lp(f)))[:k]
+    share = lambda fs: sum(1 for f in fs if netr[f] < 0) / len(fs)
+    ctrl = [g for f in H for g in matched(f, N)]
+    print(f"H17: {len(hq)} HQ counties ({miss} HQs unplaced); {len(H)} with migration data")
+    print(f"  share losing households: HQ {share(H)*100:.0f}%  vs  size-matched controls {share(ctrl)*100:.0f}%  (unmatched non-HQ {share(N)*100:.0f}%)")
+    print(f"  mean net per 1k: HQ {statistics.mean(netr[f] for f in H):+.2f}  vs  matched {statistics.mean(netr[g] for g in ctrl):+.2f}")
+    gaps = []
+    for f in H:
+        pool = [g for g in N if g[:2] == f[:2]]
+        if len(pool) < 3: continue
+        m = matched(f, pool, 3)
+        gaps.append(netr[f] - statistics.mean(netr[g] for g in m))
+    neg = sum(1 for x in gaps if x < 0)
+    print(f"  within-state (3 nearest-size controls each): n={len(gaps)} mean gap {statistics.mean(gaps):+.2f}/1k, HQ below its controls in {neg}/{len(gaps)}")
+    ph = load(p("data","staging","betrayal-ledger-perhead.json"))["rows"]
+    sm = [r["per_resident"] for r in ph if r["population_2020"] < 25000]
+    bg = [r["per_resident"] for r in ph if r["population_2020"] >= 25000]
+    print(f"H18: n={len(ph)}  median per resident under 25k ${statistics.median(sm):,.2f} (n={len(sm)}) vs 25k+ ${statistics.median(bg):,.2f} (n={len(bg)}); ratio {statistics.median(sm)/statistics.median(bg):.1f}x")
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v07":
+    v07()
+# H17 thrones exhaling:  HQ 65% losing vs size-matched 58% (raw non-HQ 48%); within-state
+#                        HQ below its controls in 96/144, mean gap -1.25/1k
+#                        -> REJECTED (7-point gap < the pre-stated 10; size explains most of
+#                           the raw 64%-vs-48% contrast — the early number was a size effect)
+# H18 price per head:    n=18 verified denominators (26 Ledger entries excluded: 13 bribery,
+#                        8 special districts, 5 mixed victims); medians $270 (<25k, n=11) vs
+#                        $141 (25k+, n=7), 1.9x -> REJECTED as a size contrast (< 5x). The
+#                        early "$312 vs $4.27" did not survive careful denominators. The
+#                        per-resident figure itself ships as a fact on each Ledger tooltip.

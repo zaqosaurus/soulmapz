@@ -1,13 +1,22 @@
 # Data Sources & Licenses
 
+**The Soul Survey is a non-commercial project.** It republishes facts that are already public,
+each traced to a named source with a retrieval date. Data is removed on request: anyone named
+or represented in it, or any rights holder, can ask through the repository's issue tracker (a
+dedicated contact method will be added). Non-commercial licenses such as CC-BY-NC are accepted
+on that basis.
+
 | Layer | Source | License / Terms | Notes |
 |---|---|---|---|
 | memory-births | Laouenan et al., "A cross-verified database of notable people, 3500BC–2018AD", *Scientific Data* (2022), via Sciences Po dataverse (doi:10.21410/7E4/RDAG3O) | **CC-BY-SA 4.0** (share-alike) | 2,291,817 records streamed; aggregated to 0.25° cells; MD5-verified download |
+| memory-languages | Glottolog 5.3 (Hammarström, Forkel, Haspelmath & Bank 2026; Max Planck Institute for Evolutionary Anthropology), CLDF release `glottolog/glottolog-cldf` | **CC-BY 4.0** — attribution required | 7,836 languages with coordinates and AES endangerment; licence text in the provenance sidecar |
 | desire-searches | Pornhub Insights "2025 Year in Review" — official state infographic read via archive; cross-checked against independent press (Advocate, UNILAD, NY Post syndication) | Published facts, attributed | Text terms only; 22 states carry no data because Pornhub blocks access there |
 | power-datacenters | OpenStreetMap contributors (telecom/building=data_center via Overpass), plus 98 records from the Brockovich data-center accountability map | **ODbL** — attribution required | © OpenStreetMap contributors; Brockovich entries carry per-record citations |
 | power-fortune500 | Fortune 500 (2025 list, FY2024 revenue) via fortune.com's published ranking data; coordinates via GeoNames | Published facts; GeoNames CC-BY 4.0 | 500/500 geocoded, 100% revenue coverage |
+| power-plants | World Resources Institute, Global Power Plant Database v1.3.0 (`wri/global-power-plant-database`) | **CC-BY 4.0** — attribution required | 34,936 plants; frozen 2021 (unmaintained), disclosed on the plate |
 | motion-fulfillment | fba.wiki "Locations of Amazon Warehouses in USA" (verified FBA shipment-routing codes). MWPVL International withdrew its public tables and was not scraped. | Scraped facts, attributed | 314 active facilities; sqft unavailable from this source |
 | loss-crashes | NHTSA FARS 2023 national accident file | US public domain | 129 unlocatable crashes (136 deaths) excluded and disclosed |
+| loss-covid | The New York Times, *Coronavirus (Covid-19) Data in the United States* (`nytimes/covid-19-data`), county files 2020–2023 | **Non-commercial licence with credit to The New York Times** (licence text in the sidecar) | Rates per 100k by county with a quarterly series; nobody named. This survey is non-commercial |
 | omen-names | USGS Geographic Names Information System (Domestic Names) | US public domain | Word-boundary match over 981,698 names; natural features + settlements only |
 | wonder-ufos | NUFORC sighting reports via the long-circulating community geocoded corpus (planetsig/ufo-reports, consolidated 2014-06-30, checksum-verified) | Community conversion of self-submitted reports; NUFORC's own ToS discourages scraping — corpus provenance disclosed, not hidden | 80,331 reports, 1906–2014; city-centroid geocodes |
 | despair-overdoses | CDC NCIPC "Mapping Injury, Overdose, and Violence — County" (Socrata psx4-wq38), Intent=Drug_OD, CY2024 | US public data | Crude rates per 100k; ~47% of counties Bayesian-modeled by CDC; 129 suppressed counties excluded |
@@ -18,12 +27,20 @@
 | company-socialcapital | Social Capital Atlas (Chetty et al. 2022) via HDX | **Meta custom permissive license** — redistribution OK with license attached; no combining to re-identify individuals | EC ×2 calibration (1.0 = class-blind); differential-privacy noise |
 | faith-altar | 2020 U.S. Religion Census (ASARB) via usreligioncensus.org | **All rights reserved, attribution requested** — facts reproduced with attribution | ~1% counties >1,000/1k (cross-county worshipper draw, documented) |
 | betrayal-ledger | Curated by the survey from DOJ/USAO releases, court records, major-outlet reporting | Facts of public record; per-entry citations in staging | Conviction/plea only; court-established amounts |
+| betrayal-ledger (per-resident figures) | Town populations: Wikidata population statements dated 2020-04-01 (the 2020 Census count), one QID per row; county populations: U.S. Census 2020 | Wikidata **CC0**; Census public domain | 18 of 44 entries — only where the victim is the residents' own government; see `data/staging/betrayal-ledger-perhead.json` |
 | memory-bios | Wikidata descriptions (via wbgetentities) | CC0 | One line per star; IDs recovered from the cross-verified database |
 | control-arsenal | — pending — ATF FFL lists verified open but browser-gated during acquisition | US public data (when landed) | ZIP gazetteer staged (GeoNames CC-BY) |
 | loss-layoffs | — pending — | — | Standardized WARN sources are paywalled/gated; layer intentionally empty |
 | basemaps | Natural Earth via world-atlas / us-atlas (TopoJSON) | Public domain | |
 | geocoding ref | GeoNames cities500 | CC-BY 4.0 | `data/ref/world_places.csv` is regenerable and excluded from the repo |
 | engine | d3 v7 (ISC), topojson-client (ISC) — vendored | ISC | |
+| control-police | The Washington Post, *Fatal Force* fatal police shootings database v2 (`washingtonpost/data-police-shootings`), 2015–2024 | **CC-BY-NC-SA 4.0** — non-commercial, attribution, **share-alike: the derived county layer is offered under the same licence** | Names, ages, race and exact points dropped at staging; county rates only |
+| motion-eviction | Princeton University Eviction Lab — Gromis, Fellows, Hendrickson, Edmonds, Leung, Porton & Desmond, *Estimating Eviction Prevalence across the United States* (2022), county estimates 2000–2018 | **ODC-BY 1.0** — attribution required | Published model estimates only (not the proprietary-count files) |
+| motion-skyroads | OpenFlights.org airports and routes (`jpatokal/openflights`), route data from Airline Route Mapper | **ODbL 1.0** (database) + **DbCL** (contents) — attribution, **share-alike: the derived flows are offered under ODbL**; route data public domain | Historic snapshot (~2014); 8,362 airport pairs with 2+ airlines |
+| control-war | Uppsala Conflict Data Program, Georeferenced Event Dataset 26.1 (Sundberg & Melander 2013; Davies et al. 2025); country populations from Wikidata | **CC BY 4.0** (UCDP); Wikidata **CC0** | Deaths per country and five-year period; actors, places and sources dropped |
+| motion-uprooted | UNHCR Refugee Population Statistics Database, via the Refugee Data Finder API (end-2024); ISO code table from Wikidata | **CC BY 4.0** under UNHCR's Terms of Use for Datasets; Wikidata **CC0** | Refugees + asylum-seekers + other people in need of international protection, by origin–asylum pair |
+| wonder-darksky | Wikidata — items recorded as International Dark Sky Parks, Reserves, Sanctuaries, Communities, Urban Night Sky Places or dark-sky preserves | **CC0** | Partial mirror of DarkSky International's register (darksky.org refuses scripts; not circumvented) |
+| company-gifts | IRS Statistics of Income, county data, tax year 2022 (`22incyallnoagi.csv`) | **Public domain** (U.S. government work) | Itemized charitable contributions ÷ AGI; itemizers only (disclosed) |
 
 **Distribution notes:** keep OSM (ODbL), GeoNames (CC-BY), and Laouenan et al. (CC-BY-SA)
 attribution visible — the site's About/Sources panel does this. The memory layer's

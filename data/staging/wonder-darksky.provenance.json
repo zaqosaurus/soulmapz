@@ -1,0 +1,70 @@
+{
+ "layer": "wonder-darksky",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "CC0 (Wikidata)"
+ },
+ "gate": "darksky.org presents a bot challenge to scripts; the survey does not get around bot checks, so DarkSky International's own register was not read. Wikidata's record is a partial mirror of it.",
+ "files": {
+  "darksky.json": {
+   "bytes": 189201,
+   "sha256": "d064f057ff0b489b50db5c34ce5c350df93f515bf267f57d60d26ee9330f4bbe"
+  }
+ },
+ "query_classes": {
+  "Q72114299": "sanctuary",
+  "Q72114283": "reserve",
+  "Q52216504": "park",
+  "Q72114249": "community",
+  "Q72114320": "urban",
+  "Q3457162": "preserve"
+ },
+ "method": "Items with P31 or P1435 among the classes above; one kind per item (sanctuary > reserve > park > community > urban > generic preserve); P625 coordinates.",
+ "counts": {
+  "items": 172,
+  "kept": 164,
+  "dropped": {
+   "no coordinates": 6,
+   "no English label": 2
+  },
+  "by_kind": {
+   "park": 86,
+   "reserve": 14,
+   "preserve": 32,
+   "sanctuary": 7,
+   "urban": 2,
+   "community": 23
+  },
+  "by_country": {
+   "United States": 91,
+   "Canada": 16,
+   "United Kingdom": 14,
+   "New Zealand": 9,
+   "Germany": 5,
+   "Poland": 5,
+   "Hungary": 3,
+   "France": 2,
+   "Netherlands": 2,
+   "Czech Republic": 2
+  }
+ },
+ "caveats": [
+  "Incomplete: Wikidata does not yet record every certified place; the true count is higher.",
+  "A point per place; reserves cover large areas."
+ ],
+ "validation": {
+  "reviewed_offshore": {
+   "count": 1,
+   "countries": [
+    "United Kingdom"
+   ],
+   "reason": "Pitcairn Islands (a Dark Sky Sanctuary since 2019), too small for the 1:50m coastline; reviewed by hand 2026-11-06"
+  },
+  "known_answers": {
+   "first International Dark Sky Park (Natural Bridges, 2007) present": "PASS",
+   "Aoraki Mackenzie reserve (NZ) present": "PASS",
+   "Central Idaho reserve present": "PASS",
+   "the U.S. holds the most places": "[('United States', 91)]"
+  }
+ }
+}

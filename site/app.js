@@ -9,6 +9,8 @@ const R=window.__REGISTRY__, D=window.__LAYERDATA__, B=window.__BASEMAPS__;
 const live=R.layers.filter(l=>l.status==='live');
 const byId={}; R.layers.forEach(l=>byId[l.id]=l);
 const themeById={}; R.themes.forEach(t=>themeById[t.id]=t);
+R.meta.repo=R.meta.repo||'ansalamalasna/soulmap';R.meta.site=R.meta.site||('https://'+R.meta.repo.split('/')[0]+'.github.io/'+R.meta.repo.split('/')[1]+'/');
+const GH='https://github.com/'+R.meta.repo+'/blob/main/';
 const fmtInt=n=>Number(n||0).toLocaleString('en-US');
 const MONTHS=["","January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATE_POSTAL={"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","District of Columbia":"DC","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY"};
@@ -25,9 +27,14 @@ const VIS={
  'loss-crashes':{r:1.45,core:.38,cA:.42},
  'omen-names':{r:2.0,core:.6},
  'wonder-ufos':{core:.46,cA:.32},
- 'residue-superfund':{core:.66}
+ 'residue-superfund':{core:.66},
+ 'betrayal-ledger':{core:.82}
 };
 const CONTOUR_T=[.10,.18,.30,.45,.62,.82];
+const FIPS_POSTAL={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
+const money=v=>v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+Math.round(v||0);
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return u;}};
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // ---------- geometry ----------
 const topo=window.topojson;
@@ -56,6 +63,12 @@ let zooming=false,zoomEndT=null,needBake=false,lastBakePump=0,bakeRR=0;
 let era=-1,eraPlay=null,reading=null,readingSaved=null,orientTimers=[],hashHadState=false,hashTimer=null;
 let refNames=true,refBounds=true;const refSyncs=[];
 let lens={},pickMode=null;
+// ---- v0.6 state ----
+let tipPinned=null;            // a tooltip held in place by a click or tap: {content,x,y}
+let rec=null;                  // the recorder: {title,stops:[],pin:[lon,lat]|null,seedTitle}
+let tour=null,tourIdx=null,tourParam=null; // a citizen reading loaded from the link, its cursor, its encoded form
+let lensPlay=null;             // a lens stepping through time: {lid,field,idx,timer}
+let pendingGeo=null;           // permalink camera waiting for the projection to exist
 function hasGlow(l){return !!(l.forms.points||l.forms.flows);}
 
 const cvs={base:$('#cvBase'),terr:$('#cvTerrain'),glow:$('#cvGlow'),lab:$('#cvLabel')};
@@ -97,8 +110,17 @@ function buildSprites(){
  SPR.omenL=makeSprite(byId['omen-names'].accent2||'#f2ead8',VIS['omen-names'].core);
  if(byId['wonder-ufos'])SPR.ufo=makeSprite(byId['wonder-ufos'].accent,VIS['wonder-ufos'].core);
  if(byId['residue-superfund'])SPR.sf=makeSprite(byId['residue-superfund'].accent,VIS['residue-superfund'].core);
+ if(byId['betrayal-ledger'])SPR.coin=makeSprite(byId['betrayal-ledger'].accent,VIS['betrayal-ledger'].core);
 }
-function inEra(b){
+// Any point layer the registry declares gets a sprite in its own accent, even if no
+// hand-tuned voice exists for it yet — a new layer must never render invisible.
+const SPRC={};
+function spriteColor(hex,core){const k=hex+':'+core;return SPRC[k]||(SPRC[k]=makeSprite(hex,core));}
+function spriteFor(lid){
+ if(!SPR['_'+lid])SPR['_'+lid]=makeSprite(byId[lid].accent,(VIS[lid]&&VIS[lid].core)||.62);
+ return SPR['_'+lid];
+}
+function inEra(b,era){
  if(b==null||isNaN(b))return false;
  if(era===0)return b<=500;
  if(era===1)return b>=501&&b<=1500;
@@ -131,7 +153,7 @@ function buildScope(s){
    ? d3.geoAlbersUsa().fitExtent(ext,geo.nation)
    : d3.geoEqualEarth().fitExtent([[ext[0][0],ext[0][1]+8],[ext[1][0],ext[1][1]-8]],{type:'Sphere'});
  const gp=d3.geoPath(proj);
- const C={proj,ext,gp,paths:{},layers:{},grids:{},contours:{},statePaths:{},stateCent:{},countryPaths:{},countryCent:{}};
+ const C={scope:s,proj,ext,gp,paths:{},layers:{},grids:{},contours:{},statePaths:{},stateCent:{},countryPaths:{},countryCent:{}};
  // base paths
  if(s==='world'){
   C.paths.sphere=new Path2D(gp({type:'Sphere'}));
@@ -158,9 +180,34 @@ function buildScope(s){
   if(d.kind==='memory'){
    C.layers[l.id]={cells:projArrays(proj,d.cells.lon,d.cells.lat),stars:projArrays(proj,d.stars.lon,d.stars.lat)};
   }else if(d.kind==='points'){
-   C.layers[l.id]={pts:projArrays(proj,d.lon,d.lat)};
+   const P0=projArrays(proj,d.lon,d.lat);
+   // registry scopeFilter: e.g. the U.S. sheet keeps only U.S. records of a world layer
+   // (Albers USA would otherwise draw Canadian and Mexican points that fall inside its frame)
+   const sf=l.scopeFilter&&l.scopeFilter[s];
+   if(sf&&d[sf.field]){const cs=d.codes&&d.codes[sf.field],want=cs?cs.indexOf(sf.label):sf.value,arr=d[sf.field];for(let i=0;i<P0.n;i++)if(arr[i]!==want)P0.keep[i]=0;}
+   C.layers[l.id]={pts:P0};
   }else if(d.kind==='flows'){
-   C.layers[l.id]={fa:projArrays(proj,d.arcs.alon,d.arcs.alat),fb:projArrays(proj,d.arcs.blon,d.arcs.blat)};
+   const L0={fa:projArrays(proj,d.arcs.alon,d.arcs.alat),fb:projArrays(proj,d.arcs.blon,d.arcs.blat)};
+   if(d.geo){
+    // v0.7 Phase 0.6: any point pair → a great-circle arc, sampled once per sheet.
+    // A jump wider than a third of the sheet is the antimeridian: the pen lifts there.
+    const jump=(ext[1][0]-ext[0][0])/3,N=28;L0.gc=[];
+    for(let i=0;i<d.arcs.alat.length;i++){
+     const ip=d3.geoInterpolate([d.arcs.alon[i],d.arcs.alat[i]],[d.arcs.blon[i],d.arcs.blat[i]]);
+     const xy=new Float32Array((N+1)*3);let ok=0,px=null;
+     for(let j=0;j<=N;j++){
+      const g=ip(j/N);
+      // over the pole a great circle hugs the sheet's top edge: lift the pen there instead
+      const p=Math.abs(g[1])>78?null:proj(g);
+      if(!p){xy[j*3+2]=0;px=null;continue;}
+      xy[j*3]=p[0];xy[j*3+1]=p[1];xy[j*3+2]=(px===null||Math.abs(p[0]-px)>jump)?1:2;px=p[0];ok++;
+     }
+     L0.gc.push(ok>1?xy:null);
+    }
+   }
+   C.layers[l.id]=L0;
+  }else if(d.kind==='raster'){
+   C.layers[l.id]={raster:true};
   }
  }
  // density grids + contours
@@ -170,6 +217,7 @@ function buildScope(s){
  for(const l of live){
   if(!l.scopes.includes(s)||!D[l.id])continue;
   if(!(l.weight>0))continue;
+  if(D[l.id].kind!=='memory'&&!(C.layers[l.id]&&C.layers[l.id].pts))continue;
   const d=D[l.id],grid=new Float32Array(GW*GH);
   const put=(x,y,w)=>{
    const gx=Math.floor((x-ext[0][0])/exw*GW),gy=Math.floor((y-ext[0][1])/exh*GH);
@@ -306,12 +354,11 @@ function drawBase(){
   }
  }
  // county tint layers (static base-space bitmaps, faded by layer alpha)
- if(scope==='us'){
-  for(const lT of countyTintLayers()){
+ {
+  for(const lT of regionTintLayers()){
    const aT=alpha[lT.id]||0;
    if(aT<=0.02)continue;
-   ensureCounties(C);
-   const cvT=countyTintFor(C,lT.id);
+   const cvT=regionTintFor(C,lT.id);
    if(!cvT)continue;
    const cmT=compareMode;
    const clipT=cmT&&(lT.id===cmT.a||lT.id===cmT.b);
@@ -326,6 +373,13 @@ function drawBase(){
    ctx.globalAlpha=1;
    if(clipT){ctx.restore();applyT(ctx);}
   }
+ }
+ // raster layers (v0.7 Phase 0.9): a quantized grid as a coloured, alpha-scaled image
+ for(const lR of live){
+  if(!scopeHas(lR.id)||!D[lR.id]||D[lR.id].kind!=='raster')continue;
+  const aR=alpha[lR.id]||0;if(aR<=0.02)continue;
+  const cvR=rasterFor(C,lR.id);if(!cvR)continue;
+  applyT(ctx);ctx.globalAlpha=aR;ctx.drawImage(cvR,0,0,W,H);ctx.globalAlpha=1;
  }
  // desire tint
  const dl=byId['desire-searches'];
@@ -390,10 +444,32 @@ function drawPointsTo(ctx,lid,step){
  const k=t.k,kk=Math.pow(k,.42);
  const draw=(spr,x,y,r)=>{const sx=x*k+t.x,sy=y*k+t.y;if(sx<-60||sx>W+60||sy<-60||sy>H+60)return;const rr=r*kk;ctx.drawImage(spr,sx-rr,sy-rr,rr*2,rr*2);};
  if(d.kind==='flows'){
-  const A=L.fa,Bf=L.fb,hh=d.arcs.hh,am=d.arcmax||1;
+  const A=L.fa,Bf=L.fb,fw=flowW(lid),hh=fw.a,am=fw.m;
   const st2=(step>1&&A.n>6000)?step:1;
   ctx.strokeStyle=byId[lid].accent;
   ctx.lineCap='round';
+  if(L.gc){
+   const lz=lens[lid],lzA=lz?d.arcs[lz.field]:null;
+   for(let i=0;i<L.gc.length;i+=st2){
+    const g=L.gc[i];if(!g)continue;
+    if(lzA&&lzA[i]!==lz.v)continue;
+    const f=Math.min(1,hh[i]/am),fs=byId[lid].flowStyle||{};
+    ctx.globalAlpha=(0.10+0.55*Math.pow(f,0.6))*(fs.alpha||1)*(st2>1?1.6:1);
+    ctx.lineWidth=(0.5+2.2*f)*(fs.width||1);
+    ctx.beginPath();
+    for(let j=0;j<g.length;j+=3){
+     const m=g[j+2];if(!m)continue;
+     const x=g[j]*k+t.x,y=g[j+1]*k+t.y;
+     m===1?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // the landing end glows: where people (or planes) arrive
+    const e=g.length-3;
+    if(g[e+2]&&!fs.noEnds){const x=g[e]*k+t.x,y=g[e+1]*k+t.y;ctx.globalAlpha=Math.min(1,.25+.6*f)*(fs.alpha||1);ctx.beginPath();ctx.arc(x,y,0.8+1.6*f,0,Math.PI*2);ctx.fillStyle=byId[lid].accent;ctx.fill();}
+   }
+   ctx.globalAlpha=1;
+   return;
+  }
   for(let i=0;i<A.n;i+=st2){
    if(!A.keep[i]||!Bf.keep[i])continue;
    const ax=A.xs[i]*k+t.x,ay=A.ys[i]*k+t.y,bx=Bf.xs[i]*k+t.x,by=Bf.ys[i]*k+t.y;
@@ -408,11 +484,14 @@ function drawPointsTo(ctx,lid,step){
   return;
  }
  if(d.kind==='memory'){
+  const era=eraFor(lid);
   const wf=scope==='world'?0.68:1;
   const st2=(step>1&&L.cells.n>30000)?step:1;
   ctx.globalAlpha=Math.min(1,(scope==='world'?0.82:1)*(st2>1?1.7:1));
   const P=L.cells,vv=d.cells.v,ee=d.cells.e;
-  for(let i=0;i<P.n;i+=st2){
+  // a calling lens (stars only) quiets the cells: the reader asked for people, not crowds
+  const SL=lens[lid],slA=SL?d.stars[SL.field]:null;
+  for(let i=0;i<P.n&&!SL;i+=st2){
    if(!P.keep[i])continue;
    const val=era<0?vv[i]:(ee&&ee[i]?ee[i][era]:0);
    if(!val)continue;
@@ -423,14 +502,16 @@ function drawPointsTo(ctx,lid,step){
   const S=L.stars,sv=d.stars.v,sb=d.stars.birth;
   for(let i=0;i<S.n;i++){
    if(!S.keep[i])continue;
-   if(era>=0&&!inEra(sb[i]))continue;
+   if(era>=0&&!inEra(sb[i],era))continue;
+   if(slA&&slA[i]!==SL.v)continue;
    draw(SPR.memStar,S.xs[i],S.ys[i],(1.2+sv[i]*.014)*wf);
   }
   ctx.globalAlpha=1;
  }else{
   const P=L.pts;
   const LZ=lens[lid];
-  const lzSkip=LZ?(ii)=>{const arr=d[LZ.field];return arr&&arr[ii]!==LZ.v;}:null;
+  const lz0=LZ?(ii)=>{const arr=d[LZ.field];return arr&&arr[ii]!==LZ.v;}:null,ts0=timeSkip(lid);
+  const lzSkip=lz0&&ts0?(ii=>lz0(ii)||ts0(ii)):(lz0||ts0);
   if(lid==='loss-crashes'){
    const vv=d.v;
    const st2=(step>1&&P.n>30000)?step:1;
@@ -455,8 +536,76 @@ function drawPointsTo(ctx,lid,step){
    ctx.globalAlpha=1;
   }else if(lid==='residue-superfund'){
    for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(SPR.sf,P.xs[i],P.ys[i],2.0);}
+  }else if(lid==='betrayal-ledger'){
+   // coins: area follows the amount stolen; a crisp ring makes each one a receipt, not a star
+   const vv=d.v,vmax=d.vmaxv||(d.vmaxv=vv.reduce((m,x)=>Math.max(m,x),1));
+   ctx.strokeStyle=byId[lid].accent;ctx.lineWidth=1;
+   for(let i=0;i<P.n;i++){
+    if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;
+    const r=2.4+Math.sqrt(Math.max(vv[i],0)/vmax)*7.5;
+    draw(SPR.coin,P.xs[i],P.ys[i],r);
+    const sx=P.xs[i]*k+t.x,sy=P.ys[i]*k+t.y,rr=r*kk*.5;
+    if(sx<-60||sx>W+60||sy<-60||sy>H+60)continue;
+    ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(sx,sy,Math.max(1.6,rr),0,Math.PI*2);ctx.stroke();
+   }
+   ctx.globalAlpha=1;
+  }else{
+   // registry-only layer: default voice. `size` scales by a field (log or sqrt);
+   // `colorBy` gives each code of an enum field its own colour.
+   const l=byId[lid],sz=l.size||{},spr=spriteFor(lid),vv=d[sz.field||'v'];
+   const cb=l.colorBy,ca=cb?d[cb.field]:null,core=sz.core||(VIS[lid]&&VIS[lid].core)||.7;
+   const sprs=ca?cb.colors.map(c=>spriteColor(c||l.accent,core)):null;
+   const mn=sz.min!=null?sz.min:1.6,mx=sz.max!=null?sz.max:5,vmx=sz.vmax||d.vmaxv||(d.vmaxv=vv?vv.reduce((m,x)=>Math.max(m,x||0),1):1);
+   const rad=!vv?(()=>sz.r||2.0):sz.scale==='sqrt'?(i=>mn+Math.sqrt(Math.max(vv[i],0)/vmx)*(mx-mn)):(i=>Math.min(mn+Math.log1p(Math.max(vv[i],0))*(sz.k||.55),mx));
+   if(sz.alpha)ctx.globalAlpha=sz.alpha*(scope==='world'&&sz.worldAlpha?sz.worldAlpha:1);
+   for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;draw(sprs?(sprs[ca[i]]||spr):spr,P.xs[i],P.ys[i],rad(i));}
+   ctx.globalAlpha=1;
+  }
+  if(LZ&&LZ.constellation)drawConstellation(ctx,lid,L,lzSkip);
+ }
+}
+// ---------- v0.6: constellations ----------
+// With an entity lens active (one operator, one facility class), the filtered members are
+// linked into a nearest-neighbour web: the network made visible. Edges are cached per scope.
+function constellationEdges(C,lid,LZ,P,lzSkip){
+ C.constel=C.constel||{};
+ const key=lid+'|'+LZ.field+'|'+LZ.v;
+ if(C.constel[key])return C.constel[key];
+ const idx=[];
+ for(let i=0;i<P.n;i++){if(!P.keep[i])continue;if(lzSkip&&lzSkip(i))continue;idx.push(i);}
+ const edges=[];
+ if(idx.length>=2&&idx.length<=700){
+  const ext=C.ext,maxD=(ext[1][0]-ext[0][0])*0.24,maxD2=maxD*maxD,seen=new Set();
+  for(let a=0;a<idx.length;a++){
+   const i=idx[a],x=P.xs[i],y=P.ys[i];
+   let b1=-1,d1=Infinity,b2=-1,d2=Infinity;
+   for(let b=0;b<idx.length;b++){
+    if(b===a)continue;const j=idx[b],dx=P.xs[j]-x,dy=P.ys[j]-y,dd=dx*dx+dy*dy;
+    if(dd<d1){b2=b1;d2=d1;b1=j;d1=dd;}else if(dd<d2){b2=j;d2=dd;}
+   }
+   for(const [j,dd] of [[b1,d1],[b2,d2]]){
+    if(j<0||dd>maxD2)continue;
+    const kk=i<j?i+','+j:j+','+i;if(seen.has(kk))continue;seen.add(kk);
+    edges.push([x,y,P.xs[j],P.ys[j],Math.sqrt(dd)/maxD]);
+   }
   }
  }
+ C.constel[key]=edges;
+ return edges;
+}
+function drawConstellation(ctx,lid,L,lzSkip){
+ const C=SC[scope],LZ=lens[lid],P=L.pts;if(!LZ||!P)return;
+ const edges=constellationEdges(C,lid,LZ,P,lzSkip);if(!edges.length)return;
+ const k=t.k;
+ ctx.strokeStyle=byId[lid].accent;ctx.lineCap='round';
+ for(const e of edges){
+  const ax=e[0]*k+t.x,ay=e[1]*k+t.y,bx=e[2]*k+t.x,by=e[3]*k+t.y;
+  if((ax<-80&&bx<-80)||(ax>W+80&&bx>W+80)||(ay<-80&&by<-80)||(ay>H+80&&by>H+80))continue;
+  ctx.globalAlpha=.34*(1-e[4]*.6);ctx.lineWidth=.8;
+  const mx=(ax+bx)/2,my=(ay+by)/2,ddx=bx-ax,ddy=by-ay;
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(mx-ddy*0.12,my+ddx*0.12,bx,by);ctx.stroke();
+ }
+ ctx.globalAlpha=1;
 }
 
 function bufFor(lid){
@@ -609,12 +758,13 @@ function drawLabels(){
  }
  // memory star names
  const ma=alpha['memory-births']||0;
- if(ma>0.5&&scopeHas('memory-births')&&t.k>=2.3){
-  const L=C.layers['memory-births'].stars,d=D['memory-births'].stars;
+ if(ma>0.5&&scopeHas('memory-births')&&t.k>=(lens['memory-births']?1.4:2.3)){
+  const L=C.layers['memory-births'].stars,d=D['memory-births'].stars,mEra=eraFor('memory-births');
   let shown=0;
   for(let i=0;i<L.n&&shown<26;i++){
    if(!L.keep[i])continue;
-   if(era>=0&&!inEra(d.birth[i]))continue;
+   if(mEra>=0&&!inEra(d.birth[i],mEra))continue;
+   if(lens['memory-births']&&d[lens['memory-births'].field]&&d[lens['memory-births'].field][i]!==lens['memory-births'].v)continue;
    const [sx,sy]=S(L.xs[i],L.ys[i]);
    if(sx<padLeft()||sx>W-20||sy<100||sy>H-80)continue;
    if(!free(sx,sy,70))continue;take(sx,sy,70);
@@ -650,12 +800,44 @@ function drawLabels(){
     shown++;
    }}
  }
+ // ledger labels: the archetypes always, the rest as you approach
+ const ba=alpha['betrayal-ledger']||0;
+ if(ba>0.5&&scopeHas('betrayal-ledger')&&C.layers['betrayal-ledger']){
+  const L=C.layers['betrayal-ledger'].pts,d=D['betrayal-ledger'];
+  const budget=t.k<1.8?5:t.k<3.2?14:40;let shown=0;
+  const ac=byId['betrayal-ledger'].accent;
+  for(let i=0;i<L.n&&shown<budget;i++){ // packed in descending amount
+   if(!L.keep[i])continue;
+   const [sx,sy]=S(L.xs[i],L.ys[i]);
+   if(sx<padLeft()||sx>W-20||sy<100||sy>H-80)continue;
+   if(!free(sx,sy,70))continue;take(sx,sy,70);
+   haloText(ctx,d.name[i].replace(/\s*\(.*\)$/,'')+' · '+money(d.v[i]),sx,sy-11,'500 9px "IBM Plex Mono"',hexA(ac,.92*ba));
+   shown++;
+  }
+ }
+ // benchmarks: the recorder's pending pin, and the pin of the citizen stop being read
+ const marks=[];
+ if(rec&&rec.pin)marks.push({g:rec.pin,label:'STOP '+(rec.stops.length+1)});
+ if(tour&&tourIdx!==null&&tour.s[tourIdx]&&tour.s[tourIdx].p)marks.push({g:tour.s[tourIdx].p,label:(tourIdx+1)+' / '+tour.s.length});
+ for(const m of marks){
+  const p=C.proj(m.g);if(!p)continue;
+  const [sx,sy]=S(p[0],p[1]);
+  if(sx<-30||sx>W+30||sy<-30||sy>H+30)continue;
+  ctx.save();ctx.translate(sx,sy);
+  ctx.strokeStyle='rgba(5,8,13,.9)';ctx.lineWidth=4;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(11,7);ctx.lineTo(-11,7);ctx.closePath();ctx.stroke();
+  ctx.strokeStyle='#e8b34b';ctx.lineWidth=1.6;ctx.stroke();
+  ctx.fillStyle='#e8b34b';ctx.beginPath();ctx.arc(0,1,2.4,0,7);ctx.fill();
+  ctx.restore();
+  haloText(ctx,m.label,sx,sy+20,'500 8.5px "IBM Plex Mono"','rgba(232,179,75,.95)');
+ }
  // hover ring
  if(hoverPt){
   const [sx,sy]=S(hoverPt.x,hoverPt.y);
   ctx.strokeStyle=hoverPt.color;ctx.lineWidth=1;ctx.globalAlpha=.9;
   ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
  }
+ if(tipPinned)placeTip(tipPinned.content,tipPinned.x,tipPinned.y);
 }
 
 // ---------- tween/frame ----------
@@ -678,6 +860,15 @@ function frame(){
   const ids=activeIds().filter(id=>hasGlow(byId[id]));
   if(ids.length){bakeRR=(bakeRR+1)%ids.length;bakeLayer(ids[bakeRR],!zooming);}
  }
+ // a layer switched on by any path (toggle, plate, reading, tour, plunge) that has
+ // never been painted is painted now — one per frame, so a big switch stays smooth
+ if(!zooming){
+  for(const lid of activeIds()){
+   if(!hasGlow(byId[lid]))continue;
+   const bm=glowBMs[lid];
+   if(!bm||!bm.curT){bakeLayer(lid,true);break;}
+  }
+ }
  let fading=false;
  for(const lid in glowBMs){
   const bm=glowBMs[lid];
@@ -695,9 +886,10 @@ function rebuildQt(){
   const l=byId[lid];if(!l.forms.points)continue;
   const L=C.layers[lid];if(!L)continue;
   if(D[lid].kind==='memory'){
-   const dd=D[lid],ee=dd.cells.e;
+   const era=eraFor(lid);
+   const dd=D[lid],ee=dd.cells.e,SLq=lens[lid],slq=SLq?dd.stars[SLq.field]:null;
    const P=L.cells;
-   for(let i=0;i<P.n;i++){
+   for(let i=0;i<P.n&&!SLq;i++){
     if(!P.keep[i])continue;
     const val=era<0?dd.cells.v[i]:(ee&&ee[i]?ee[i][era]:0);
     if(!val)continue;
@@ -706,14 +898,16 @@ function rebuildQt(){
    const St=L.stars,sb=dd.stars.birth;
    for(let i=0;i<St.n;i++){
     if(!St.keep[i])continue;
-    if(era>=0&&!inEra(sb[i]))continue;
+    if(era>=0&&!inEra(sb[i],era))continue;
+    if(slq&&slq[i]!==SLq.v)continue;
     items.push({x:St.xs[i],y:St.ys[i],lid,i,kind:'star'});
    }
   }else if(L.pts){
-   const P=L.pts,LZq=lens[lid],arrq=LZq?D[lid][LZq.field]:null;
+   const P=L.pts,LZq=lens[lid],arrq=LZq?D[lid][LZq.field]:null,tsq=timeSkip(lid);
    for(let i=0;i<P.n;i++){
     if(!P.keep[i])continue;
     if(arrq&&arrq[i]!==LZq.v)continue;
+    if(tsq&&tsq(i))continue;
     items.push({x:P.xs[i],y:P.ys[i],lid,i,kind:'pt'});
    }
   }
@@ -724,7 +918,7 @@ function scheduleQt(){clearTimeout(qtTimer);qtTimer=setTimeout(rebuildQt,260);}
 
 const tip=$('#tooltip');
 function tipHTML(f){
- const l=byId[f.lid],d=D[f.lid];
+ const l=byId[f.lid],d=D[f.lid],era=eraFor(f.lid);
  let k=l.title.toUpperCase(),ti='',s='';
  if(f.kind==='star'){
   const st=d.stars;ti='★ '+st.name[f.i];
@@ -740,31 +934,73 @@ function tipHTML(f){
   const lab=d.cells.lab[String(f.i)];if(lab)s='brightest: '+lab;
  }
  else if(f.lid==='loss-crashes'){const v=d.v[f.i];ti=v===1?'One person died here':v+' people died here';s=MONTHS[d.m[f.i]]+' 2023 · fatal crash';}
- else if(f.lid==='power-datacenters'){ti=d.name[f.i]||'Unnamed facility';s='data center';}
  else if(f.lid==='power-fortune500'){const v=d.v[f.i];ti='#'+d.rank[f.i]+' '+d.name[f.i];s=d.loc[f.i]+' · $'+(v>=1e6?(v/1e6).toFixed(2)+'T':v>=1000?(v/1000).toFixed(1)+'B':v+'M')+' revenue';}
  else if(f.lid==='motion-fulfillment'){ti=d.name[f.i]||'Amazon facility';s=(d.typeNames[d.t[f.i]]||'')+' · '+d.loc[f.i];}
  else if(f.lid==='omen-names'){ti=d.name[f.i];s=(d.s[f.i]?'light':'dark')+' name · '+d.cls[f.i]+', '+d.st[f.i];}
- else if(f.lid==='wonder-ufos'){const v=d.v?d.v[f.i]:1;ti=v>1?fmtInt(v)+' sightings reported here':'A sighting reported here';const DECS=['1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2010s'];const dc2=d.dec?d.dec[f.i]:-1;s=(dc2>=0?'latest in the '+DECS[dc2]+' · ':'')+'NUFORC testimony';}
+ else if(f.lid==='wonder-ufos'){const v=d.v?d.v[f.i]:1,sh=d.codes&&d.codes.sh?d.codes.sh[d.sh[f.i]]:'',dc=d.dec?d.dec[f.i]:0;ti=v>1?fmtInt(v)+' sightings reported here':'A sighting reported here';s=(sh?esc(sh.toLowerCase())+' · ':'')+(dc?(dc<1960?'before 1960':dc+'s')+' · ':'')+'NUFORC testimony';}
  else if(f.lid==='residue-superfund'){ti=d.name[f.i];s=['proposed for the NPL','on the National Priorities List','deleted from the NPL — cleaned enough to leave'][d.st2[f.i]]+' · '+d.state[f.i];}
+ else if(f.lid==='betrayal-ledger'){
+  ti=money(d.v[f.i])+' — '+esc(d.name[f.i]);
+  const cites=(d.cites&&d.cites[f.i])||[];
+  s='<b>'+esc(d.who[f.i])+'</b>'+(d.years[f.i]?' · '+esc(d.years[f.i]):'')+
+    (d.scheme[f.i]?'<br>'+esc(d.scheme[f.i]):'')+
+    (d.outcome[f.i]?'<br><i>'+esc(d.outcome[f.i])+'</i>':'')+
+    (d.ph&&d.ph[f.i]>=0?'<br>≈ <b>'+(d.ph[f.i]>=10?'$'+fmtInt(Math.round(d.ph[f.i])):'$'+d.ph[f.i].toFixed(2))+' per resident</b> of '+esc(d.phj[f.i])+' ('+fmtInt(d.php[f.i])+' people, 2020 Census)':'')+
+    (cites.length?'<br><span class="tt-cite">receipts · '+cites.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(hostOf(u))+'</a>').join(' · ')+'</span>':'');
+  return {k,ti,s,color:l.accent,wide:true};
+ }
+ else if(l.tip){
+  ti=tplFill(l.tip.ti||'{name}',d,f.i)||(l.tip.ti2?tplFill(l.tip.ti2,d,f.i):'')||l.title;s=tplFill(l.tip.s||'',d,f.i);
+  const cb=l.colorBy;
+  return {k,ti,s,color:cb&&d[cb.field]?(cb.colors[d[cb.field][f.i]]||l.accent):l.accent,wide:!!l.tip.wide};
+ }
+ else{ti=(d.name&&d.name[f.i])||l.title;s=l.unit||'';}
  return {k,ti,s,color:f.lid==='omen-names'&&d.s[f.i]?(byId[f.lid].accent2||'#f2ead8'):l.accent};
+}
+// v0.7 Phase 0.4: registry tooltip templates. "{field}" or "{field|fmt}" with fmt in
+// int, money, mw, month, year, f1, raw. Enum fields print their label. Empty parts drop
+// out with their separator; "\n" breaks the line. Output is always escaped.
+function tplVal(d,field,i,fmt){
+ const arr=d[field];if(!arr)return '';
+ const v=arr[i],codes=d.codes&&d.codes[field];
+ if(codes&&fmt!=='raw')return (v!=null&&v>=0&&codes[v]!=null)?codes[v]:'';
+ if(v==null||v==='')return '';
+ if(fmt==='int')return fmtInt(Math.round(v));
+ if(fmt==='money')return money(v);
+ if(fmt==='mw')return fmtInt(Math.round(v))+' MW';
+ if(fmt==='month')return MONTHS[v]||'';
+ if(fmt==='year')return v?String(v):'';
+ if(fmt==='f1')return Number(v).toFixed(1);
+ return String(v);
+}
+function tplFill(str,d,i){
+ // a ' · ' segment whose placeholders all came back empty drops out with its separator
+ return String(str).split('\n').map(line=>line.split(' · ').map(part=>{
+  let n=0,filled=0;
+  const out=part.replace(/\{(\w+)(?:\|(\w+))?\}/g,(m,f,fmt)=>{n++;const v=tplVal(d,f,i,fmt);if(v!=='')filled++;return v;});
+  return (n&&!filled)?'':esc(out);
+ }).filter(x=>x.trim()).join(' · ')).filter(Boolean).join('<br>');
 }
 function regionTip(qx,qy){
  const C0=SC[scope];
- if(scope==='us'&&C0.countyBoxes){
-  const tls=countyTintLayers().filter(l=>(alpha[l.id]||0)>0.3).reverse();
+ const boxes0=scope==='us'?C0.countyBoxes:C0.countryBoxes;
+ if(boxes0){
+  const tls=regionTintLayers().filter(l=>(alpha[l.id]||0)>0.3).reverse();
   if(tls.length){
    idT(hitCtx);
-   for(const b of C0.countyBoxes){
+   for(const b of boxes0){
     if(qx<b.x0||qx>b.x1||qy<b.y0||qy>b.y1)continue;
     if(hitCtx.isPointInPath(b.p,qx*dpr,qy*dpr)){
      const lines=[];let color=null,anySupp=false;
      for(const lT of tls){
-      const e=D[lT.id].counties[b.fips];
-      if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=lT.accent;}
+      const e=regionMap(D[lT.id])[b.fips],ee=eraFor(lT.id);
+      if(e&&ee>=0&&e.t){const tl=timeOf(lT.id),v=e.t[ee];lines.push(v==null?'no figure for '+tl.labels[ee]:'<b>'+(Math.abs(v)>=100?fmtInt(Math.round(v)):v)+' '+esc(lT.unit||'')+'</b> · '+tl.labels[ee]);if(!color)color=lT.accent;}
+      else if(e&&inPeople[lT.id]&&e.p!=null){lines.push('<b>net '+(e.p>=0?'+':'−')+fmtInt(Math.abs(e.p))+' people</b>'+esc(e.label.replace(/^[^—]*/,' ')));if(!color)color=lT.accent;}
+      else if(e){lines.push('<b>'+e.label+'</b>');if(!color)color=catOn(lT.id)&&e.c!=null&&e.c>=0?catColor(D[lT.id],e.c):lT.accent;}
       else if(lT.id==='despair-overdoses'||lT.id==='despair-suicide')anySupp=true;
      }
      if(!lines.length&&anySupp)return {k:'COUNTY',ti:b.name,s:'no reportable rate — suppressed or missing<br>(small counts protect privacy)',color:'#5a6577'};
-     if(lines.length)return {k:'COUNTY — '+tls.map(l=>l.title.toUpperCase()).join(' × '),ti:b.name,s:lines.join('<br>'),color:color||'#c8d2e2'};
+     if(lines.length)return {k:(scope==='us'?'COUNTY — ':'')+tls.map(l=>l.title.toUpperCase()).join(' × '),ti:b.name,s:lines.join('<br>'),color:color||'#c8d2e2'};
      break;
     }
    }
@@ -824,26 +1060,80 @@ function onMove(ev){
     $('#datum').textContent=txt;
    }
   }catch(e){}
+  if(tipPinned){
+   // a pinned tooltip holds until the mouse wanders off it; touch never wanders
+   if(ev.pointerType==='touch')return;
+   const psx=tipPinned.x*t.k+t.x,psy=tipPinned.y*t.k+t.y;
+   if(Math.hypot(mx-psx,my-psy)<70)return;
+   unpinTip();
+  }
   let f=qt?qt.find(qx,qy,14/Math.max(1,t.k)):null;
   let content=f?tipHTML(f):regionTip(qx,qy);
   if(f){hoverPt={x:f.x,y:f.y,color:content.color};dirty=true;}
   else if(hoverPt){hoverPt=null;dirty=true;}
   if(content){
-   tip.style.display='block';
-   tip.style.borderLeftColor=content.color;
-   tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
+   renderTip(content,false);
    const tw=tip.offsetWidth,th=tip.offsetHeight;
    tip.style.left=Math.min(mx+16,W-tw-14)+'px';
    tip.style.top=Math.min(my+16,H-th-14)+'px';
-  }else tip.style.display='none';
+  }else{tip.style.display='none';tip._c=null;}
  });
+}
+// ---------- v0.6: tooltips you can hold ----------
+function renderTip(content,pinned){
+ tip.style.display='block';
+ tip.style.borderLeftColor=content.color;
+ tip.classList.toggle('wide',!!content.wide);
+ tip.classList.toggle('pinned',!!pinned);
+ tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+(pinned?'<span class="tt-pin">PINNED · click away to release</span>':'')+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
+ tip._c=content;tip._p=!!pinned;
+}
+function placeTip(content,x,y,pinned){
+ // x,y in base (projected) space; the tooltip rides with the map. The HTML is only
+ // rebuilt when the content changes, so links inside a pinned tip stay clickable.
+ const sx=x*t.k+t.x,sy=y*t.k+t.y;
+ const pin=pinned===undefined?!!tipPinned:pinned;
+ if(tip._c!==content||tip._p!==pin)renderTip(content,pin);
+ tip.style.display='block';
+ const tw=tip.offsetWidth,th=tip.offsetHeight;
+ tip.style.left=Math.max(8,Math.min(sx+16,W-tw-14))+'px';
+ tip.style.top=Math.max(8,Math.min(sy+14,H-th-14))+'px';
+}
+function pinTip(content,x,y){
+ tipPinned={content,x,y};
+ hoverPt={x,y,color:content.color};
+ placeTip(content,x,y,true);
+ dirty=true;
+}
+function unpinTip(){
+ if(!tipPinned)return;
+ tipPinned=null;hoverPt=null;tip.classList.remove('pinned');tip.style.display='none';tip._c=null;dirty=true;
+}
+function onClick(ev){
+ if(ev.target!==undefined&&ev.target.closest&&ev.target.closest('#tooltip'))return;
+ const mx=ev.clientX,my=ev.clientY;
+ const qx=(mx-t.x)/t.k,qy=(my-t.y)/t.k;
+ if(rec){ // composing: a click sets the benchmark for the next stop
+  const C=SC[scope];
+  const g=C.proj.invert?C.proj.invert([qx,qy]):null;
+  if(g&&isFinite(g[0])&&isFinite(g[1])){rec.pin=[+g[0].toFixed(4),+g[1].toFixed(4)];recRender();dirty=true;toast('Benchmark set — it rides with the next captured stop.');}
+  return;
+ }
+ const f=qt?qt.find(qx,qy,(ev.pointerType==='touch'?22:14)/Math.max(1,t.k)):null;
+ if(f){pinTip(tipHTML(f),f.x,f.y);return;}
+ const rt=regionTip(qx,qy);
+ if(rt&&ev.pointerType==='touch'){pinTip(rt,qx,qy);return;}
+ unpinTip();
 }
 
 // ---------- UI ----------
 function updateStatline(){
  const parts=activeIds().map(lid=>{
-  if(lid==='memory-births'&&era>=0&&D[lid].eras)return fmtInt(D[lid].eras.totals[era])+' births, '+D[lid].eras.labels[era];
+  const e=eraFor(lid);
+  if(lid==='memory-births'&&e>=0&&D[lid].eras)return fmtInt(D[lid].eras.totals[e])+' births, '+D[lid].eras.labels[e];
   let s=byId[lid].statline;
+  const tl=timeOf(lid);
+  if(e>=0&&tl)s=(byId[lid].title)+' — '+tl.labels[e]+(tl.counts&&tl.counts[e]!=null?' · '+fmtInt(tl.counts[e]):'');
   if(lens[lid])s=(s?s+' ':'')+'· lens: '+lens[lid].label;
   return s;
  }).filter(Boolean);
@@ -930,6 +1220,10 @@ function buildRail(){
  return railOrder;
 }
 let railOrder=[];
+// Permalinks address layers by position. The v0.6 order is frozen so links already shared
+// keep meaning the same layers; every later layer is appended in registry order.
+const HASH_LEGACY=["memory-births","desire-searches","power-datacenters","power-fortune500","motion-fulfillment","motion-sorting","loss-crashes","loss-layoffs","omen-names","wonder-ufos","despair-overdoses","despair-suicide","residue-superfund","company-socialcapital","control-arsenal","faith-altar","betrayal-ledger"];
+const HASH_ORDER=HASH_LEGACY.concat(R.layers.map(l=>l.id).filter(id=>HASH_LEGACY.indexOf(id)<0));
 
 function openPlate(lid){
  const l=byId[lid],th=themeById[l.theme];
@@ -947,33 +1241,49 @@ function openPlate(lid){
   '<div class="pl-h" style="color:'+l.accent+'">WHY</div><div class="pl-body">'+l.essay.why+'</div>'+
   (l.caveat?'<div class="pl-cav"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
   (srcs?'<div class="pl-h" style="color:'+l.accent+'">SOURCES</div><div class="pl-src">'+srcs+'</div>':'')+
-  (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+v[1]+'">'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+'</div>').join('')+'</div>':'')+
-  (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="https://github.com/ansalamalasna/soulmap/blob/main/data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="https://github.com/ansalamalasna/soulmap/blob/main/data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="https://github.com/ansalamalasna/soulmap/blob/main/registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a></div>':'')+
-  (l.status==='live'?'<div class="pl-solo">SOLO VIEW — other layers dimmed · close to restore</div>':'<div class="pl-solo">'+(l.pendingNote||'')+'</div>');
+  (l.status==='live'&&D[l.id]&&D[l.id].kind==='flows'&&D[l.id].arcs&&D[l.id].arcs.pp?'<div class="pl-h" style="color:'+l.accent+'">COUNT</div><div class="pl-lensrow"><button class="lz-chip ppl-mode'+(inPeople[l.id]?'':' on')+'" data-lid="'+l.id+'" data-p="0">HOUSEHOLDS (TAX RETURNS)</button><button class="lz-chip ppl-mode'+(inPeople[l.id]?' on':'')+'" data-lid="'+l.id+'" data-p="1">PEOPLE (EXEMPTIONS)</button></div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].categories&&D[l.id].categories.toggle?'<div class="pl-h" style="color:'+l.accent+'">SHADE BY</div><div class="pl-lensrow"><button class="lz-chip cat-mode'+(catOn(l.id)?'':' on')+'" data-lid="'+l.id+'" data-cat="0">'+esc((l.unit||'value').toUpperCase())+'</button><button class="lz-chip cat-mode'+(catOn(l.id)?' on':'')+'" data-lid="'+l.id+'" data-cat="1">'+esc((D[l.id].categories.label||'category').toUpperCase())+'</button></div>':'')+
+  (l.status==='live'&&D[l.id]&&D[l.id].categories&&catOn(l.id)?'<div class="pl-h" style="color:'+l.accent+'">LEGEND · '+esc((D[l.id].categories.label||'').toUpperCase())+'</div><div class="pl-legend">'+D[l.id].categories.labels.map((lb,i)=>D[l.id].categories.counts[i]?'<span class="lg-item"><i style="background:'+catColor(D[l.id],i)+'"></i>'+esc(lb)+' <b>'+fmtInt(D[l.id].categories.counts[i])+'</b></span>':'').join('')+'</div>':'')+
+  (l.status==='live'&&timeOf(l.id)&&l.id!=='memory-births'?'<div class="pl-h" style="color:'+l.accent+'">TIME · '+esc((timeOf(l.id).label||'').toUpperCase())+'</div><div class="pl-note">'+timeOf(l.id).labels.length+' steps, '+esc(timeOf(l.id).labels[0])+' → '+esc(timeOf(l.id).labels[timeOf(l.id).labels.length-1])+'. Use the bar at the foot of the map, or ▶ to watch it move.</div>':'')+
+  (l.status==='live'&&l.filters&&l.filters.length&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">LENSES</div><div class="pl-lens">'+l.filters.map(fl=>'<div class="pl-lensrow"><span class="pl-lenslab">'+fl.label+(fl.constellation?' · members are drawn as a constellation':'')+(fl.seq?' · ▶ steps through time':'')+'</span><button class="lz-chip'+(!lens[l.id]||lens[l.id].field!==fl.field?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-clear="1">ALL</button>'+fl.values.map(v=>'<button class="lz-chip'+(lens[l.id]&&lens[l.id].field===fl.field&&lens[l.id].v===v[0]?' on':'')+'" data-lid="'+l.id+'" data-field="'+fl.field+'" data-v="'+v[0]+'" data-label="'+esc(v[1])+'"'+(fl.constellation?' data-const="1"':'')+'>'+v[1]+' <span>'+fmtInt(v[2])+'</span></button>').join('')+(fl.seq?'<button class="lz-chip lz-play" data-lid="'+l.id+'" data-field="'+fl.field+'" title="Step through '+esc(fl.label.toLowerCase())+'">'+(lensPlay&&lensPlay.lid===l.id&&lensPlay.field===fl.field?'■':'▶')+'</button>':'')+'</div>').join('')+'</div>':'')+
+  (l.status==='live'&&D[l.id]?'<div class="pl-h" style="color:'+l.accent+'">DATA</div><div class="pl-src"><a href="'+GH+'data/staging/'+l.id+'.json" target="_blank" rel="noopener noreferrer">staging JSON</a> · <a href="'+GH+'data/staging/'+l.id+'.provenance.json" target="_blank" rel="noopener noreferrer">provenance</a> · <a href="'+GH+'registry/registry.json" target="_blank" rel="noopener noreferrer">registry entry</a> · <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a></div>':'')+
+  (l.status==='live'?'<div class="pl-solo">SOLO VIEW — other layers dimmed · the audio follows · close to restore</div>':'<div class="pl-solo">'+(l.pendingNote||'')+'</div>');
  $('#plate').style.borderTopColor=l.accent;
  $('#plate').classList.add('open');
  $('#plateClose').addEventListener('click',closePlate);
- inner.querySelectorAll('.lz-chip').forEach(b=>b.addEventListener('click',()=>{
+ inner.querySelectorAll('.cat-mode').forEach(b=>b.addEventListener('click',ev=>{
+  ev.stopPropagation();catMode[b.dataset.lid]=b.dataset.cat==='1';dirty=true;openPlate(b.dataset.lid);
+ }));
+ inner.querySelectorAll('.ppl-mode').forEach(b=>b.addEventListener('click',ev=>{
+  ev.stopPropagation();inPeople[b.dataset.lid]=b.dataset.p==='1';bakeLayer(b.dataset.lid,true);dirty=true;openPlate(b.dataset.lid);
+ }));
+ inner.querySelectorAll('.lz-chip:not(.lz-play):not(.cat-mode):not(.ppl-mode)').forEach(b=>b.addEventListener('click',()=>{
   const bl=b.dataset.lid;
+  stopLensPlay();
   if(b.dataset.clear)delete lens[bl];
-  else lens[bl]={field:b.dataset.field,v:parseInt(b.dataset.v,10),label:b.dataset.label};
-  bakeLayer(bl,true);scheduleQt();updateStatline();dirty=true;
+  else lens[bl]={field:b.dataset.field,v:parseInt(b.dataset.v,10),label:b.dataset.label,constellation:!!b.dataset.const};
+  applyLens(bl);
   openPlate(bl);
  }));
+ inner.querySelectorAll('.lz-play').forEach(b=>b.addEventListener('click',()=>toggleLensPlay(b.dataset.lid,b.dataset.field)));
  if(l.status==='live'){
-  if(!scopeHas(lid)&&l.scopes.includes('us'))switchScope('us');
+  if(!scopeHas(lid))switchScope(l.scopes.includes('us')?'us':'world');
   if(!plateOpen)savedTargets={...target};
   for(const x of live)target[x.id]=(x.id===lid?1:0);
-  chipRefresh();updateStatline();scheduleQt();terrainDirty=true;dirty=true;
+  plateOpen=lid;
+  if(!tipPinned)tip.style.display='none';
+  chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
  }
  plateOpen=lid;
 }
 function closePlate(){
  if(!plateOpen)return;
+ stopLensPlay();
  $('#plate').classList.remove('open');
  if(savedTargets){for(const k in savedTargets)target[k]=savedTargets[k];savedTargets=null;}
  plateOpen=null;
- chipRefresh();updateStatline();scheduleQt();terrainDirty=true;dirty=true;
+ if(!tipPinned)tip.style.display='none';
+ chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
 }
 
 function buildHero(){
@@ -985,7 +1295,7 @@ function buildHero(){
   '<p class="hero-man">'+R.meta.manifesto+'</p>'+
   '<div class="hero-stats">'+live.length+' LAYERS LIVE · '+fmtInt(total)+' COORDINATES OF HUMAN ACTIVITY · ZERO RUNTIME NETWORK CALLS</div>'+
   '<button id="heroEnter">ENTER THE SURVEY</button>'+
-  '<div class="hero-hint">hover anything · '+(railOrder.length>9?'1–9, 0':'1–'+railOrder.length)+' layers · R readings · F findings · G place names · E everything · C curated · ♪ audio · U / W sheets</div>'+
+  '<div class="hero-hint">hover or tap anything · '+(railOrder.length>9?'1–9, 0':'1–'+railOrder.length)+' layers · R readings · F findings · ? plunge · G place names · E everything · C curated · ♪ audio · U / W sheets</div>'+
   '</div>';
  const go=()=>{
   if($('#hero').classList.contains('gone'))return;
@@ -1004,21 +1314,26 @@ function buildAbout(){
   '<div class="pl-over">'+R.meta.sheet+'</div>'+
   '<div class="ab-title">About the Survey</div>'+
   '<div class="ab-body">'+R.meta.manifesto+'</div>'+
-  '<div class="ab-body">Each layer answers three questions — <i>what</i> the data is, <i>how</i> it was measured, and <i>why</i> it says something about us. Density becomes elevation: the hillshade and contour lines are computed from the active layers, so the topography you see is literally the shape of the data. Nothing here is invented; every point traces to a named source with a retrieval date, and one layer (mass layoffs) is deliberately shown as pending rather than faked.</div>'+
+  '<div class="ab-body">Each layer answers three questions — <i>what</i> the data is, <i>how</i> it was measured, and <i>why</i> it says something about us. Density becomes elevation: the hillshade and contour lines are computed from the active layers, so the topography you see is literally the shape of the data. Nothing here is invented; every point traces to a named source with a retrieval date, and two layers (the arsenal, mass layoffs) are deliberately shown as pending rather than faked.</div>'+
   '<div class="ab-h">METHOD</div>'+
   '<div class="ab-body" style="font-size:13px">Point layers render as additive light — where records overlap, the map burns brighter. Weighted density fields drive the shared relief. The page is fully self-contained: basemaps, data, and libraries are baked in at build time and it makes zero runtime network calls (fonts degrade gracefully). Built on a registry architecture: adding a future layer is one data file and one registry entry.</div>'+
   '<div class="ab-h">SOURCES & LICENSES</div><div class="ab-src">'+rows+
-  '<div style="margin-top:10px">Basemaps: Natural Earth (public domain). Geocoding &amp; reference places: GeoNames (CC-BY 4.0). Notable-people data: Laouenan et al. (CC-BY-SA 4.0). Map data © OpenStreetMap contributors (ODbL). FARS &amp; GNIS: U.S. public domain.</div></div>'+
+  '<div style="margin-top:10px">Basemaps: Natural Earth (public domain). Geocoding &amp; reference places: GeoNames (CC-BY 4.0). Notable-people data: Laouenan et al. (CC-BY-SA 4.0). Map data © OpenStreetMap contributors (ODbL). FARS &amp; GNIS: U.S. public domain. Languages: Glottolog 5.3, Max Planck Institute for Evolutionary Anthropology (CC-BY 4.0). Power plants: World Resources Institute (CC-BY 4.0). COVID-19 deaths: The New York Times (non-commercial licence, credit to The New York Times). Fatal police shootings: The Washington Post, Fatal Force (CC-BY-NC-SA 4.0 — the derived county layer is shared alike). Evictions: Princeton University Eviction Lab (ODC-BY 1.0). Air routes: OpenFlights.org (ODbL; derived flows shared alike). Conflict deaths: Uppsala Conflict Data Program GED 26.1 (CC BY 4.0). Refugees: UNHCR Refugee Population Statistics Database (CC BY 4.0). Itemized gifts: IRS Statistics of Income (public domain). Dark-sky places, populations and codes: Wikidata (CC0).</div></div>'+
   '<div class="ab-h">METHODS</div>'+
-  '<div class="ab-body" style="font-size:13px">Each layer is fetched by its own pipeline script into a staging file with a provenance sidecar (method, counts, caveats), then packed — coordinates quantized to ~110 m, giant datasets aggregated to cells — and baked into this single page. Terrain is computed here in your browser: density grids from the active layers, Gaussian-smoothed, contoured, and hillshaded; nothing is pre-rendered. Findings are computed at build time by pipeline/correlate.py (county joins, cell-grid log–log correlations), hand-reviewed, and shipped with their method notes; one deliberately spurious correlation is included as the control. Known limitations live on each plate as a FIELD NOTE. Full pipeline, data, and provenance: <a href="https://github.com/ansalamalasna/soulmap" target="_blank" rel="noopener noreferrer">github.com/ansalamalasna/soulmap</a>.</div>'+
+  '<div class="ab-body" style="font-size:13px">Each layer is fetched by its own pipeline script into a staging file with a provenance sidecar (method, counts, caveats), then packed — coordinates quantized to ~110 m, giant datasets aggregated to cells — and baked into this single page. Terrain is computed here in your browser: density grids from the active layers, Gaussian-smoothed, contoured, and hillshaded; nothing is pre-rendered. Findings are computed at build time by pipeline/correlate.py (county joins, cell-grid log–log correlations), hand-reviewed, and shipped with their method notes; one deliberately spurious correlation is included as the control. Known limitations live on each plate as a FIELD NOTE. Full pipeline, data, and provenance: <a href="https://github.com/'+R.meta.repo+'" target="_blank" rel="noopener noreferrer">github.com/'+R.meta.repo+'</a> · the raw endpoints are documented as a <a href="'+GH+'docs/DATA_API.md" target="_blank" rel="noopener noreferrer">data API</a>.</div>'+
+  '<div class="ab-h">CITIZEN READINGS</div>'+
+  '<div class="ab-body" style="font-size:13px">Readings are no longer author-only. From READINGS, <i>compose a reading</i>: frame a view, write a line, capture a stop, set a benchmark by clicking the map, and finish — the whole tour is encoded into the link itself. No server, no account. Anyone who opens the link can answer with a counter-reading. Citizen readings are marked as a reader\'s, never as the survey\'s canon.</div>'+
+  '<div class="ab-h">NON-COMMERCIAL · REMOVAL ON REQUEST</div>'+
+  '<div class="ab-body" style="font-size:13px">The Soul Survey is a non-commercial project. It republishes facts that are already public, each traced to its source. If you are named or represented in this data and want something removed, or a rights holder objects to how a source is used, ask and it will be taken down. Open an issue at <a href="https://github.com/'+R.meta.repo+'/issues" target="_blank" rel="noopener noreferrer">github.com/'+R.meta.repo+'/issues</a>.</div>'+
   '<div class="ab-h">CITE THIS SURVEY</div>'+
-  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. https://ansalamalasna.github.io/soulmap/ — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · Laouenan et al. 2022 (CC-BY-SA).</div>'+
+  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. '+R.meta.site+' — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · IRS SOI 2022–23 · NCHS/CHR&amp;R 2018–22 · Social Capital Atlas 2022 · U.S. Religion Census 2020 · Laouenan et al. 2022 (CC-BY-SA).</div>'+
   '<button class="ab-copy" id="abCopy">COPY CITATION</button>'+
   '<div class="ab-h">SURVEY LOG</div>'+
   '<table class="ab-log">'+live.map(l=>'<tr><td>'+l.title+'</td><td>'+(l.retrieved?String(l.retrieved).slice(0,10):'—')+'</td><td>'+(l.statline||l.unit)+'</td></tr>').join('')+
-  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v'+R.meta.version+' the sorting, the ledger, lenses &amp; bios</td></tr></table>'+
+  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v0.5 the sorting, the ledger, lenses &amp; bios · v'+R.meta.version+' the ledger lit, citizen readings, constellations, the plunge, the living log</td></tr></table>'+
+  (R.meta.log&&R.meta.log.length?'<div class="ab-h">THE LIVING LOG</div><div class="ab-body" style="font-size:12px;margin-bottom:6px">The survey\'s memory of itself, straight from its history: every refresh, every correction, in public.</div><div class="ab-livelog">'+R.meta.log.map(r=>'<div><span>'+esc(r[0])+'</span>'+esc(r[1])+'</div>').join('')+'</div>':'')+
   '<div class="ab-h">CONTROLS</div>'+
-  '<div class="ab-kbd"><b>/</b> search the Index &nbsp; <b>1–'+railOrder.length+'</b> toggle layers &nbsp; <b>G</b> place names &nbsp; <b>R</b> readings &nbsp; <b>F</b> findings &nbsp; <b>E</b> everything &nbsp; <b>C</b> curated &nbsp; <b>U</b>/<b>W</b> sheets &nbsp; <b>scroll</b> zoom &nbsp; <b>ESC</b> close</div>';
+  '<div class="ab-kbd"><b>/</b> search the Index &nbsp; <b>?</b> random plunge &nbsp; <b>1–'+Math.min(10,railOrder.length)+'</b> toggle layers &nbsp; <b>click</b> hold a tooltip &nbsp; <b>G</b> place names &nbsp; <b>R</b> readings &nbsp; <b>F</b> findings &nbsp; <b>E</b> everything &nbsp; <b>C</b> curated &nbsp; <b>U</b>/<b>W</b> sheets &nbsp; <b>scroll</b> zoom &nbsp; <b>ESC</b> close</div>';
  const cp=$('#abCopy');
  if(cp)cp.addEventListener('click',()=>{
   const txt=$('#abCiteText').textContent;
@@ -1031,6 +1346,7 @@ function buildAbout(){
 function switchScope(s){
  if(s===scope)return;
  scope=s;
+ unpinTip();
  buildScope(s);
  resetGlowFades();
  t=d3.zoomIdentity;
@@ -1080,19 +1396,22 @@ function memGrid(C,er){
  return out;
 }
 function layerGrid(C,lid){
- if(lid==='memory-births'&&era>=0){const m=memGrid(C,era);return m.grid;}
+ const e=eraFor(lid);
+ if(lid==='memory-births'&&e>=0){const m=memGrid(C,e);return m.grid;}
+ if(e>=0&&byId[lid].time&&D[lid].kind==='points'){const m=timeGrid(C,lid,e);if(m)return m.grid;}
  return C.grids[lid];
 }
 function layerContours(C,lid){
- if(lid==='memory-births'&&era>=0){const m=memGrid(C,era);return m.contours;}
+ const e=eraFor(lid);
+ if(lid==='memory-births'&&e>=0){const m=memGrid(C,e);return m.contours;}
+ if(e>=0&&byId[lid].time&&D[lid].kind==='points'){const m=timeGrid(C,lid,e);if(m)return m.contours;}
  return C.contours[lid];
 }
 
 // ---------- v2: counties ----------
 function ensureCounties(C){
- if(C.countyBoxes||scope!=='us'||!B.counties)return;
+ if(C.countyBoxes||C.scope!=='us'||!B.counties)return;
  if(!geo.counties)geo.counties=topo.feature(B.counties,B.counties.objects.counties).features;
- const dd=D['despair-overdoses'];
  C.countyBoxes=[];
  for(const f of geo.counties){
   const fips=String(f.id).padStart(5,'0');
@@ -1102,32 +1421,92 @@ function ensureCounties(C){
   C.countyBoxes.push({fips,p,name:f.properties.name,x0:bb[0][0],y0:bb[0][1],x1:bb[1][0],y1:bb[1][1]});
  }
 }
-function countyTintFor(C,lid){
- C.countyTints=C.countyTints||{};
- if(C.countyTints[lid]!==undefined)return C.countyTints[lid];
- const d=D[lid],l=byId[lid];
- if(!d||!C.countyBoxes){C.countyTints[lid]=null;return null;}
+function ensureCountries(C){
+ if(C.countryBoxes||C.scope!=='world')return;
+ C.countryBoxes=[];
+ for(const f of geo.countries){
+  if(f.id==null)continue;
+  const key=String(f.id).padStart(3,'0');
+  const ds=C.gp(f);if(!ds)continue;
+  const bb=C.gp.bounds(f);
+  C.countryBoxes.push({fips:key,p:new Path2D(ds),name:(f.properties&&f.properties.name)||key,x0:bb[0][0],y0:bb[0][1],x1:bb[1][0],y1:bb[1][1]});
+ }
+}
+// v0.7: one tint engine for counties (U.S. sheet) and countries (world sheet)
+function regionBoxes(C,lid){
+ const rk=byId[lid].forms.regionKind;
+ if(rk==='county'&&C.scope==='us'){ensureCounties(C);return C.countyBoxes;}
+ if(rk==='country'&&C.scope==='world'){ensureCountries(C);return C.countryBoxes;}
+ return null;
+}
+function regionMap(d){return d?(d.counties||d.countries||null):null;}
+function regionVal(lid,e){const ee=eraFor(lid);return (ee>=0&&e.t)?e.t[ee]:e.v;}
+const catMode={};
+const inPeople={};  // lid -> true when the sorting is counted in people, not households
+function flowW(lid){const d=D[lid];return inPeople[lid]&&d.arcs.pp?{a:d.arcs.pp,m:d.arcmaxp||1}:{a:d.arcs.hh,m:d.arcmax||1};}   // lid -> true when a toggled categorical layer shows its categories
+function catOn(lid){const d=D[lid];return !!(d&&d.categories&&(d.categories.toggle?catMode[lid]:true));}
+function catColor(d,c){const cs=d.categories&&d.categories.colors;return (cs&&cs[c])||'#8796ad';}
+function regionTintFor(C,lid){
+ C.regionTints=C.regionTints||{};
+ const key=lid+':'+eraFor(lid)+':'+(catOn(lid)?1:0)+(inPeople[lid]?':p':'');
+ if(C.regionTints[key]!==undefined)return C.regionTints[key];
+ const d=D[lid],l=byId[lid],boxes=regionBoxes(C,lid),M=regionMap(d);
+ if(!d||!boxes||!M){C.regionTints[key]=null;return null;}
  const cv=document.createElement('canvas');cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
  const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
  if(d.kind==='flows'){
-  const vmax=d.vmax||1;
-  for(const b of C.countyBoxes){
-   const e=d.counties[b.fips];if(!e)continue;
-   const norm=Math.min(1,Math.abs(e.v)/vmax);
-   x.fillStyle=hexA(e.v>=0?l.accent:(l.accent2||'#c98a7a'),0.04+norm*0.30);
+  const pe=inPeople[lid],vmax=(pe?d.vmaxp:d.vmax)||1;
+  for(const b of boxes){
+   const e=M[b.fips];if(!e)continue;
+   const ev=pe&&e.p!=null?e.p:e.v;
+   const norm=Math.min(1,Math.abs(ev)/vmax);
+   x.fillStyle=hexA(ev>=0?l.accent:(l.accent2||'#c98a7a'),0.04+norm*0.30);
+   x.fill(b.p);
+  }
+ }else if(catOn(lid)&&eraFor(lid)<0){
+  // categorical: each region wears its category's colour
+  for(const b of boxes){
+   const e=M[b.fips];if(!e||e.c==null||e.c<0)continue;
+   x.fillStyle=hexA(catColor(d,e.c),0.30);
    x.fill(b.p);
   }
  }else{
-  const vmax=d.vmax||60;
-  for(const b of C.countyBoxes){
-   const e=d.counties[b.fips];if(!e)continue;
-   const norm=Math.min(1,e.v/vmax);
-   x.fillStyle=hexA(l.accent,0.04+norm*0.30);
+  const ser=eraFor(lid)>=0,vmax=(ser&&d.vmaxT)||d.vmax||60,vmin=ser?0:(d.vmin||0);
+  for(const b of boxes){
+   const e=M[b.fips];if(!e)continue;
+   const v=regionVal(lid,e);if(v==null)continue;
+   const norm=Math.max(0,Math.min(1,(v-vmin)/((vmax-vmin)||1)));
+   x.fillStyle=hexA(l.accent,0.04+norm*(l.tintMax||0.30));
    x.fill(b.p);
   }
  }
- C.countyTints[lid]=cv;
+ C.regionTints[key]=cv;
  return cv;
+}
+function rasterFor(C,lid){
+ C.rasters=C.rasters||{};
+ if(C.rasters[lid]!==undefined)return C.rasters[lid];
+ const d=D[lid],l=byId[lid];
+ const bin=atob(d.b64),w=d.w,h=d.h,[x0,y0,x1,y1]=d.bbox,dx=(x1-x0)/w,dy=(y1-y0)/h;
+ const cv=document.createElement('canvas');cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+ const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+ const r=parseInt(l.accent.slice(1,3),16),g=parseInt(l.accent.slice(3,5),16),b=parseInt(l.accent.slice(5,7),16);
+ for(let j=0;j<h;j++){
+  const lat=y1-(j+.5)*dy;
+  for(let i=0;i<w;i++){
+   const v=bin.charCodeAt(j*w+i);if(!v)continue;
+   const lon=x0+(i+.5)*dx,p=C.proj([lon,lat]);if(!p)continue;
+   const q=C.proj([lon+dx,lat-dy]);
+   const sx=q?Math.max(.6,Math.abs(q[0]-p[0])):1,sy=q?Math.max(.6,Math.abs(q[1]-p[1])):1;
+   x.fillStyle='rgba('+r+','+g+','+b+','+(Math.pow(v/255,.7)*.85).toFixed(3)+')';
+   x.fillRect(p[0]-sx/2,p[1]-sy/2,sx+.4,sy+.4);
+  }
+ }
+ C.rasters[lid]=cv;
+ return cv;
+}
+function regionTintLayers(){
+ return live.filter(l=>l.forms.tint&&scopeHas(l.id)&&((l.forms.regionKind==='county'&&scope==='us')||(l.forms.regionKind==='country'&&scope==='world')));
 }
 function countyTintLayers(){
  return live.filter(l=>l.forms.tint&&l.forms.regionKind==='county'&&scopeHas(l.id));
@@ -1140,35 +1519,101 @@ function toast(msg,ms){
  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||3400);
 }
 
-// ---------- v2: era scrubber ----------
+// ---------- v0.7: TIME EVERYWHERE ----------
+// Any layer whose registry entry declares `time` gets the scrubber. The bar shows the
+// buckets of the first active timed layer (rail order); `era` indexes those buckets and
+// applies to that layer only. Memory keeps its five eras through the same door.
+function timeOf(lid){
+ const l=byId[lid],d=D[lid];if(!l||!d)return null;
+ if(lid==='memory-births')return d.eras?{labels:d.eras.labels,counts:d.eras.totals,label:'era of birth'}:null;
+ if(!l.time||!l.time.buckets)return null;
+ return {labels:l.time.buckets.map(b=>b[2]),counts:l.time.counts||null,label:l.time.label||'',spec:l.time};
+}
+function timeLid(){const ids=activeIds();for(const id of railOrder)if(ids.indexOf(id)>=0&&timeOf(id))return id;return null;}
+function eraFor(lid){return (era>=0&&timeLid()===lid)?era:-1;}
+function timeSkip(lid){
+ const e=eraFor(lid);if(e<0||lid==='memory-births')return null;
+ const tm=byId[lid].time,arr=D[lid][tm.field];if(!arr||!tm.buckets[e])return null;
+ const lo=tm.buckets[e][0],hi=tm.buckets[e][1];
+ if(tm.mode==='upto'){
+  // standing ground: listed by the bucket's end, and (when an end field exists) not yet gone
+  const endA=tm.endField?D[lid][tm.endField]:null;
+  return endA?(i=>!(arr[i]&&arr[i]<=hi&&!(endA[i]&&endA[i]<=hi))):(i=>!(arr[i]&&arr[i]<=hi));
+ }
+ return i=>!(arr[i]>=lo&&arr[i]<=hi);
+}
+function timeGrid(C,lid,e){
+ C.timeGrids=C.timeGrids||{};
+ const key=lid+':'+e;
+ if(C.timeGrids[key]!==undefined)return C.timeGrids[key];
+ const l=byId[lid],L=C.layers[lid],d=D[lid];
+ if(!L||!L.pts||!(l.weight>0)){C.timeGrids[key]=null;return null;}
+ const ext=C.ext,exw=ext[1][0]-ext[0][0],exh=ext[1][1]-ext[0][1],GW=C.GW,GH=C.GH;
+ const grid=new Float32Array(GW*GH),P=L.pts,vv=d.v,sk=timeSkip(lid);
+ for(let i=0;i<P.n;i++){
+  if(!P.keep[i]||(sk&&sk(i)))continue;
+  const gx=Math.floor((P.xs[i]-ext[0][0])/exw*GW),gy=Math.floor((P.ys[i]-ext[0][1])/exh*GH);
+  if(gx>=0&&gx<GW&&gy>=0&&gy<GH)grid[gy*GW+gx]+=vv?Math.min(vv[i],4):1;
+ }
+ let g=gaussBlur(grid,GW,GH);
+ // normalise against the full layer so the land rises over time instead of re-scaling
+ const full=C.grids[lid];let p=0;
+ if(full){const nz=[];for(let i=0;i<g.length;i++)if(g[i]>0)nz.push(g[i]);nz.sort((a,b)=>a-b);p=nz.length?nz[Math.min(nz.length-1,Math.floor(nz.length*.996))]:1;}
+ for(let i=0;i<g.length;i++)g[i]=Math.min(1,g[i]/(p||1));
+ const out={grid:g,contours:null};
+ if(l.forms.contours){
+  const cs=d3.contours().size([GW,GH]).thresholds(CONTOUR_T)(g);
+  out.contours=cs.map((c,ci)=>{const p2=new Path2D();c.coordinates.forEach(poly=>poly.forEach(ring=>{ring.forEach((pt,j)=>{const x=ext[0][0]+pt[0]/GW*exw,y=ext[0][1]+pt[1]/GH*exh;j?p2.lineTo(x,y):p2.moveTo(x,y);});p2.closePath();}));return {p:p2,i:ci};});
+ }
+ C.timeGrids[key]=out;
+ return out;
+}
+let eraBarLid;   // the layer whose buckets the bar currently shows
 function buildEraBar(){
- const d=D['memory-births'];
- if(!d||!d.eras)return;
  const bar=$('#eraBar');bar.innerHTML='';
- const mk=(label,e)=>{
-  const b=document.createElement('button');b.textContent=label;b.dataset.era=e;
+ const lid=timeLid(),tl=lid?timeOf(lid):null;
+ bar.dataset.lid=lid||'';
+ if(!tl)return;
+ const l=byId[lid];
+ const mk=(label,e,title)=>{
+  const b=document.createElement('button');b.textContent=label;b.dataset.era=e;if(title)b.title=title;
   b.addEventListener('click',()=>setEra(parseInt(b.dataset.era,10)));
   bar.appendChild(b);return b;
  };
+ const tag=document.createElement('span');tag.className='eb-tag';tag.style.color=l.accent;
+ tag.textContent=(tl.label||l.title).toUpperCase();bar.appendChild(tag);
  mk('ALL TIME',-1);
- d.eras.labels.forEach((lb,i)=>mk(lb,i));
- const play=document.createElement('button');play.className='play';play.textContent='▶';
+ tl.labels.forEach((lb,i)=>mk(lb,i,tl.counts&&tl.counts[i]!=null?fmtInt(tl.counts[i]):''));
+ const play=document.createElement('button');play.className='play';play.textContent=eraPlay?'■':'▶';
  play.addEventListener('click',()=>{
   if(eraPlay){clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
   play.textContent='■';let e=era<0?-1:era;
+  const n=tl.labels.length,ms=n>8?1100:2100;
   eraPlay=setInterval(()=>{
    e++;
-   if(e>4){setEra(-1);clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
+   if(e>n-1){setEra(-1);clearInterval(eraPlay);eraPlay=null;play.textContent='▶';return;}
    setEra(e);
-  },2100);
+  },ms);
  });
  bar.appendChild(play);
- eraRefresh();
 }
 function eraRefresh(){
- const d=D['memory-births'];
- const show=d&&d.eras&&activeIds().indexOf('memory-births')>=0;
- $('#eraBar').classList.toggle('show',!!show);
+ const lid=timeLid();
+ if(eraBarLid!==undefined&&lid!==eraBarLid){
+  // the bar now belongs to another layer: its buckets mean something else
+  if(eraPlay){clearInterval(eraPlay);eraPlay=null;}
+  if(era!==-1){era=-1;bakeGlow();scheduleQt();updateStatline();terrainDirty=true;dirty=true;}
+ }
+ if(lid!==eraBarLid||!$('#eraBar').children.length){eraBarLid=lid;buildEraBar();}
+ const tl=lid?timeOf(lid):null;
+ if(tl&&era>=tl.labels.length)era=-1;
+ $('#eraBar').classList.toggle('show',!!tl);
+ // centre the bar on the map area (right of the rail), never under it
+ const pl=padLeft(),bar=$('#eraBar'),pe=$('#plate');
+ const right=(plateOpen&&pe&&W>760)?Math.min(W-46,W-26-(pe.offsetWidth||392)-16):W-46;
+ if(W>760){bar.style.left=((pl+right)/2)+'px';bar.style.maxWidth=Math.max(240,right-pl-24)+'px';}else{bar.style.left='';bar.style.maxWidth='';}
+ // too many steps for the room: the label tag gives way first (the plate names the series)
+ const tg=bar.querySelector('.eb-tag');if(tg){tg.style.display='';if(bar.scrollWidth>bar.clientWidth+2)tg.style.display='none';}
  document.querySelectorAll('#eraBar button[data-era]').forEach(b=>{
   b.classList.toggle('on',parseInt(b.dataset.era,10)===era);
  });
@@ -1183,20 +1628,45 @@ function setEra(e){
 
 // ---------- v2: camera flights ----------
 function flyTo(bbox,ms,done){
+ // Albers USA returns null for anything off the composite (an ocean corner of a
+ // country-wide box), so the box is sampled, not cornered: whatever projects, we fit.
  const C=SC[scope];
- const pts=[[bbox[0][0],bbox[0][1]],[bbox[1][0],bbox[1][1]],[bbox[0][0],bbox[1][1]],[bbox[1][0],bbox[0][1]]];
+ const N=7,pts=[];
+ for(let i=0;i<=N;i++)for(let j=0;j<=N;j++)pts.push([bbox[0][0]+(bbox[1][0]-bbox[0][0])*i/N,bbox[0][1]+(bbox[1][1]-bbox[0][1])*j/N]);
  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,ok=false;
  for(const g of pts){
-  const p=C.proj(g);if(!p)continue;ok=true;
+  const p=C.proj(g);if(!p||!isFinite(p[0])||!isFinite(p[1]))continue;ok=true;
   x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);
  }
- if(!ok){done&&done();return;}
  const ext=C.ext,aw=ext[1][0]-ext[0][0],ah=ext[1][1]-ext[0][1];
- const k=Math.max(1,Math.min(26,0.85*Math.min(aw/Math.max(x1-x0,1),ah/Math.max(y1-y0,1))));
- const cx=(x0+x1)/2,cy=(y0+y1)/2,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
- const target=d3.zoomIdentity.translate(ecx-k*cx,ecy-k*cy).scale(k);
+ let target;
+ if(!ok)target=d3.zoomIdentity;
+ else{
+  const k=Math.max(1,Math.min(26,0.85*Math.min(aw/Math.max(x1-x0,1),ah/Math.max(y1-y0,1))));
+  const cx=(x0+x1)/2,cy=(y0+y1)/2,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+  target=k<=1.02?d3.zoomIdentity:d3.zoomIdentity.translate(ecx-k*cx,ecy-k*cy).scale(k);
+ }
  d3.select('#stage').transition('fly').duration(REDUCED?0:(ms||2500)).ease(d3.easeCubicInOut)
   .call(zoomB.transform,target).on('end interrupt',()=>{done&&done();});
+}
+// camera as geography: a centre and a zoom survive any screen size
+function camFor(lon,lat,k){
+ const C=SC[scope],p=C.proj([lon,lat]);
+ if(!p||!isFinite(p[0]))return d3.zoomIdentity;
+ k=Math.max(1,Math.min(26,k||1));
+ const ext=C.ext,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+ return k<=1.02?d3.zoomIdentity:d3.zoomIdentity.translate(ecx-k*p[0],ecy-k*p[1]).scale(k);
+}
+function camNow(){
+ const C=SC[scope];if(!C||!C.proj.invert)return null;
+ const ext=C.ext,ecx=(ext[0][0]+ext[1][0])/2,ecy=(ext[0][1]+ext[1][1])/2;
+ const g=C.proj.invert([(ecx-t.x)/t.k,(ecy-t.y)/t.k]);
+ if(!g||!isFinite(g[0])||!isFinite(g[1]))return null;
+ return {lon:+g[0].toFixed(4),lat:+g[1].toFixed(4),k:+t.k.toFixed(3)};
+}
+function flyToCam(lon,lat,k,ms,done){
+ d3.select('#stage').transition('fly').duration(REDUCED?0:(ms||2200)).ease(d3.easeCubicInOut)
+  .call(zoomB.transform,camFor(lon,lat,k)).on('end interrupt',()=>{done&&done();});
 }
 
 // ---------- v2: readings ----------
@@ -1237,10 +1707,13 @@ function startReading(i){
  wireCapNav();
 }
 function stepReading(dir){
+ if(tourIdx!==null&&tour){startTour((tourIdx+dir+tour.s.length)%tour.s.length);return;}
  if(reading===null)return;
  let j=(reading+dir+R.readings.length)%R.readings.length;
  startReading(j);
 }
+const NUMWORDS=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+function numWord(n){const w=NUMWORDS[n]||String(n);return w.charAt(0).toUpperCase()+w.slice(1);}
 function runOrientation(){
  if(scope!=='us')switchScope('us');
  for(const l of live)target[l.id]=0;
@@ -1248,7 +1721,7 @@ function runOrientation(){
  chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
  d3.select('#stage').transition('fly').duration(900).call(zoomB.transform,d3.zoomIdentity);
  const skipRow='<div class="cc-row"><span class="cc-step">ORIENTATION</span><span class="cc-nav"><button class="cc-btn" id="ccEnd">SKIP ▸</button></span></div>';
- showCap(capBase('HOW TO READ THIS MAP','Orientation',R.readings[0].text)+skipRow);
+ showCap(capBase('HOW TO READ THIS MAP','Orientation',R.readings[0].text.replace('{n}',numWord(railOrder.length)))+skipRow);
  wireCapNav();
  railOrder.forEach((lid,ix)=>{
   orientTimers.push(setTimeout(()=>{
@@ -1277,23 +1750,33 @@ function endReading(){
   d3.select('#stage').transition('fly').duration(1500).ease(d3.easeCubicInOut)
    .call(zoomB.transform,d3.zoomIdentity.translate(s.x,s.y).scale(s.k));
  }
- reading=null;readingSaved=null;findingOpen=null;setCompare(null);
+ reading=null;readingSaved=null;findingOpen=null;tourIdx=null;setCompare(null);
  hideCap();
  chipRefresh();updateStatline();eraRefresh();scheduleQt();
  terrainDirty=true;dirty=true;writeHash();
 }
 function maybeOrientation(){
+ if(tour){startTour(0);return;}
  if(hashHadState)return;
  startReading(0);
 }
 function buildReadingsMenu(){
  const m=$('#readingsMenu');m.innerHTML='';
+ if(tour){
+  const it=document.createElement('div');it.className='rm-item citizen';
+  it.innerHTML='<div class="rk">A CITIZEN READING · '+tour.s.length+' STOP'+(tour.s.length>1?'S':'')+' · FROM THE LINK</div><div class="rt">'+esc(tour.t)+'</div>';
+  it.addEventListener('click',()=>startTour(0));
+  m.appendChild(it);
+ }
  R.readings.forEach((r,i)=>{
   const it=document.createElement('div');it.className='rm-item';
   it.innerHTML='<div class="rk">'+r.kicker+'</div><div class="rt">'+r.title+'</div>';
   it.addEventListener('click',()=>startReading(i));
   m.appendChild(it);
  });
+ const mk=(k,tt,fn)=>{const it=document.createElement('div');it.className='rm-item special';it.innerHTML='<div class="rk">'+k+'</div><div class="rt">'+tt+'</div>';it.addEventListener('click',fn);m.appendChild(it);};
+ mk('COMPOSE · NO SERVER, NO ACCOUNT','✎ Record your own reading',()=>startRecording(null));
+ mk('SERENDIPITY · PRESS ?','⚄ Random plunge',plunge);
 }
 
 // ---------- v2: locate ----------
@@ -1373,30 +1856,54 @@ function exportSheet(){
 }
 
 // ---------- v2: permalinks ----------
+// codec v2: the camera is geography (c=lon,lat & k), so a link opens on the same place
+// on any screen; a lens rides along (z=); a citizen reading rides along (t=).
+// v1 links (pixel x/y) still open.
+function currentHash(noTour){
+ const l=HASH_ORDER.map(id=>target[id]>0?1:0).join('');
+ const cam=camNow();
+ let h='#s='+scope+'&l='+l+'&e='+era+'&k='+t.k.toFixed(3);
+ if(cam)h+='&c='+cam.lon+','+cam.lat; else h+='&x='+t.x.toFixed(1)+'&y='+t.y.toFixed(1);
+ const zl=Object.keys(lens).find(id=>lens[id]&&scopeHas(id)&&target[id]>0);
+ if(zl)h+='&z='+encodeURIComponent(zl+':'+lens[zl].field+':'+lens[zl].v);
+ if(tourParam&&!noTour)h+='&t='+tourParam;
+ return h;
+}
 function writeHash(){
  clearTimeout(hashTimer);
- hashTimer=setTimeout(()=>{
-  try{
-   const l=railOrder.map(id=>target[id]>0?1:0).join('');
-   history.replaceState(null,'','#s='+scope+'&l='+l+'&e='+era+'&k='+t.k.toFixed(3)+'&x='+t.x.toFixed(1)+'&y='+t.y.toFixed(1));
-  }catch(e){}
- },300);
+ hashTimer=setTimeout(()=>{try{history.replaceState(null,'',currentHash());}catch(e){}},300);
 }
-let pendingHashT=null;
+let pendingHashT=null,pendingLens=null;
 function parseHash(){
  try{
   const h=location.hash.replace(/^#/,'');
   if(!h)return false;
-  const q={};h.split('&').forEach(kv=>{const p=kv.split('=');q[p[0]]=decodeURIComponent(p[1]||'');});
-  if(!q.s||(q.s!=='us'&&q.s!=='world'))return false;
+  const q={};h.split('&').forEach(kv=>{const i=kv.indexOf('=');const k=i<0?kv:kv.slice(0,i);q[k]=decodeURIComponent(i<0?'':kv.slice(i+1));});
+  if(q.t){const tr=decodeTour(q.t);if(tr){tour=tr;tourParam=q.t;}}
+  if(!q.s||(q.s!=='us'&&q.s!=='world'))return tour?{bits:''}:false;
   scope=q.s;
-  if(q.e!==undefined){const e=parseInt(q.e,10);if(e>=-1&&e<=4)era=e;}
-  if(q.k){
-   const k=parseFloat(q.k),xx=parseFloat(q.x),yy=parseFloat(q.y);
+  if(q.e!==undefined){const e=parseInt(q.e,10);if(e>=-1&&e<=60)era=e;}
+  const k=parseFloat(q.k);
+  if(q.c){
+   const c=q.c.split(',').map(Number);
+   if(c.length===2&&isFinite(c[0])&&isFinite(c[1]))pendingGeo={lon:c[0],lat:c[1],k:isFinite(k)?k:1};
+  }else if(q.k){
+   const xx=parseFloat(q.x),yy=parseFloat(q.y);
    if(isFinite(k)&&isFinite(xx)&&isFinite(yy))pendingHashT=d3.zoomIdentity.translate(xx,yy).scale(Math.max(1,Math.min(26,k)));
   }
+  if(q.z){const z=q.z.split(':');if(z.length===3)pendingLens={lid:z[0],field:z[1],v:parseInt(z[2],10)};}
   return {bits:q.l||''};
  }catch(e){return false;}
+}
+function applyPendingLens(){
+ if(!pendingLens)return;
+ const l=byId[pendingLens.lid];
+ if(l&&l.status==='live'&&l.filters){
+  const fl=l.filters.find(f=>f.field===pendingLens.field);
+  const val=fl&&fl.values.find(v=>v[0]===pendingLens.v);
+  if(fl&&val)lens[l.id]={field:fl.field,v:val[0],label:val[1],constellation:!!fl.constellation};
+ }
+ pendingLens=null;
 }
 
 // ---------- v3: findings + split compare ----------
@@ -1413,15 +1920,16 @@ function buildFindingsMenu(){
  const m=$('#findingsMenu');m.innerHTML='';
  const d=document.createElement('div');d.className='fm-disc';d.textContent=R.findings.disclaimer;m.appendChild(d);
  R.findings.findings.forEach(f=>{
-  const it=document.createElement('div');it.className='fm-card'+(f.spurious?' spur':'');
-  it.innerHTML='<div class="fm-stat">'+f.stat+'</div><div class="fm-body"><div class="fm-t">'+f.title+(f.spurious?' <span class="fm-tag">SPURIOUS — ON PURPOSE</span>':'')+'</div><div class="fm-s">'+f.statLabel+'</div></div>';
+  const it=document.createElement('div');it.className='fm-card'+(f.spurious||f.lesson?' spur':'');
+  const tag=f.tag||(f.spurious?'SPURIOUS — ON PURPOSE':'');
+  it.innerHTML='<div class="fm-stat">'+f.stat+'</div><div class="fm-body"><div class="fm-t">'+f.title+(tag?' <span class="fm-tag">'+tag+'</span>':'')+'</div><div class="fm-s">'+f.statLabel+'</div></div>';
   it.addEventListener('click',()=>applyFinding(f));
   m.appendChild(it);
  });
 }
 function findingCap(f){
  const ac=f.spurious?'#8a94a6':(byId[f.layers[0]]?byId[f.layers[0]].accent:'#e8b34b');
- return '<div class="cc-k" style="color:'+ac+'">FINDING'+(f.spurious?' — EPISTEMIC CONTROL':'')+'</div>'+
+ return '<div class="cc-k" style="color:'+ac+'">FINDING'+(f.spurious?' — EPISTEMIC CONTROL':f.lesson?' — A LESSON IN CONFOUNDING':'')+'</div>'+
   '<div class="cc-t">'+f.title+'</div>'+
   '<div class="cc-stat" style="color:'+ac+'">'+f.stat+' <span>'+f.statLabel.toUpperCase()+'</span></div>'+
   '<div class="cc-x">'+f.body+'</div>'+
@@ -1450,7 +1958,13 @@ function applyFinding(f){
 
 // ---------- v3: audio ----------
 let AU=null,audioOn=false,audioTimer=null,omenTimer=null;
-const AUDIO_BASE={'memory-births':.17,'loss-crashes':.2,'power-datacenters':.09,'motion-fulfillment':.07,'power-fortune500':.05,'wonder-ufos':.05,'despair-overdoses':.08,'desire-searches':.06,'residue-superfund':.05,'omen-names':.6};
+const AUDIO_BASE={'memory-births':.17,'loss-crashes':.2,'power-datacenters':.09,'motion-fulfillment':.07,'power-fortune500':.05,'wonder-ufos':.05,'despair-overdoses':.08,'desire-searches':.06,'residue-superfund':.05,'omen-names':.6,
+ 'motion-sorting':.07,'company-socialcapital':.05,'faith-altar':.06,'despair-suicide':.045,'betrayal-ledger':.5};
+// plucked voices: short events whose rate follows the density under the viewport
+const PLUCKS={
+ 'omen-names':{p:.22,freqs:[220,261.63,329.63,392,523.25],type:'triangle',dec:1.25,ratio:0},          // the names, as bells
+ 'betrayal-ledger':{p:.10,freqs:[880,987.77,1174.66,1318.51,1760],type:'sine',dec:.85,ratio:2.76}     // coins, inharmonic
+};
 function mkNoise(ctx){
  const len=ctx.sampleRate*2,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);
  let last=0;
@@ -1484,6 +1998,12 @@ function buildAudio(){
  V['desire-searches']=voice(g=>{const n=mkNoise(ctx);const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=520;f.Q.value=3.5;n.connect(f);f.connect(g);const l=osc(.06);const lg=ctx.createGain();lg.gain.value=320;l.connect(lg);lg.connect(f.frequency);n.start();});
  V['residue-superfund']=voice(g=>{const o=osc(311.13,'triangle');const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=900;o.connect(f);f.connect(g);});
  V['omen-names']=voice(g=>{});
+ // v0.6 voices
+ V['motion-sorting']=voice(g=>{const n=mkNoise(ctx);const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=240;const gg=ctx.createGain();n.connect(f);f.connect(gg);gg.connect(g);lfoGain(gg,.11,.45,.5);n.start();});   // the country breathing in and out
+ V['company-socialcapital']=voice(g=>{const a=osc(261.63),b=osc(329.63),c=osc(392);const gg=ctx.createGain();gg.gain.value=.33;a.connect(gg);b.connect(gg);c.connect(gg);gg.connect(g);lfoGain(gg,.05,.1,.33);}); // a warm triad: company
+ V['faith-altar']=voice(g=>{const a=osc(130.81),b=osc(196),c=osc(261.63);const gg=ctx.createGain();gg.gain.value=.3;a.connect(gg);b.connect(gg);c.connect(gg);const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=700;gg.connect(f);f.connect(g);lfoGain(gg,.16,.08,.3);}); // an organ, far off
+ V['despair-suicide']=voice(g=>{const o=osc(41.2);const gg=ctx.createGain();o.connect(gg);gg.connect(g);lfoGain(gg,.045,.35,.45);});   // the quiet hours: barely there
+ V['betrayal-ledger']=voice(g=>{});
  return {ctx,master,V};
 }
 function viewportDensity(lid){
@@ -1519,23 +2039,24 @@ function updateAudio(){
   }catch(e){}
  }
 }
-function omenPluck(){
+function pluckTick(){
  if(!AU||!audioOn)return;
- const a=alpha['omen-names']||0;
- if(a<=0.05||!scopeHas('omen-names'))return;
- const r=viewportDensity('omen-names');
- const dens=typeof r==='number'?r:r.mean;
- if(Math.random()>0.22+dens*0.6)return;
- const ctx=AU.ctx,v=AU.V['omen-names'];
- const freqs=[220,261.63,329.63,392,523.25];
- const o=ctx.createOscillator();o.type='triangle';
- o.frequency.value=freqs[Math.floor(Math.random()*freqs.length)];
- const g=ctx.createGain();
- g.gain.setValueAtTime(0.0001,ctx.currentTime);
- g.gain.exponentialRampToValueAtTime(.9,ctx.currentTime+.02);
- g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+1.25);
- o.connect(g);g.connect(v.g);
- o.start();o.stop(ctx.currentTime+1.35);
+ for(const lid in PLUCKS){
+  const cfg=PLUCKS[lid],a=alpha[lid]||0;
+  if(a<=0.05||!byId[lid]||!scopeHas(lid))continue;
+  const r=viewportDensity(lid);
+  const dens=typeof r==='number'?r:r.mean;
+  if(Math.random()>cfg.p+dens*0.6)continue;
+  const ctx=AU.ctx,v=AU.V[lid];if(!v)continue;
+  const f0=cfg.freqs[Math.floor(Math.random()*cfg.freqs.length)];
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.0001,ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.9,ctx.currentTime+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+cfg.dec);
+  g.connect(v.g);
+  const o=ctx.createOscillator();o.type=cfg.type;o.frequency.value=f0;o.connect(g);o.start();o.stop(ctx.currentTime+cfg.dec+.1);
+  if(cfg.ratio){const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=f0*cfg.ratio;const g2=ctx.createGain();g2.gain.value=.3;o2.connect(g2);g2.connect(g);o2.start();o2.stop(ctx.currentTime+cfg.dec+.1);}
+ }
 }
 function audioToggle(){
  if(!AU){
@@ -1547,7 +2068,7 @@ function audioToggle(){
   try{AU.ctx.resume();}catch(e){}
   AU.master.gain.setTargetAtTime(.6,AU.ctx.currentTime,.5);
   if(!audioTimer)audioTimer=setInterval(updateAudio,300);
-  if(!omenTimer)omenTimer=setInterval(omenPluck,620);
+  if(!omenTimer)omenTimer=setInterval(pluckTick,620);
   updateAudio();
   toast('The survey is singing — pan the map, toggle layers, change eras.');
  }else{
@@ -1577,6 +2098,34 @@ function buildIndex(){
  if(am)for(let i=0;i<am.name.length;i++)push(am.name[i],(am.typeNames[am.t[i]]||'')+' · '+am.loc[i],{type:'pt',lid:'motion-fulfillment',i,scope:'us',la:am.lat[i],lo:am.lon[i],pop:100000});
  const om=D['omen-names'];
  if(om)for(let i=0;i<om.name.length;i++)push(om.name[i],(om.s[i]?'light':'dark')+' omen · '+om.st[i],{type:'pt',lid:'omen-names',i,scope:'us',la:om.lat[i],lo:om.lon[i],pop:80000});
+ const bl=D['betrayal-ledger'];
+ if(bl)for(let i=0;i<bl.name.length;i++){
+  push(bl.name[i],money(bl.v[i])+' · '+(bl.who[i]||'').split(';')[0].split(',')[0]+' · ledger',{type:'pt',lid:'betrayal-ledger',i,scope:'us',la:bl.lat[i],lo:bl.lon[i],pop:900000+bl.v[i]/40});
+  const who=(bl.who[i]||'').split(';')[0].split(',')[0].trim();
+  if(who)push(who,bl.name[i]+' · '+money(bl.v[i])+' · convicted',{type:'pt',lid:'betrayal-ledger',i,scope:'us',la:bl.lat[i],lo:bl.lon[i],pop:900000});
+ }
+ const dc=D['power-datacenters'];
+ if(dc)for(let i=0;i<dc.name.length;i++)if(dc.name[i])push(dc.name[i],'data center',{type:'pt',lid:'power-datacenters',i,scope:'any',la:dc.lat[i],lo:dc.lon[i],pop:30000});
+ const uf=D['wonder-ufos'];
+ if(uf&&uf.v){
+  const Cu=buildScope('us'),top=[];
+  for(let i=0;i<uf.v.length;i++)if(uf.v[i]>=60)top.push(i);
+  top.sort((a,b)=>uf.v[b]-uf.v[a]);
+  for(const i of top.slice(0,60)){
+   let near='';
+   if(Cu.places){let bd=1e9;for(let j=0;j<Math.min(Cu.places.length,600);j++){const pl=Cu.places[j];if(Math.abs(pl.la-uf.lat[i])>1.5||Math.abs(pl.lo-uf.lon[i])>1.8)continue;const dd=havKm(uf.lat[i],uf.lon[i],pl.la,pl.lo);if(dd<bd){bd=dd;near=pl.name+', '+pl.st;}}}
+   push(fmtInt(uf.v[i])+' sightings'+(near?' near '+near:''),'densest sky · NUFORC',{type:'pt',lid:'wonder-ufos',i,scope:'any',la:uf.lat[i],lo:uf.lon[i],pop:200000+uf.v[i]*300});
+  }
+ }
+ try{
+  // counties by spherical centroid: no projection, no outlines, no wait
+  if(!geo.counties)geo.counties=topo.feature(B.counties,B.counties.objects.counties).features;
+  for(const f of geo.counties){
+   const fips=String(f.id).padStart(5,'0'),st=FIPS_POSTAL[fips.slice(0,2)];if(!st)continue;
+   const g=d3.geoCentroid(f);if(!g||!isFinite(g[0])||!isFinite(g[1]))continue;
+   push(f.properties.name+', '+st,'county',{type:'county',scope:'us',fips,la:g[1],lo:g[0],pop:150000});
+  }
+ }catch(e){}
  for(const st in STATE_NAME)push(STATE_NAME[st],'state',{type:'state',st,scope:'us',pop:5000000});
  for(const l of live)push(l.title,'layer · '+themeById[l.theme].name,{type:'layer',lid:l.id,pop:3000000});
  R.readings.forEach((r,i)=>push(r.title,'reading',{type:'reading',ri:i,pop:3000000}));
@@ -1598,12 +2147,8 @@ function searchIndex(q){
  return out.slice(0,8).map(x=>x[1]);
 }
 function showTipAt(content,p){
- const sx=p[0]*t.k+t.x,sy=p[1]*t.k+t.y;
- tip.style.display='block';
- tip.style.borderLeftColor=content.color;
- tip.innerHTML='<div class="tt-k" style="color:'+content.color+'">'+content.k+'</div><div class="tt-t">'+content.ti+'</div>'+(content.s?'<div class="tt-s">'+content.s+'</div>':'');
- tip.style.left=Math.min(sx+16,W-300)+'px';
- tip.style.top=Math.min(sy+14,H-130)+'px';
+ // arrivals from the Index, the plunge, and the tour hold their tooltip in place
+ pinTip(content,p[0],p[1]);
 }
 function selectEntry(e){
  if(pickMode&&e.la!=null){
@@ -1642,18 +2187,18 @@ function selectEntry(e){
    showTipAt(content,p);
   }else{
    hoverPt={x:p[0],y:p[1],color:'#c8d2e2'};dirty=true;
-   showTipAt({k:e.type==='state'?'REFERENCE — STATE':'REFERENCE',ti:e.label,s:e.sub,color:'#c8d2e2'},p);
+   showTipAt({k:e.type==='state'?'REFERENCE — STATE':e.type==='county'?'REFERENCE — COUNTY':'REFERENCE',ti:esc(e.label),s:esc(e.sub),color:'#c8d2e2'},p);
   }
  });
 }
 function renderIdx(res){
  idxResults=res;idxSel=0;
  const box=$('#idxResults');
- box.innerHTML=res.length?'':'<div class="ix-empty">Type a town, a person, a company, a facility code, a buried site, an omen, a state, a layer, a reading, a finding. Everything named in the survey is indexed — 13,000 entries, all local.</div>';
+ box.innerHTML=res.length?'':'<div class="ix-empty">Type a town, a county, a person, a company, a facility code, a buried site, an omen, a betrayal, a state, a layer, a reading, a finding. Everything named in the survey is indexed — '+fmtInt(buildIndex().length)+' entries, all local.</div>';
  res.forEach((e,i)=>{
   const d=document.createElement('div');
   d.className='ix-row'+(i===idxSel?' sel':'');
-  d.innerHTML='<span class="ix-l">'+e.label+'</span><span class="ix-s">'+e.sub+'</span>'+(e.type==='place'?'<button class="ix-dossier" title="Open field dossier" aria-label="Open field dossier">▤</button>':'');
+  d.innerHTML='<span class="ix-l">'+esc(e.label)+'</span><span class="ix-s">'+esc(e.sub)+'</span>'+(e.type==='place'||e.type==='county'?'<button class="ix-dossier" title="Open field dossier" aria-label="Open field dossier">▤</button>':'');
   d.addEventListener('click',ev=>{
    if(ev.target.closest('.ix-dossier')){closeIndex();openDossier(e.la,e.lo,e.label);return;}
    selectEntry(e);
@@ -1665,11 +2210,12 @@ function idxHighlight(){
  document.querySelectorAll('.ix-row').forEach((r,i)=>r.classList.toggle('sel',i===idxSel));
 }
 function openIndex(){
- buildIndex();
+ // focus first, build second: keystrokes typed during the first build queue into the
+ // input instead of landing on the map as layer hotkeys
  $('#indexOverlay').classList.add('open');
  const inp=$('#idxInput');inp.value='';
+ inp.focus();
  renderIdx([]);
- setTimeout(()=>inp.focus(),30);
 }
 function closeIndex(){
  $('#indexOverlay').classList.remove('open');
@@ -1729,9 +2275,24 @@ function computeDossier(la,lo,label){
    const rr=getRateRank();
    if(e)ground=doRow('despair-overdoses','Overdose mortality: <b>'+e.v+' per 100k (2024)</b> — rank '+(rr[countyFips]||'—')+' of '+fmtInt(rr.__n||0)+' counties')+ground;
    else ground=doRow('despair-overdoses','Overdose mortality: <b>suppressed</b> (small counts protect privacy)')+ground;
+   // v0.6: the quiet layers answer too — rates for a place, never points for people
+   const ds=D['despair-suicide'];
+   if(ds){const e2=ds.counties[countyFips];ground+=doRow('despair-suicide','Suicide mortality: <b>'+(e2?esc(e2.label.split(' — ')[0])+' (2018–2022, age-adjusted)':'suppressed — kept dark by law and by principle')+'</b> · if you need it, call or text <b>988</b>');}
+   const ec=D['company-socialcapital'];
+   if(ec){const e2=ec.counties[countyFips];if(e2)ground+=doRow('company-socialcapital','Economic connectedness: <b>'+esc(e2.label.split(' — ')[0].replace(/^EC /,''))+'</b> (1.0 = class-blind friendship)');}
+   const fa=D['faith-altar'];
+   if(fa){const e2=fa.counties[countyFips];if(e2){const parts=e2.label.split(' — ');ground+=doRow('faith-altar','The altar: <b>'+esc(parts[0])+'</b>'+(parts[2]?' · '+esc(parts[2]):''));}}
+   const ms=D['motion-sorting'];
+   if(ms){const e2=ms.counties[countyFips];if(e2)ground+=doRow('motion-sorting','The sorting: <b>'+esc(e2.label.split(' — ')[0].replace(' hh',' households'))+'</b> (2022–23, tax filers)');}
   }
  }
  if(ground)secs.push(['THE GROUND',ground]);
+ // THE LEDGER
+ const blg=D['betrayal-ledger'];
+ if(blg&&usOk){
+  const n=nearestOf(la,lo,blg.lat,blg.lon);
+  if(n.i>=0)secs.push(['THE LEDGER',doRow('betrayal-ledger','Nearest betrayal on the ledger: <b>'+esc(blg.name[n.i])+' — '+money(blg.v[n.i])+'</b> · '+esc((blg.who[n.i]||'').split(';')[0])+' · '+Math.round(n.km)+' km')]);
+ }
  // THE LIGHT
  let light='';
  const dm=D['memory-births'];
@@ -1875,8 +2436,327 @@ function exportDossier(){
  },'image/png');
 }
 
+// ======================================================================
+// ---------- v0.6: CITIZEN READINGS — the survey becomes a medium ----------
+// A reading is a sequence of stops. A stop is a camera, a sheet, the layer bits, an
+// era, a lens, an optional benchmark, and a caption. The whole thing is encoded into
+// the link: no server, no account, nothing to moderate, nothing to lose.
+// ======================================================================
+function b64uEncode(str){
+ const b=new TextEncoder().encode(str);let s='';
+ for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);
+ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64uDecode(s){
+ s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';
+ const bin=atob(s),b=new Uint8Array(bin.length);
+ for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+ return new TextDecoder().decode(b);
+}
+function encodeTour(tr){return b64uEncode(JSON.stringify(tr));}
+function decodeTour(str){
+ // everything from the link is untrusted: clamp, coerce, drop what does not parse
+ try{
+  const o=JSON.parse(b64uDecode(str));
+  if(!o||!Array.isArray(o.s)||!o.s.length||o.s.length>60)return null;
+  const stops=[];
+  for(const st of o.s){
+   if(!st||!Array.isArray(st.c)||st.c.length!==2)continue;
+   const lon=+st.c[0],lat=+st.c[1];if(!isFinite(lon)||!isFinite(lat)||Math.abs(lat)>90||Math.abs(lon)>180)continue;
+   stops.push({c:[lon,lat],k:Math.max(1,Math.min(26,+st.k||1)),s:st.s==='world'?'world':'us',
+    l:String(st.l||'').replace(/[^01]/g,'').slice(0,64),e:(st.e>=-1&&st.e<=4)?Math.round(+st.e):-1,
+    z:(st.z&&typeof st.z==='object'&&st.z.lid&&st.z.field!=null)?{lid:String(st.z.lid).slice(0,40),field:String(st.z.field).slice(0,20),v:Math.round(+st.z.v)}:null,
+    p:(Array.isArray(st.p)&&st.p.length===2&&isFinite(+st.p[0])&&isFinite(+st.p[1]))?[+st.p[0],+st.p[1]]:null,
+    x:String(st.x||'').slice(0,600)});
+  }
+  if(!stops.length)return null;
+  return {v:1,t:String(o.t||'').slice(0,120),s:stops};
+ }catch(e){return null;}
+}
+function captureStop(caption,keepPin){
+ const cam=camNow()||{lon:0,lat:0,k:1};
+ const zl=Object.keys(lens).find(id=>lens[id]&&scopeHas(id)&&target[id]>0);
+ return {c:[cam.lon,cam.lat],k:cam.k,s:scope,l:HASH_ORDER.map(id=>target[id]>0?1:0).join(''),e:era,
+  z:zl?{lid:zl,field:lens[zl].field,v:lens[zl].v}:null,
+  p:(rec&&rec.pin)?rec.pin.slice():(keepPin||null),x:(caption||'').slice(0,600)};
+}
+function applyStop(st,ms,done){
+ if(st.s!==scope)switchScope(st.s);
+ for(let i=0;i<HASH_ORDER.length;i++)if(byId[HASH_ORDER[i]])target[HASH_ORDER[i]]=(st.l&&st.l[i]==='1'&&scopeHas(HASH_ORDER[i]))?1:0;
+ era=st.e;
+ for(const id in lens)delete lens[id];
+ if(st.z&&byId[st.z.lid]&&byId[st.z.lid].filters){
+  const fl=byId[st.z.lid].filters.find(f=>f.field===st.z.field);
+  const val=fl&&fl.values.find(v=>v[0]===st.z.v);
+  if(fl&&val)lens[st.z.lid]={field:fl.field,v:val[0],label:val[1],constellation:!!fl.constellation};
+ }
+ chipRefresh();updateStatline();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;
+ bakeGlow(true);
+ flyToCam(st.c[0],st.c[1],st.k,ms,done);
+}
+// ---- the recorder ----
+function startRecording(seed){
+ if(reading!==null||tourIdx!==null)endReading();
+ if(plateOpen)closePlate();
+ unpinTip();
+ $('#readingsMenu').classList.remove('open');
+ rec={title:seed?('Re: '+(seed.t||'a citizen reading')).slice(0,120):'',stops:seed?seed.s.map(s=>Object.assign({},s)):[],pin:null,cur:-1,draft:''};
+ recRender();
+ $('#recCard').classList.add('open');
+ toast(seed?'Counter-reading: the stops are yours to keep, cut, or answer.':'Composing. Frame a view, write a line, capture it. Click the map to set a benchmark.',5200);
+}
+function stopRecording(){rec=null;$('#recCard').classList.remove('open');dirty=true;}
+function recRender(){
+ if(!rec)return;
+ const c=$('#recCard');
+ const prev=$('#recCap');if(prev)rec.draft=prev.value;
+ const editing=rec.cur>=0;
+ const chips=rec.stops.map((s,i)=>'<span class="rc-stop'+(i===rec.cur?' cur':'')+'" data-i="'+i+'" title="'+esc(s.x||'(no caption)')+'">'+(i+1)+(s.p?' ▲':'')+'<button class="rc-x" data-del="'+i+'" aria-label="Remove stop '+(i+1)+'">✕</button></span>').join('');
+ c.innerHTML='<div class="rc-head"><span class="rc-dot"></span><span class="rc-k">COMPOSING A CITIZEN READING · '+(editing?'EDITING STOP '+(rec.cur+1):'STOP '+(rec.stops.length+1))+(rec.pin?' · BENCHMARK SET ▲':'')+'</span><button class="cc-btn rc-discard" id="recDiscard">✕ DISCARD</button></div>'+
+  '<input id="recTitle" class="rc-title" maxlength="120" placeholder="Name this reading" value="'+esc(rec.title)+'">'+
+  '<textarea id="recCap" class="rc-cap" maxlength="600" rows="2" placeholder="What should the reader see here? Frame the view — layers, era, lens, zoom — then capture.">'+esc(rec.draft)+'</textarea>'+
+  '<div class="rc-row"><div class="rc-stops">'+(chips||'<span class="rc-empty">no stops yet · a reading needs at least one</span>')+'</div>'+
+  '<span class="cc-nav"><button class="cc-btn" id="recPin" title="A benchmark marks one exact spot for the reader">'+(rec.pin?'▲ CLEAR BENCHMARK':'▲ BENCHMARK · CLICK THE MAP')+'</button>'+
+  (editing?'<button class="cc-btn" id="recNew">+ NEW STOP INSTEAD</button>':'')+
+  '<button class="cc-btn rc-cap-btn" id="recCapture">'+(editing?'⊕ UPDATE STOP '+(rec.cur+1):'⊕ CAPTURE THIS VIEW')+'</button>'+
+  '<button class="cc-btn rc-finish" id="recFinish"'+(rec.stops.length?'':' disabled')+'>▣ FINISH &amp; SHARE</button></span></div>';
+ $('#recTitle').addEventListener('input',ev=>{rec.title=ev.target.value;});
+ $('#recDiscard').addEventListener('click',()=>{if(rec.stops.length&&!window.confirm('Discard this reading and its '+rec.stops.length+' stop'+(rec.stops.length>1?'s':'')+'?'))return;stopRecording();toast('Discarded.');});
+ $('#recPin').addEventListener('click',()=>{if(rec.pin){rec.pin=null;recRender();dirty=true;}else toast('Click anywhere on the map to set the benchmark.');});
+ const nb=$('#recNew');if(nb)nb.addEventListener('click',()=>{rec.cur=-1;rec.draft='';recRender();});
+ $('#recCapture').addEventListener('click',()=>{
+  const cap=$('#recCap').value.trim();
+  if(rec.cur>=0){const old=rec.stops[rec.cur];rec.stops[rec.cur]=captureStop(cap,old.p);toast('Stop '+(rec.cur+1)+' updated.');}
+  else{rec.stops.push(captureStop(cap,null));toast('Stop '+rec.stops.length+' captured.');}
+  rec.pin=null;rec.cur=-1;rec.draft='';
+  const ta=$('#recCap');if(ta)ta.value='';
+  recRender();dirty=true;
+ });
+ $('#recFinish').addEventListener('click',recFinish);
+ c.querySelectorAll('.rc-x').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();rec.stops.splice(parseInt(b.dataset.del,10),1);rec.cur=-1;recRender();dirty=true;}));
+ c.querySelectorAll('.rc-stop').forEach(s=>s.addEventListener('click',()=>{
+  const i=parseInt(s.dataset.i,10);rec.cur=i;rec.draft=rec.stops[i].x||'';rec.pin=null;
+  const ta=$('#recCap');if(ta)ta.value=rec.draft;
+  applyStop(rec.stops[i],1400);recRender();
+ }));
+}
+function recFinish(){
+ if(!rec||!rec.stops.length)return;
+ const tr={v:1,t:(rec.title||'').trim().slice(0,120)||'A citizen reading',s:rec.stops.map(s=>Object.assign({},s))};
+ const enc=encodeTour(tr);
+ tour=tr;tourParam=enc;tourIdx=null;
+ stopRecording();
+ buildReadingsMenu();
+ try{history.replaceState(null,'',currentHash());}catch(e){}
+ openShare(location.href.split('#')[0]+currentHash(),tr);
+}
+// ---- the share card (the embed kit) ----
+function openShare(url,tr){
+ const sc=$('#shareCard');
+ const embed='<iframe src="'+url+'" width="100%" height="720" style="border:0;background:#070a10" loading="lazy" title="THE SOUL SURVEY'+(tr?' — '+tr.t.replace(/"/g,'\''):'')+'"></iframe>';
+ sc.innerHTML='<div id="shareInner"><button class="pl-x" id="shareClose">✕ ESC</button>'+
+  '<div class="pl-over">'+(tr?'A CITIZEN READING · '+tr.s.length+' STOP'+(tr.s.length>1?'S':''):'THIS EXACT VIEW')+' — SHARE</div>'+
+  '<div class="ab-title" style="font-size:24px">'+(tr?esc(tr.t):'Link to exactly this')+'</div>'+
+  '<div class="ab-body" style="font-size:13px">No server, no account. '+(tr?'The whole reading — every stop, caption, and benchmark — lives inside this link.':'The sheet, camera, layers, era, and lens live inside this link; it opens on the same place on any screen.')+' Anyone who opens it can answer with a counter-reading.</div>'+
+  '<input class="sh-url" id="shareUrl" readonly value="'+esc(url)+'" aria-label="Share link">'+
+  '<div class="do-actions" style="justify-content:flex-start"><button class="cc-btn" id="shareCopy">⧉ COPY LINK</button><button class="cc-btn" id="shareEmbed">⧉ COPY EMBED</button><a class="cc-btn" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">↗ OPEN IN ITS OWN TAB</a></div>'+
+  '<div class="pl-h" style="color:var(--gold)">EMBED</div><textarea class="sh-embed" id="shareEmbedText" readonly rows="3" aria-label="Embed snippet">'+esc(embed)+'</textarea>'+
+  '<div class="pl-cav"><b>ATTRIBUTION</b> — an embed carries the survey\'s own masthead, sources, and licenses; keep them visible. '+(url.length>1800?'This link is long ('+fmtInt(url.length)+' characters) — fine for browsers and most chat apps; shorten captions if a platform truncates it.':'')+'</div></div>';
+ sc.classList.add('open');
+ const copy=(txt,msg)=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast(msg),()=>toast('Select the text to copy it.'));else toast('Select the text to copy it.');};
+ $('#shareClose').addEventListener('click',()=>sc.classList.remove('open'));
+ $('#shareCopy').addEventListener('click',()=>copy(url,'Link copied.'));
+ $('#shareEmbed').addEventListener('click',()=>copy(embed,'Embed snippet copied.'));
+ $('#shareUrl').addEventListener('focus',ev=>ev.target.select());
+ $('#shareEmbedText').addEventListener('focus',ev=>ev.target.select());
+}
+// ---- playback ----
+function startTour(i){
+ if(!tour||!tour.s[i])return;
+ clearOrient();
+ if(plateOpen)closePlate();
+ if(rec)stopRecording();
+ $('#readingsMenu').classList.remove('open');
+ if(reading===null&&tourIdx===null&&!findingOpen)readingSaved={scope:scope,targets:{...target},t:{k:t.k,x:t.x,y:t.y},era:era};
+ reading=null;findingOpen=null;setCompare(null);
+ tourIdx=i;
+ unpinTip();
+ applyStop(tour.s[i],2400);
+ showCap(tourCap(i));
+ wireCapNav();
+ const fk=$('#ccFork');if(fk)fk.addEventListener('click',()=>{const seed=tour;endReading();startRecording(seed);});
+ writeHash();
+}
+function tourCap(i){
+ const st=tour.s[i],n=tour.s.length;
+ const body=st.x?esc(st.x).replace(/\n/g,'<br>'):'<i style="opacity:.6">no caption for this stop</i>';
+ return '<div class="cc-k" style="color:#e8b34b">A CITIZEN READING · STOP '+(i+1)+' OF '+n+(st.p?' · ▲ BENCHMARK':'')+'</div>'+
+  '<div class="cc-t">'+esc(tour.t)+'</div><div class="cc-x">'+body+'</div>'+
+  '<div class="cc-row"><span class="cc-step">RECORDED BY A READER · NOT THE SURVEY\'S CANON</span>'+
+  '<span class="cc-nav"><button class="cc-btn" id="ccPrev">◀ PREV</button><button class="cc-btn" id="ccNext">NEXT ▶</button><button class="cc-btn" id="ccFork" title="Load these stops into the recorder and answer">✎ COUNTER-READING</button><button class="cc-btn" id="ccEnd">✕ END</button></span></div>';
+}
+// ---------- v0.6: THE PLUNGE ----------
+let plungeN=0;
+function plunge(){
+ const E=buildIndex(),pools={};
+ for(const e of E){if(!e.lid||(e.type!=='pt'&&e.type!=='star'))continue;(pools[e.lid]=pools[e.lid]||[]).push(e);}
+ const keys=Object.keys(pools);if(!keys.length)return;
+ const lid=keys[Math.floor(Math.random()*keys.length)];
+ let arr=pools[lid];
+ if(lid==='memory-births')arr=arr.slice().sort((a,b)=>b.pop-a.pop).slice(0,250);
+ if(lid==='power-fortune500')arr=arr.slice().sort((a,b)=>b.pop-a.pop).slice(0,80);
+ if(lid==='power-datacenters')arr=arr.filter(e=>!/^(unnamed|data center)$/i.test(e.label));
+ const e=arr[Math.floor(Math.random()*arr.length)];if(!e)return;
+ plungeN++;
+ if(reading!==null||tourIdx!==null||findingOpen)endReading();
+ if(plateOpen)closePlate();
+ $('#readingsMenu').classList.remove('open');$('#findingsMenu').classList.remove('open');
+ selectEntry(e);
+ toast('PLUNGE № '+plungeN+' — '+byId[lid].title.toUpperCase()+' · press ? again',3800);
+}
+// ---------- v0.6: lenses that step through time ----------
+function refreshLensChips(lid){
+ const L=lens[lid];
+ document.querySelectorAll('.lz-chip[data-lid="'+lid+'"]').forEach(b=>{
+  if(b.classList.contains('lz-play'))return;
+  const on=b.dataset.clear?(!L||L.field!==b.dataset.field):(!!L&&L.field===b.dataset.field&&L.v===parseInt(b.dataset.v,10));
+  b.classList.toggle('on',on);
+ });
+}
+function applyLens(lid){bakeLayer(lid,true);scheduleQt();updateStatline();refreshLensChips(lid);writeHash();dirty=true;}
+function stopLensPlay(){
+ if(!lensPlay)return;
+ clearInterval(lensPlay.timer);
+ const b=document.querySelector('.lz-play[data-lid="'+lensPlay.lid+'"][data-field="'+lensPlay.field+'"]');if(b)b.textContent='▶';
+ lensPlay=null;
+}
+function toggleLensPlay(lid,field){
+ if(lensPlay&&lensPlay.lid===lid&&lensPlay.field===field){stopLensPlay();return;}
+ stopLensPlay();
+ const fl=(byId[lid].filters||[]).find(f=>f.field===field);if(!fl)return;
+ const b=document.querySelector('.lz-play[data-lid="'+lid+'"][data-field="'+field+'"]');if(b)b.textContent='■';
+ let idx=-1;
+ const step=()=>{
+  idx++;
+  if(idx>=fl.values.length){delete lens[lid];applyLens(lid);stopLensPlay();toast(fl.label+' — the whole span, restored.');return;}
+  const v=fl.values[idx];
+  lens[lid]={field,v:v[0],label:v[1],constellation:!!fl.constellation};
+  applyLens(lid);
+ };
+ lensPlay={lid,field,timer:setInterval(step,1150)};
+ step();
+}
+
+// ======================================================================
+// ---------- v0.6: THE PRINT ATLAS — the survey as a physical object ----------
+// Composed in the page from the live engine, one solo render per layer, then handed
+// to the browser's print dialog (which saves to PDF). No network, no server.
+// ======================================================================
+function renderSnapshot(sc,ids){
+ // put the engine into a still pose and photograph the map area of the four canvases
+ if(sc!==scope){scope=sc;buildScope(sc);}
+ t=d3.zoomIdentity;era=-1;
+ for(const k in lens)delete lens[k];
+ for(const l of live){const on=ids.indexOf(l.id)>=0&&l.scopes.includes(sc)?1:0;target[l.id]=on;alpha[l.id]=on;}
+ hoverPt=null;terrainDirty=true;
+ for(const lid of ids){
+  if(!byId[lid]||!hasGlow(byId[lid])||!byId[lid].scopes.includes(sc))continue;
+  bakeLayer(lid,true);glowBMs[lid].prevT=null;
+ }
+ drawBase();drawTerrain();drawGlow();drawLabels();
+ const C=SC[scope],e=C.ext,pad=14;
+ const x0=Math.max(0,e[0][0]-pad),y0=Math.max(0,e[0][1]-pad),x1=Math.min(W,e[1][0]+pad),y1=Math.min(H,e[1][1]+pad);
+ const off=document.createElement('canvas');off.width=Math.round((x1-x0)*dpr);off.height=Math.round((y1-y0)*dpr);
+ const g=off.getContext('2d');
+ g.fillStyle='#070a10';g.fillRect(0,0,off.width,off.height);
+ for(const k of ['base','terr','glow','lab'])g.drawImage(cvs[k],x0*dpr,y0*dpr,off.width,off.height,0,0,off.width,off.height);
+ return off.toDataURL('image/jpeg',0.9);
+}
+function atlasPlateHTML(l,img){
+ const th=themeById[l.theme];
+ const stats=(l.plateStats||[]).map(s=>'<div class="at-stat"><b>'+s.value+'</b><span>'+s.label+'</span></div>').join('');
+ const srcs=(l.sources||[]).map(s=>'<div>'+esc(s.name)+(s.url?' — <span class="at-url">'+esc(s.url)+'</span>':'')+'</div>').join('');
+ return '<section class="at-page at-plate"><div class="at-plate-map">'+
+   (img?'<img src="'+img+'" alt="'+esc(l.title)+' — solo render">':'')+
+   '<div class="at-run">PLATE · '+esc(th.name.toUpperCase())+' — '+esc(th.reading.toUpperCase())+'</div></div>'+
+  '<div class="at-plate-text">'+
+   (l.protocol?'<div class="at-protocol">'+l.protocol+'</div>':'')+
+   '<div class="at-kicker" style="color:'+l.accent+'">'+esc(th.name.toUpperCase())+'</div>'+
+   '<h2>'+l.title+'</h2><div class="at-unit">'+(l.statline||l.unit)+(l.retrieved?' · surveyed '+String(l.retrieved).slice(0,10):'')+'</div>'+
+   (stats?'<div class="at-stats">'+stats+'</div>':'')+
+   '<h3>WHAT</h3><p>'+l.essay.what+'</p><h3>HOW</h3><p>'+l.essay.how+'</p><h3>WHY</h3><p>'+l.essay.why+'</p>'+
+   (l.caveat?'<div class="at-note"><b>FIELD NOTE</b> — '+l.caveat+'</div>':'')+
+   (srcs?'<h3>SOURCES</h3><div class="at-src">'+srcs+'</div>':'')+
+  '</div></section>';
+}
+let atlasBusy=false;
+function composeAtlas(){
+ if(atlasBusy)return;atlasBusy=true;
+ if(rec){toast('Finish or discard the reading you are composing first.');atlasBusy=false;return;}
+ if(reading!==null||tourIdx!==null||findingOpen)endReading();
+ if(plateOpen)closePlate();
+ stopLensPlay();unpinTip();
+ const saved={scope,targets:{...target},alpha:{...alpha},t:{k:t.k,x:t.x,y:t.y},era,lens:JSON.parse(JSON.stringify(lens))};
+ const today=new Date().toISOString().slice(0,10);
+ const pages=[],jobs=[];
+ const usIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('us')&&byId[id].status==='live');
+ // the sheets mirror the views the live map opens with; every layer still gets its own plate
+ const worldIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('world')&&byId[id].status==='live');
+ jobs.push(()=>{pages.push({k:'sheet',n:1,title:'The Human Signal — Conterminous United States',ids:usIds,img:renderSnapshot('us',usIds)});});
+ jobs.push(()=>{pages.push({k:'sheet',n:2,title:'The Human Signal — The World',ids:worldIds,img:renderSnapshot('world',worldIds)});});
+ for(const l of live)jobs.push(()=>{pages.push({k:'plate',l,img:renderSnapshot(l.scopes[0],[l.id])});});
+ let i=0;
+ toast('Composing the atlas — '+jobs.length+' renders…',20000);
+ const step=()=>{
+  try{jobs[i]();}catch(e){err(e);}
+  i++;
+  if(i<jobs.length){toast('Composing the atlas — render '+(i+1)+' of '+jobs.length+'…',20000);setTimeout(step,30);return;}
+  finishAtlas(pages,saved,today);
+ };
+ setTimeout(step,60);
+}
+function finishAtlas(pages,saved,today){
+ // restore the reader's view exactly
+ if(saved.scope!==scope){scope=saved.scope;buildScope(scope);}
+ for(const k in saved.targets)target[k]=saved.targets[k];
+ for(const k in saved.alpha)alpha[k]=saved.alpha[k];
+ era=saved.era;for(const k in lens)delete lens[k];Object.assign(lens,saved.lens);
+ $('#scopeUS').classList.toggle('on',scope==='us');$('#scopeWorld').classList.toggle('on',scope==='world');
+ resetGlowFades();
+ d3.select('#stage').call(zoomB.transform,d3.zoomIdentity.translate(saved.t.x,saved.t.y).scale(saved.t.k));
+ chipRefresh();updateStatline();updateDatumDefault();eraRefresh();scheduleQt();terrainDirty=true;dirty=true;bakeGlow(true);
+ const M=R.meta,sheets=pages.filter(p=>p.k==='sheet'),plates=pages.filter(p=>p.k==='plate');
+ const legend=ids=>ids.map(id=>'<span><i style="background:'+byId[id].accent+'"></i>'+byId[id].title+' — '+(byId[id].statline||byId[id].unit)+'</span>').join('');
+ const fnd=R.findings?R.findings.findings.map(f=>'<div class="at-finding'+(f.spurious||f.lesson?' at-control':'')+'"><div class="at-fstat">'+f.stat+'</div><div><div class="at-ft">'+f.title+(f.tag||f.spurious?' <small>'+(f.tag||'SPURIOUS — ON PURPOSE')+'</small>':'')+'</div><div class="at-fs">'+f.statLabel+'</div><p>'+f.body+'</p><div class="at-meth">METHOD — '+f.method+'</div></div></div>').join(''):'';
+ const pending=R.layers.filter(l=>l.status!=='live');
+ let html='<section class="at-page at-cover"><div class="at-over">'+esc(M.sheet)+' · SURVEYED '+esc(M.surveyed)+'</div>'+
+  '<h1>THE <em>SOUL</em> SURVEY</h1><div class="at-tag">'+esc(M.tagline.toUpperCase())+'</div>'+
+  '<p class="at-man">'+M.manifesto+'</p>'+
+  '<div class="at-contents"><div><b>'+sheets.length+'</b>sheets</div><div><b>'+plates.length+'</b>plates</div><div><b>'+(R.findings?R.findings.findings.length:0)+'</b>findings</div><div><b>'+pending.length+'</b>pending slots</div></div>'+
+  '<div class="at-colo">THE PRINT ATLAS · v'+esc(M.version)+' · RENDERED '+today+' · '+esc(M.site)+'</div></section>';
+ for(const s of sheets)html+='<section class="at-page at-sheet"><div class="at-run">SHEET '+s.n+' · '+esc(s.title.toUpperCase())+'</div><img src="'+s.img+'" alt="'+esc(s.title)+'"><div class="at-legend">'+legend(s.ids)+'</div></section>';
+ for(const p of plates)html+=atlasPlateHTML(p.l,p.img);
+ if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+'</section>';
+ html+='<section class="at-page at-colophon"><div class="at-run">COLOPHON</div><h2>Method, sources, and the slots still empty</h2>'+
+  '<p>Every layer is a real dataset with coordinates. Density becomes elevation: the relief on each sheet is computed from the layers shown, Gaussian-smoothed, contoured, and hillshaded in the browser that printed this atlas. Point layers render as additive light. Coordinates are quantized to about 110 m and giant datasets are aggregated to cells. Every staging file ships with a provenance sidecar naming its source, retrieval date, method, and caveats.</p>'+
+  (pending.length?'<h3>PENDING SLOTS — SHOWN EMPTY RATHER THAN FAKED</h3>'+pending.map(l=>'<p><b>'+l.title+'.</b> '+(l.pendingNote||'Source gated; slot reserved.')+'</p>').join(''):'')+
+  '<h3>LICENSES</h3><p>Basemaps: Natural Earth (public domain). Reference places: GeoNames (CC-BY 4.0). Notable people: Laouenan et al., <i>Scientific Data</i> 2022 (CC-BY-SA 4.0). Data centers: © OpenStreetMap contributors (ODbL). Social Capital Atlas: Meta custom permissive license, no re-identification. U.S. Religion Census: facts reproduced with attribution. FARS, GNIS, EPA, CDC, IRS SOI: U.S. public data. Languages: Glottolog 5.3, Max Planck Institute for Evolutionary Anthropology (CC-BY 4.0). Power plants: World Resources Institute (CC-BY 4.0). COVID-19 deaths: The New York Times (non-commercial licence, credit to The New York Times). Fatal police shootings: The Washington Post, Fatal Force (CC-BY-NC-SA 4.0 — the derived county layer is shared alike). Evictions: Princeton University Eviction Lab (ODC-BY 1.0). Air routes: OpenFlights.org (ODbL; derived flows shared alike). Conflict deaths: Uppsala Conflict Data Program GED 26.1 (CC BY 4.0). Refugees: UNHCR Refugee Population Statistics Database (CC BY 4.0). Itemized gifts: IRS Statistics of Income (public domain). Dark-sky places, populations and codes: Wikidata (CC0). Full table: DATA_LICENSES.md in the repository.</p>'+
+  '<h3>NON-COMMERCIAL · REMOVAL ON REQUEST</h3><p>A non-commercial project. Public facts, each traced to its source; anything will be removed on request. Requests: github.com/'+esc(M.repo)+'/issues</p>'+
+  '<h3>CITE</h3><p class="at-cite">The Soul Survey (v'+esc(M.version)+', '+esc(M.surveyed.toLowerCase())+'). A topographic survey of the collective soul, conducted in objective data. '+esc(M.site)+' — source: github.com/'+esc(M.repo)+'</p>'+
+  '<div class="at-colo">WHERE, NOT WHY.</div></section>';
+ let el=$('#atlas');if(!el){el=document.createElement('div');el.id='atlas';document.body.appendChild(el);}
+ el.innerHTML=html;
+ atlasBusy=false;
+ const imgs=[...el.querySelectorAll('img')];
+ Promise.all(imgs.map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve())).then(()=>{
+  toast('Atlas ready — '+(pages.length+3)+' pages. Choose “Save as PDF” in the print dialog to keep it.',6000);
+  document.dispatchEvent(new CustomEvent('atlas:ready',{detail:{pages:pages.length+3}}));
+  if(!window.__ATLAS_NOPRINT__)setTimeout(()=>window.print(),250);
+ });
+}
+
 // ---------- zoom ----------
-const zoomB=d3.zoom().scaleExtent([1,26]).on('zoom',ev=>{
+const zoomB=d3.zoom().scaleExtent([1,26]).clickDistance(6).on('zoom',ev=>{
  t=ev.transform;dirty=true;needBake=true;zooming=true;
  clearTimeout(zoomEndT);
  zoomEndT=setTimeout(()=>{zooming=false;bakeGlow(true);},170);
@@ -1890,6 +2770,7 @@ function init(){
  const hp=parseHash();
  if(hp){hashHadState=true;}
  buildScope(scope);
+ applyPendingLens();
  buildHero();
  buildAbout();
  buildEraBar();
@@ -1909,8 +2790,11 @@ function init(){
  document.addEventListener('click',ev=>{if(!ev.target.closest('.mh-menu-wrap')){$('#readingsMenu').classList.remove('open');$('#findingsMenu').classList.remove('open');}});
  $('#locateBtn').addEventListener('click',locateMe);
  $('#exportBtn').addEventListener('click',exportSheet);
+ $('#atlasBtn').addEventListener('click',composeAtlas);
  $('#audioBtn').addEventListener('click',audioToggle);
  $('#indexBtn').addEventListener('click',openIndex);
+ $('#shareBtn').addEventListener('click',()=>openShare(location.href.split('#')[0]+currentHash(true),null));
+ $('#shareCard').addEventListener('click',ev=>{if(ev.target.id==='shareCard')$('#shareCard').classList.remove('open');});
  $('#indexOverlay').addEventListener('click',ev=>{if(ev.target.id==='indexOverlay')closeIndex();});
  $('#dossier').addEventListener('click',ev=>{if(ev.target.id==='dossier')$('#dossier').classList.remove('open');});
  const idxInp=$('#idxInput');
@@ -1927,31 +2811,37 @@ function init(){
  sh.addEventListener('pointermove',ev=>{if(!shDrag||!compareMode)return;compareMode.x=Math.max(.12,Math.min(.88,ev.clientX/W));sh.style.left=(compareMode.x*100)+'%';dirty=true;});
  window.addEventListener('pointerup',()=>{shDrag=false;});
  if(hp&&hp.bits){
-  for(let i=0;i<railOrder.length&&i<hp.bits.length;i++)target[railOrder[i]]=hp.bits[i]==='1'?1:0;
+  for(let i=0;i<HASH_ORDER.length;i++)if(byId[HASH_ORDER[i]])target[HASH_ORDER[i]]=hp.bits[i]==='1'?1:0;
   for(const l of live){alpha[l.id]=target[l.id];}
  }
  const stage=$('#stage');
  d3.select(stage).call(zoomB).on('dblclick.zoom',null);
  if(pendingHashT)d3.select(stage).call(zoomB.transform,pendingHashT);
+ else if(pendingGeo){d3.select(stage).call(zoomB.transform,camFor(pendingGeo.lon,pendingGeo.lat,pendingGeo.k));pendingGeo=null;}
  stage.addEventListener('pointermove',onMove);
+ stage.addEventListener('click',onClick);
  stage.addEventListener('pointerdown',()=>{
   if(reading!==null&&R.readings[reading]&&R.readings[reading].special){
    clearOrient();
    endReading();
   }
  });
- stage.addEventListener('pointerleave',()=>{tip.style.display='none';hoverPt=null;updateDatumDefault();dirty=true;});
+ stage.addEventListener('pointerleave',()=>{if(!tipPinned){tip.style.display='none';hoverPt=null;dirty=true;}updateDatumDefault();});
  window.addEventListener('keydown',ev=>{
   if(ev.target&&(ev.target.tagName==='INPUT'||ev.target.tagName==='TEXTAREA')){
    if(ev.key==='Escape')closeIndex();
    return;
   }
   if(ev.key==='/'){ev.preventDefault();openIndex();return;}
+  if(ev.key==='?'){ev.preventDefault();plunge();return;}
   if(ev.key==='Escape'){
-   if($('#indexOverlay').classList.contains('open'))closeIndex();
+   // the recorder is deliberately NOT closed by ESC: a composed reading is work
+   if($('#shareCard').classList.contains('open'))$('#shareCard').classList.remove('open');
+   else if($('#indexOverlay').classList.contains('open'))closeIndex();
    else if($('#dossier').classList.contains('open'))$('#dossier').classList.remove('open');
    else if($('#about').classList.contains('open'))$('#about').classList.remove('open');
-   else if(reading!==null||findingOpen)endReading();
+   else if(tipPinned)unpinTip();
+   else if(reading!==null||findingOpen||tourIdx!==null)endReading();
    else if($('#capCard').classList.contains('open'))hideCap();
    else if(plateOpen)closePlate();
    else{$('#hero').classList.add('gone');}
@@ -1989,6 +2879,11 @@ function init(){
  $('#stage').classList.add('ready');
  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true;bakeGlow();});
  frame();
+ // a read-only window for tests and the curious: where a place lands on screen now
+ window.__SURVEY__={screenOf:(lon,lat)=>{const p=SC[scope]&&SC[scope].proj([lon,lat]);return p?[p[0]*t.k+t.x,p[1]*t.k+t.y]:null;},
+  era:()=>era,timeLayer:()=>timeLid(),scope:()=>scope};
+ // a citizen reading that arrived in the link plays itself (the hero is skipped)
+ if(tour&&hashHadState)setTimeout(()=>startTour(0),700);
 }
 try{init();}catch(e){err(e);}
 })();

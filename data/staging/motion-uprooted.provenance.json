@@ -1,0 +1,78 @@
+{
+ "layer": "motion-uprooted",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "CC BY 4.0 with supplemental Terms of Use for Datasets",
+  "statement": "unhcr.org/us/terms-use-datasets (read via search excerpt 2026-11-06; www.unhcr.org is not reachable from the build environment): 'Except where otherwise provided, the datasets made available by UNHCR on the UNHCR Refugee Population Statistics Database (the “Datasets”) are licensed under a Creative Commons Attribution International License 4.0 (the “CC BY License”) and the provision thereof is subject to the supplemental terms contained below in these Terms of Use for Datasets.' The Methodology page states the same.",
+  "attribution": "UNHCR Refugee Population Statistics Database"
+ },
+ "files": {
+  "pop2024.json": {
+   "bytes": 1727717,
+   "sha256": "055270d06ab8764818408b2228915c7be08851b153a447442b6f7e15aee2e79e"
+  }
+ },
+ "method": "For each origin–asylum pair at end-2024: refugees + asylum-seekers + other people in need of international protection (UNHCR's own headline category). Internally displaced people (same country) are not drawn. Arcs run between the centroids of each country's largest polygon on the map.",
+ "counts": {
+  "pairs_in": 6200,
+  "flows": 5651,
+  "people_drawn": 44831377,
+  "dropped_people": {
+   "not on the 1:110m map: China, Hong Kong SAR": 1355,
+   "not on the 1:110m map: Anguilla": 5,
+   "not on the 1:110m map: Malta": 9304,
+   "not on the 1:110m map: Andorra": 21,
+   "not on the 1:110m map: Antigua and Barbuda": 176,
+   "not on the 1:110m map: Bahrain": 985,
+   "not on the 1:110m map: Barbados": 1048,
+   "not on the 1:110m map: Mauritius": 976,
+   "not on the 1:110m map: Bermuda": 99,
+   "not on the 1:110m map: Nauru": 118,
+   "not on the 1:110m map: Sint Maarten (Dutch part)": 156,
+   "not on the 1:110m map: British Virgin Islands": 46,
+   "not on the 1:110m map: Palau": 5,
+   "not on the 1:110m map: Liechtenstein": 875,
+   "not on the 1:110m map: Comoros": 2808,
+   "not on the 1:110m map: Cayman Islands": 65,
+   "not on the 1:110m map: Saint Kitts and Nevis": 113,
+   "not on the 1:110m map: Curacao ": 11601,
+   "not on the 1:110m map: Cabo Verde": 286,
+   "not on the 1:110m map: Dominica": 640,
+   "not on the 1:110m map: French Guiana": 538,
+   "not on the 1:110m map: Micronesia (Federated States of)": 5,
+   "not on the 1:110m map: Guadeloupe": 98,
+   "not on the 1:110m map: Grenada": 236,
+   "not on the 1:110m map: Saint Lucia": 464,
+   "not on the 1:110m map: Monaco": 17,
+   "not on the 1:110m map: Kiribati": 58,
+   "not on the 1:110m map: Turks and Caicos Islands": 28,
+   "not on the 1:110m map: China, Macao SAR": 28,
+   "not on the 1:110m map: Martinique": 5,
+   "not on the 1:110m map: Maldives": 107,
+   "not on the 1:110m map: Marshall Islands": 10,
+   "not on the 1:110m map: Niue": 10,
+   "not on the 1:110m map: Seychelles": 28,
+   "not on the 1:110m map: Singapore": 348,
+   "no ISO code: Stateless": 41083,
+   "not on the 1:110m map: Sao Tome and Principe": 25,
+   "no ISO code: Tibetan": 12576,
+   "not on the 1:110m map: Tonga": 1754,
+   "not on the 1:110m map: Tuvalu": 11,
+   "no ISO code: Unknown ": 254406,
+   "not on the 1:110m map: Saint Vincent and the Grenadines": 415,
+   "not on the 1:110m map: Aruba": 11470,
+   "not on the 1:110m map: Samoa": 492
+  }
+ },
+ "caveats": [
+  "Stocks at end-2024, not flows within the year: an arc is everyone from A then living in B.",
+  "Palestine refugees under UNRWA's mandate are outside UNHCR's statistics.",
+  "Country centroids, not camps or cities."
+ ],
+ "validation": {
+  "known_answers": {
+   "largest origins include Afghanistan, Syria, Venezuela, Ukraine, Sudan": "[('Venezuela (Bolivarian Republic of)', 7582310), ('Afghanistan', 6151305), ('Syrian Arab Rep.', 6116819), ('Ukraine', 5160957), ('Sudan', 2776616), ('South Sudan', 2323458)]",
+   "largest hosts include Iran, Türkiye, Colombia, Germany, Uganda (and the U.S., through pending asylum claims)": "[('United States of America', 3600385), ('Iran (Islamic Rep. of)', 3489257), ('Türkiye', 3088634), ('Germany', 3040767), ('Colombia', 2809946), ('Uganda', 1796597)]"
+  }
+ }
+}

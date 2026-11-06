@@ -3,8 +3,10 @@
     "title": "THE SOUL SURVEY",
     "tagline": "A topographic survey of the collective soul, conducted in objective data.",
     "sheet": "SHEET NO. 1 — THE HUMAN SIGNAL",
-    "version": "0.5.0",
+    "version": "0.7.0-dev",
     "surveyed": "JULY 2026",
+    "repo": "",
+    "site": "",
     "manifesto": "Every act leaves a coordinate. A birth, a search, a warehouse, a crash — each one lands somewhere, and the landing is recorded. Alone, each record is trivia. Stacked, they become relief: ridgelines of genius, basins of grief, the bright grid of the machines we serve and that serve us. This is not a map of the land. It is a map of what we do on it. Toggle the layers. Watch the country change shape. The terrain is us."
   },
   "themes": [
@@ -26,7 +28,7 @@
     {
       "id": "orientation", "special": "orientation",
       "title": "Orientation", "kicker": "HOW TO READ THIS MAP", "scope": "us",
-      "text": "Seven instruments, one terrain. Each layer is a real dataset with coordinates. Density becomes elevation; overlap becomes light. Watch them arrive."
+      "text": "{n} instruments, one terrain. Each layer is a real dataset with coordinates. Density becomes elevation; overlap becomes light. Watch them arrive."
     },
     {
       "id": "corridor", "title": "The Corridor of Grief", "kicker": "MOTION × LOSS", "scope": "us",
@@ -67,6 +69,11 @@
       "id": "arsenal-altar", "title": "The Arsenal and the Altar", "kicker": "CONTROL × FAITH", "scope": "us",
       "layers": ["control-arsenal", "faith-altar"], "bbox": [[-107, 29], [-80, 42]],
       "text": "Two geographies of devotion, drawn from license rolls and pew counts. Steel points are the places that sell arms; the candle-gold wash is the density of the faithful. Sometimes they are the same places, sometimes opposites — the survey only shows where, and lets you argue about why."
+    },
+    {
+      "id": "who-knows-whom", "title": "Who Knows Whom", "kicker": "COMPANY — FRIENDSHIP ACROSS CLASS", "scope": "us",
+      "layers": ["company-socialcapital"], "bbox": [[-125, 24], [-66, 50]],
+      "text": "Economic connectedness asks one question of a county: do its poorer residents have friends who are not poor? At 1.0, friendship ignores class entirely. Only one county in six reaches it. The state averages run from 0.56 in South Carolina to 1.09 in New Hampshire, and the Upper Midwest and the mountain West glow while the Deep South stays pale. The map measures who knows whom, which is not the same as who helps whom."
     }
   ],
   "layers": [
@@ -82,16 +89,40 @@
       "statline": "{n} remembered births",
       "status": "live",
       "caveat": "visibility scoring favors the recently famous; 25.6% of source records lack coordinates",
-      "essay": {
-        "what": "The birthplaces of 1,704,189 notable humans — everyone with a verified Wikipedia/Wikidata footprint born between 3500 BC and 2018 AD, from the cross-verified database of notable people (Laouenan et al., Scientific Data, 2022). Every golden grain is a place that produced someone the world still remembers. The 12,000 most visible burn as distinct stars.",
-        "how": "2,291,817 records streamed and aggregated to 0.25° cells; 74.4% carry verified birth coordinates. Brightness follows log density. Star selection uses the database's composite visibility score across five criteria — which favors the recently famous, and we disclose it: memory's spotlight is aimed at the present. Use the era scrubber to walk the nebula through five thousand years.",
-        "why": "Memory has a geography. It pools where rivers meet, where ports open, where empires kept their books — Paris alone holds 28,055 remembered births, more than most nations. Genius is not sown evenly; it is watered by cities. The nebula argues something uncomfortable: the world remembers people from places that were already powerful."
-      },
+      "essay": {"what": "The birthplaces of 1,704,189 notable humans — everyone with a verified Wikipedia/Wikidata footprint born between 3500 BC and 2018 AD, from the cross-verified database of notable people (Laouenan et al., Scientific Data, 2022). Every golden grain is a place that produced someone the world still remembers. The 12,000 most visible burn as distinct stars.", "how": "2,291,817 records streamed and aggregated to 0.25° cells; 74.4% carry verified birth coordinates. Brightness follows log density. Star selection uses the database's composite visibility score across five criteria — which favors the recently famous, and we disclose it: memory's spotlight is aimed at the present. Use the era scrubber to walk the nebula through five thousand years. A calling lens sorts the 5,000 brightest into nine groups folded from their Pantheon domains (screen, music, letters, art, thought and science, sport, power, faith, other); the fold is the survey's own and is listed in pipeline/build.py.", "why": "Memory has a geography. It pools where rivers meet, where ports open, where empires kept their books — Paris alone holds 28,055 remembered births, more than most nations. Genius is not sown evenly; it is watered by cities. The nebula argues something uncomfortable: the world remembers people from places that were already powerful."},
       "plateStats": [
         { "label": "records processed", "value": "2,291,817" },
         { "label": "located births", "value": "1,704,189" },
         { "label": "densest cell", "value": "Paris — 28,055" },
         { "label": "runners-up", "value": "New York 23,018 · London 19,583" }
+      ]
+    },
+    {
+      "id": "memory-languages",
+      "title": "The Last Speakers",
+      "theme": "memory",
+      "accent": "#7fd6c2",
+      "scopes": ["world"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "languages",
+      "statline": "{n} languages, every one a way of seeing",
+      "status": "pending",
+      "caveat": "one representative point per language, not a territory; endangerment as Glottolog's agglomerated status (AES)",
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 40}, {"name": "aes", "from": "meta.aes", "type": "int", "default": 0}, {"name": "es", "from": "meta.aes", "type": "enum", "values": ["1", "2", "3", "4", "5", "6"], "labels": ["Not endangered", "Threatened", "Shifting", "Moribund", "Nearly extinct", "Extinct"], "default": -1}, {"name": "fam", "from": "meta.family", "type": "str", "max": 28}], "lenses": [{"field": "es", "label": "Endangerment (AES)"}]},
+      "colorBy": {"field": "es", "colors": ["#4f8f84", "#7fd6c2", "#e8d36a", "#f0a050", "#ff6b5e", "#8a94a6"]},
+      "size": {"r": 1.9},
+      "tip": {"ti": "{name}", "s": "{es} · {fam}"},
+      "essay": {
+        "what": "7,836 languages, each placed where Glottolog puts its heart, coloured by how close it is to silence: from not endangered through threatened, shifting, moribund and nearly extinct to extinct. 983 are already gone. Another 2,520 are shifting, moribund or nearly extinct — spoken mostly by grandparents.",
+        "how": "Glottolog 5.3 (Max Planck Institute for Evolutionary Anthropology), read as CLDF: every language-level languoid that is a spoken first language or a sign language, with Glottolog's coordinate and its Agglomerated Endangerment Status, which folds three expert catalogues (EGIDS, UNESCO, ElCat) into six steps. Pidgins, unattested and artificial languages are left out.",
+        "why": "Papua New Guinea alone holds 849 of these points, more than any other country. The red and grey sit where empires and settlers arrived: Australia has lost 227 languages, the United States 135, Brazil 95. Each grey point is a way of naming the world that no one alive can use. This is the survey's light side and its loss in one layer: the remembered, at the scale of a people."
+      },
+      "plateStats": [
+        {"label": "languages on the map", "value": "7,836"},
+        {"label": "extinct", "value": "983"},
+        {"label": "shifting → nearly extinct", "value": "2,520"},
+        {"label": "most languages", "value": "Papua New Guinea 849 · Indonesia 728 · Nigeria 454"}
       ]
     },
     {
@@ -125,16 +156,14 @@
       "accent": "#38e1ff",
       "scopes": ["us", "world"],
       "forms": { "points": true, "contours": true, "tint": false },
+      "tip": {"ti": "{name}", "s": "{opn} · {ai} · data center"},
+      "pack": {"kind": "points", "fields": [{"name": "name", "from": "name|meta.operator", "type": "str", "max": 42}, {"name": "op", "from": "meta.operator", "type": "enum", "values": ["Meta", "AWS", "Google", "Microsoft", "Equinix", "Digital Realty", "NTT", "QTS", "Oracle", "Apple", "xAI", "CoreWeave"], "contains": [["xai", "xAI"], ["coreweave", "CoreWeave"], ["oracle", "Oracle"], ["openai", "Oracle"], ["amazon", "AWS"], ["aws", "AWS"], ["facebook", "Meta"], ["meta", "Meta"], ["google", "Google"], ["microsoft", "Microsoft"], ["azure", "Microsoft"], ["equinix", "Equinix"], ["digital realty", "Digital Realty"], ["ntt", "NTT"], ["quality technology", "QTS"], ["qts", "QTS"], ["apple", "Apple"]], "default": -1}, {"name": "opn", "from": "meta.operator", "type": "str", "max": 48}, {"name": "ai", "from": "meta.status", "type": "enum", "values": ["operational", "construction"], "labels": ["AI campus, operating", "AI campus, under construction"], "default": -1}], "lenses": [{"field": "op", "label": "Operator", "constellation": true, "min": 3}, {"field": "ai", "label": "The AI build-out (Brockovich records)"}]},
       "weight": 1.0,
       "unit": "data centers",
       "statline": "{n} data centers",
       "status": "live",
       "caveat": "OpenStreetMap completeness follows mapping effort; centroids, not entrances",
-      "essay": {
-        "what": "4,342 data centers with ground coordinates, worldwide: 4,244 mapped by OpenStreetMap contributors, plus 98 of the newest US hyperscale and AI campuses — xAI Colossus, Stargate sites — from the Brockovich accountability map, which tracks what OSM hasn't surveyed yet.",
-        "how": "Overpass API over telecom=data_center and building=data_center, nodes, ways and relations, deduplicated within 200 meters. Community-mapped data inherits community bias: coverage follows mapping effort, so Europe and North America are sharpest. © OpenStreetMap contributors, ODbL.",
-        "why": "The cloud is a place. It hums in Northern Virginia — Ashburn is the true capital of the internet — and clusters wherever power is cheap, land is flat, and fiber is thick. Every question you ask online is answered somewhere on this map. Notice the new AI campuses landing in the same basins: the machines settle like sediment, in layers, along the same rivers of electricity."
-      },
+      "essay": {"what": "4,342 data centers with ground coordinates, worldwide: 4,244 mapped by OpenStreetMap contributors, plus 98 of the newest US hyperscale and AI campuses — xAI Colossus, Stargate sites — from the Brockovich accountability map, which tracks what OSM hasn't surveyed yet.", "how": "Overpass API over telecom=data_center and building=data_center, nodes, ways and relations, deduplicated within 200 meters. Community-mapped data inherits community bias: coverage follows mapping effort, so Europe and North America are sharpest. © OpenStreetMap contributors, ODbL. The operator lens reads OpenStreetMap's own operator tag (2,634 of 4,342 facilities carry one) rather than guessing from names; joint ventures are filed under one named partner (the OpenAI campuses under Oracle) and shown in full on hover. A second lens isolates the 98 AI campuses from the Brockovich records: 33 operating, 65 under construction.", "why": "The cloud is a place. It hums in Northern Virginia — Ashburn is the true capital of the internet — and clusters wherever power is cheap, land is flat, and fiber is thick. Every question you ask online is answered somewhere on this map. Notice the new AI campuses landing in the same basins: the machines settle like sediment, in layers, along the same rivers of electricity."},
       "plateStats": [
         { "label": "total mapped", "value": "4,342" },
         { "label": "in the United States", "value": "1,673 (38.5%)" },
@@ -164,6 +193,35 @@
         { "label": "list year", "value": "2025 (FY2024 revenue)" },
         { "label": "rank 1", "value": "Walmart — $680,985M" },
         { "label": "states represented", "value": "37 + DC" }
+      ]
+    },
+    {
+      "id": "power-plants",
+      "title": "The World's Furnaces",
+      "theme": "power",
+      "accent": "#ff8a3d",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "scopeFilter": {"us": {"field": "cc", "label": "United States of America"}},
+      "weight": 0.0,
+      "unit": "power plants",
+      "statline": "{n} power plants, sized by what they can burn",
+      "status": "pending",
+      "caveat": "frozen in 2021 (WRI no longer maintains the database); nameplate capacity, not generation; small plants unevenly covered outside the U.S. and Europe",
+      "pack": {"kind": "points", "sort": "v", "fields": [{"name": "name", "type": "str", "max": 36}, {"name": "v", "type": "float", "nd": 0}, {"name": "fu", "from": "meta.fuel", "type": "enum", "values": ["coal", "gas", "oil", "nuclear", "hydro", "wind", "solar", "other"], "labels": ["Coal", "Gas", "Oil", "Nuclear", "Hydro", "Wind", "Solar", "Other"], "default": 7}, {"name": "cc", "from": "meta.country", "type": "enum", "top": 200, "other": false}], "lenses": [{"field": "fu", "label": "Fuel"}], "coordNd": 2},
+      "colorBy": {"field": "fu", "colors": ["#c9473b", "#ff8a3d", "#b5653a", "#d9f25c", "#4fa3e0", "#a8e0f0", "#ffd84d", "#a08bc0"]},
+      "size": {"field": "v", "scale": "sqrt", "min": 0.9, "max": 7.5, "vmax": 3000, "alpha": 0.9, "worldAlpha": 0.66, "core": 0.42},
+      "tip": {"ti": "{name}", "ti2": "{fu} plant · {v|int} MW", "s": "{fu} · {v|int} MW · {cc}"},
+      "essay": {
+        "what": "34,936 power plants in 167 countries, each sized by the electricity it can make and coloured by what it burns or catches: coal, gas, oil, nuclear, hydro, wind, solar. Together they could deliver about 5.7 terawatts — the furnace under every other layer of this map.",
+        "how": "The World Resources Institute's Global Power Plant Database v1.3.0, built from national registries, the Global Energy Observatory, Enipedia and WRI's own work, under CC-BY 4.0. Fuels are folded into eight groups (petcoke with oil; biomass, waste, geothermal, storage and tidal under other). Names are kept for plants of 50 MW or more; capacity is nameplate, not generation. The database has been frozen since 2021: coal plants closed since and the solar and wind built since are missing.",
+        "why": "Lay the data centers on top: the cloud settles where the furnaces already burn. China holds 956 gigawatts of coal capacity — almost four times the United States — while the U.S. lists the most plants of any country, partly because its national registry reaches down to the smallest solar farms. The bright red knots are where the world's electricity is still made from fire."
+      },
+      "plateStats": [
+        {"label": "plants", "value": "34,936"},
+        {"label": "coal capacity, China", "value": "956 GW"},
+        {"label": "largest plant", "value": "Three Gorges Dam"},
+        {"label": "vintage", "value": "v1.3.0, frozen 2021"}
       ]
     },
     {
@@ -215,6 +273,32 @@
       ]
     },
     {
+      "id": "loss-covid",
+      "title": "The Year Without Goodbyes",
+      "theme": "loss",
+      "accent": "#b9a3e3",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "tintMax": 0.62,
+      "weight": 0.0,
+      "unit": "deaths per 100k",
+      "statline": "COVID-19 deaths in {n} counties, per 100,000 residents",
+      "status": "pending",
+      "caveat": "deaths as states reported them, by county of residence; small counties rest on a few deaths (counts shown); Kansas City and Joplin, Mo. are reported apart from their counties",
+      "pack": {"kind": "regions", "regionKind": "county", "time": {"from": "meta.series", "label": "Deaths in the quarter, per 100k", "buckets": [[0, 0, "2020 Q1"], [1, 1, "2020 Q2"], [2, 2, "2020 Q3"], [3, 3, "2020 Q4"], [4, 4, "2021 Q1"], [5, 5, "2021 Q2"], [6, 6, "2021 Q3"], [7, 7, "2021 Q4"], [8, 8, "2022 Q1"], [9, 9, "2022 Q2"], [10, 10, "2022 Q3"], [11, 11, "2022 Q4"], [12, 12, "2023 Q1"]], "vmaxQuantile": 0.97}, "vminQuantile": 0.05},
+      "essay": {
+        "what": "1,122,747 deaths from COVID-19 in 3,137 counties, January 2020 to March 2023, shown as deaths per 100,000 residents. The bar steps through thirteen quarters so the waves can be watched moving: New Jersey, New York and southwest Georgia in the spring of 2020, Texas and the Deep South that summer, the Dakotas and the northern plains that winter. Some states reported deaths in batches long after they happened: when one whole state lights at once (Kansas in 2021 Q2, Nebraska in 2022 Q4), it may be paperwork arriving rather than a wave.",
+        "how": "The New York Times' county-level counts, compiled from state and local health departments, differenced into deaths per quarter and divided by each county's 2020 Census population. New York City's five boroughs are reported together, so each borough shows the city's combined rate. Licensed for non-commercial use with credit to The New York Times — this survey is non-commercial.",
+        "why": "No one is named here, and no one needs to be. The pale counties of the high plains are not spared places; they are places where a few deaths are a large share of everyone. Read with the Quiet Hours and the overdose layer, this is the survey's map of absence: chairs that stayed empty at tables the rest of the map never sees."
+      },
+      "plateStats": [
+        {"label": "deaths counted", "value": "1,122,747"},
+        {"label": "most deaths", "value": "Los Angeles County — 35,960"},
+        {"label": "first wave, highest rates", "value": "SW Georgia · New York City"},
+        {"label": "credit", "value": "The New York Times"}
+      ]
+    },
+    {
       "id": "omen-names",
       "title": "Devil's Land, Angel's Land",
       "theme": "omen",
@@ -222,16 +306,13 @@
       "accent2": "#f2ead8",
       "scopes": ["us"],
       "forms": { "points": true, "contours": false, "tint": false },
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 40}, {"name": "s", "from": "meta.side", "type": "enum", "values": ["dark", "light"], "labels": ["Devils & hells", "Angels & paradises"], "default": 1}, {"name": "cls", "from": "meta.class", "type": "str", "max": 18}, {"name": "st", "from": "meta.state", "type": "str", "max": 2}, {"name": "cl", "from": "meta.class", "type": "enum", "values": ["Valley", "Stream", "Summit", "Populated Place", "Lake", "Basin", "Ridge", "Gap", "Spring"], "labels": ["Valleys", "Streams", "Summits", "Towns", "Lakes", "Basins", "Ridges", "Gaps", "Springs"], "default": -1}], "lenses": [{"field": "s", "label": "Side"}, {"field": "cl", "label": "Feature"}]},
       "weight": 0.4,
       "unit": "place names",
       "statline": "{dark} devils · {light} angels",
       "status": "live",
       "caveat": "natural features and settlements only; word-boundary matching",
-      "essay": {
-        "what": "Every natural feature and settlement in America officially named for the beyond: 1,922 for devils, hell, and purgatory; 809 for angels, paradise, and Eden. Devils Canyon. Hells Half Acre. Angel Ridge. Paradise Valley.",
-        "how": "Word-boundary search across all 981,698 official names in the USGS Geographic Names Information System, restricted to natural features and populated places — no churches, no schools, nothing self-named. Red points are the dark names; bone-white points are the light ones.",
-        "why": "Surveyors named what they felt. The devils cluster in the hard land — the canyons, buttes, and badlands of the arid West, where the ground itself seemed hostile — while the angels settle in gentler valleys. Fear got the dramatic terrain; hope got the farmland. The final ratio is 2.4 devils for every angel, which may be the most honest theological statement America has ever made."
-      },
+      "essay": {"what": "Every natural feature and settlement in America officially named for the beyond: 1,922 for devils, hell, and purgatory; 809 for angels, paradise, and Eden. Devils Canyon. Hells Half Acre. Angel Ridge. Paradise Valley.", "how": "Word-boundary search across all 981,698 official names in the USGS Geographic Names Information System, restricted to natural features and populated places — no churches, no schools, nothing self-named. Red points are the dark names; bone-white points are the light ones.", "why": "Surveyors named what they felt. The devils cluster in the hard land — the canyons, buttes, and badlands of the arid West, where the ground itself seemed hostile — while the angels settle in gentler valleys. Fear got the dramatic terrain; hope got the farmland. The final ratio is 2.4 devils for every angel, which may be the most honest theological statement America has ever made. Split by feature and the pattern sharpens: 89% of the Gaps and 84% of the Ridges belong to the devil, while 86% of the Towns took an angel's or a paradise's name. We fear the passes and bless the places we live."},
       "plateStats": [
         { "label": "dark names", "value": "1,922" },
         { "label": "light names", "value": "809" },
@@ -246,22 +327,67 @@
       "accent": "#8dffab",
       "scopes": ["us", "world"],
       "forms": { "points": true, "contours": true, "tint": false },
+      "pack": {"kind": "points", "count": "v", "fields": [{"name": "v", "type": "int", "default": 1}, {"name": "sh", "from": "meta.shape", "type": "enum", "values": ["light", "triangle", "circle", "fireball", "sphere", "disk", "oval", "formation", "cigar", "changing", "flash", "unknown"], "labels": ["Light", "Triangle", "Circle", "Fireball", "Sphere", "Disk", "Oval", "Formation", "Cigar", "Changing", "Flash", "Other or unknown"], "alias": {"changed": "changing", "flare": "flash", "round": "circle", "delta": "triangle", "other": "unknown"}, "default": 11}, {"name": "dec", "from": "meta.yr", "type": "decade"}], "aggregate": {"nd": 2, "sum": "v"}, "lenses": [{"field": "sh", "label": "Reported shape"}], "time": {"field": "dec", "label": "Decade reported", "weight": "v", "buckets": [[1900, 1959, "before 1960"], [1960, 1969, "1960s"], [1970, 1979, "1970s"], [1980, 1989, "1980s"], [1990, 1999, "1990s"], [2000, 2009, "2000s"], [2010, 2019, "2010s"]]}},
       "weight": 0.5,
       "unit": "sightings",
       "statline": "{n} sightings reported",
       "status": "pending",
       "caveat": "self-reported testimony, geocoded to towns; corpus frozen mid-2014; reporting bias toward population and internet access",
-      "essay": {
-        "what": "80,331 UFO sightings reported to the National UFO Reporting Center between 1906 and 2014, each with a mappable location — strange lights, discs, triangles, and orbs; every point a moment when somebody looked up and could not explain what they saw. The Phoenix Lights of March 1997 are in here, a tight knot of triangles over Arizona.",
-        "how": "The open community-geocoded NUFORC corpus (consolidated June 2014, checksum-verified). Reports are self-submitted and located to the nearest town. This layer maps testimony, not verified phenomena — which is exactly what makes it a soul measurement.",
-        "why": "Wonder has a geography, and it looks suspiciously like population plus darkness plus loneliness. The sightings trace where people live and where the sky is big enough to watch. The map says less about visitors than about who is looking up — and how badly they want an answer."
-      },
+      "essay": {"what": "80,331 UFO sightings reported to the National UFO Reporting Center between 1906 and 2014, each with a mappable location — strange lights, discs, triangles, and orbs; every point a moment when somebody looked up and could not explain what they saw. The Phoenix Lights of March 1997 are in here, a tight knot of triangles over Arizona.", "how": "The open community-geocoded NUFORC corpus (consolidated June 2014, checksum-verified). Reports are self-submitted and located to the nearest town. This layer maps testimony, not verified phenomena — which is exactly what makes it a soul measurement. Since v0.7 the plate carries a shape lens (light, triangle, circle, fireball, disk…), and the bar at the foot of the map steps through the decades the reports were filed. Reports are grouped by place to 0.01°, so one glow can hold many nights.", "why": "Wonder has a geography, and it looks suspiciously like population plus darkness plus loneliness. The sightings trace where people live and where the sky is big enough to watch. The map says less about visitors than about who is looking up — and how badly they want an answer."},
       "plateStats": [
         { "label": "sightings reported", "value": "80,331" },
         { "label": "span", "value": "1906 – 2014" },
-        { "label": "top shapes", "value": "light 16,336 · triangle 7,734 · circle 7,547" },
+        { "label": "top shapes", "value": "light 16,495 · triangle 7,833 · circle 7,747" },
         { "label": "reported in the U.S.", "value": "91.4%" }
       ]
+    },
+    {
+      "id": "wonder-darksky",
+      "title": "The Last Dark",
+      "theme": "wonder",
+      "accent": "#cfe0ff",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "dark-sky places",
+      "statline": "{n} places that promised to keep the night",
+      "status": "pending",
+      "caveat": "from Wikidata, which records only part of DarkSky International's register (darksky.org refuses scripts); one point per place, though reserves span whole regions",
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 48}, {"name": "kd", "from": "meta.kind", "type": "enum", "values": ["sanctuary", "reserve", "park", "community", "urban", "preserve"], "labels": ["Sanctuary", "Reserve", "Park", "Community", "Urban night sky place", "Dark-sky preserve"], "default": 5}, {"name": "cc", "from": "meta.country", "type": "str", "max": 24}], "lenses": [{"field": "kd", "label": "Designation"}]},
+      "scopeFilter": {"us": {"field": "cc", "value": "United States"}},
+      "size": {"r": 4.6, "core": 1.0},
+      "tip": {"ti": "{name}", "s": "{kd} · {cc}"},
+      "essay": {
+        "what": "The places that have promised to keep the night: parks, reserves, sanctuaries and whole towns certified for dark skies, from Natural Bridges in Utah (the first, in 2007) to Aoraki Mackenzie in New Zealand. Turn on the World's Furnaces and the data centers beside it: the dark places are what is left between the lights.",
+        "how": "Wikidata's records of International Dark Sky Parks, Reserves, Sanctuaries, Communities and Urban Night Sky Places, plus items it calls dark-sky preserves (CC0). DarkSky International's own register sits behind a bot check that the survey does not get around, so this is a partial mirror: the real count is higher, and the gaps are Wikidata's, not the sky's.",
+        "why": "Most of the light layers on this map are ones we did not choose — crashes, overdoses, furnaces. These points were chosen. A town that dims its streetlights so its children can see the Milky Way is a small, stubborn kind of wonder, and it belongs on a survey of the soul."
+      },
+      "plateStats": [
+        {"label": "places on the map", "value": "164"},
+        {"label": "first park", "value": "Natural Bridges, Utah — 2007"},
+        {"label": "most places", "value": "United States"},
+        {"label": "source", "value": "Wikidata (CC0)"}
+      ]
+    },
+    {
+      "id": "wonder-nightlights",
+      "title": "The Banished Dark",
+      "theme": "wonder",
+      "accent": "#ffe9a8",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "night radiance",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the VIIRS annual night-lights composites at eogdata.mines.edu fail certificate verification from the build environment (retried; still unreachable). The raster engine for this layer is built and tested.",
+      "essay": {
+        "what": "Night-time light seen from orbit (VIIRS annual composite), as a quantized raster: the shape of every city, highway and gas flare.",
+        "how": "Will be aggregated to about 0.1° worldwide and 0.05° over the U.S., 8-bit, under 600 KB.",
+        "why": "The opposite of the Last Dark: what we did to the night."
+      },
+      "plateStats": []
     },
     {
       "id": "despair-overdoses",
@@ -270,6 +396,7 @@
       "accent": "#c489d6",
       "scopes": ["us"],
       "forms": { "points": false, "contours": false, "tint": true, "regionKind": "county" },
+      "pack": {"kind": "regions", "regionKind": "county"},
       "weight": 0.0,
       "unit": "deaths per 100k",
       "statline": "overdose rates in {n} counties",
@@ -294,16 +421,13 @@
       "accent": "#d6e055",
       "scopes": ["us"],
       "forms": { "points": true, "contours": false, "tint": false },
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 60}, {"name": "st2", "from": "meta.status", "type": "enum", "values": ["proposed", "final", "deleted"], "labels": ["Proposed", "On the list", "Deleted (cleaned)"], "default": 1}, {"name": "state", "from": "meta.state", "type": "str", "max": 2}, {"name": "yr", "from": "meta.listing_date", "type": "year"}, {"name": "del", "from": "meta.deletion_date", "type": "year"}], "lenses": [{"field": "st2", "label": "Status"}], "time": {"field": "yr", "endField": "del", "mode": "upto", "label": "On the list as of", "buckets": [[1983, 1983, "1983"], [1990, 1990, "1990"], [2000, 2000, "2000"], [2010, 2010, "2010"], [2020, 2020, "2020"], [2026, 2026, "2026"]]}},
       "weight": 0.4,
       "unit": "contaminated sites",
       "statline": "{n} places we poisoned",
       "status": "pending",
       "caveat": "National Priorities List only — thousands of lesser Superfund-program sites are not shown",
-      "essay": {
-        "what": "All 1,840 sites of the EPA's National Priorities List — the most contaminated ground in America: mines, smelters, chemical plants, landfills, military ranges. Love Canal is here. So is the Butte pit complex, and Hanford four times over.",
-        "how": "EPA's own NPL inventory with coordinates (the dataset behind its Superfund 'Where You Live' map), statuses normalized to proposed (37), final (1,343), and deleted (460) — where deleted means cleaned up enough to leave the list, not erased from the ground.",
-        "why": "Industry leaves a residue that outlives the industry: acid in the aquifer, lead in the yard soil, a fence around a field. The acid-yellow points cluster where America made things and walked away. Stack them on the Thrones of Capital and you are looking at the before and after of the same story."
-      },
+      "essay": {"what": "All 1,840 sites of the EPA's National Priorities List — the most contaminated ground in America: mines, smelters, chemical plants, landfills, military ranges. Love Canal is here. So is the Butte pit complex, and Hanford four times over.", "how": "EPA's own NPL inventory with coordinates (the dataset behind its Superfund 'Where You Live' map), statuses normalized to proposed (37), final (1,343), and deleted (460) — where deleted means cleaned up enough to leave the list, not erased from the ground. The bar replays the list itself: a site appears the year EPA listed it and leaves the map the year it was deleted, so 1983's 406 standing sites become 1,343 today. Forty-two sites have no listing date in the inventory (37 still proposed, 5 deleted) and never appear on the bar.", "why": "Industry leaves a residue that outlives the industry: acid in the aquifer, lead in the yard soil, a fence around a field. The acid-yellow points cluster where America made things and walked away. Stack them on the Thrones of Capital and you are looking at the before and after of the same story."},
       "plateStats": [
         { "label": "NPL sites", "value": "1,840" },
         { "label": "final / deleted / proposed", "value": "1,343 / 460 / 37" },
@@ -318,6 +442,7 @@
       "accent": "#7f9bc9",
       "scopes": ["us"],
       "forms": { "points": false, "contours": false, "tint": true, "regionKind": "county" },
+      "pack": {"kind": "regions", "regionKind": "county"},
       "weight": 0.0,
       "unit": "deaths per 100k",
       "statline": "suicide rates in {n} counties",
@@ -344,12 +469,86 @@
       "statline": "{arcs} corridors · {n} counties sorted",
       "status": "pending",
       "caveat": "IRS tax-filer data — the poorest and richest households are undercounted; households, not people, unless noted",
-      "essay": {
-        "what": "County-to-county migration drawn from IRS tax returns: the survey's first flow map. Teal counties gained households on net; ember counties lost them. The arcs are the largest corridors — each one thousands of actual moves.",
-        "how": "IRS Statistics of Income migration files, latest filing-year pair. Same-county and summary rows excluded per the file layout; corridors kept above a disclosed household threshold so the map stays legible. Tax-filer data undercounts the poorest and the richest; that caveat rides on every number.",
-        "why": "This is the country rearranging itself in real time — out of the old cores, into the Sun Belt, following rent and work and weather. Toggle the thrones or the fulfillment network underneath and watch what the movers are moving toward. Every arc is a bet that somewhere else is better."
-      },
+      "essay": {"what": "County-to-county migration drawn from IRS tax returns: the survey's first flow map. Teal counties gained households on net; ember counties lost them. The arcs are the largest corridors — each one thousands of actual moves.", "how": "IRS Statistics of Income migration files, latest filing-year pair. Same-county and summary rows excluded per the file layout; corridors kept above a disclosed household threshold so the map stays legible. Tax-filer data undercounts the poorest and the richest; that caveat rides on every number. COUNT switches between households (tax returns) and people (exemptions claimed): the same IRS rows in a different unit, and only the second counts children and other dependents.", "why": "This is the country rearranging itself in real time — out of the old cores, into the Sun Belt, following rent and work and weather. Toggle the thrones or the fulfillment network underneath and watch what the movers are moving toward. Every arc is a bet that somewhere else is better."},
       "plateStats": []
+    },
+    {
+      "id": "motion-eviction",
+      "title": "The Price of Staying",
+      "theme": "motion",
+      "accent": "#d9a45b",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "threatened per 100 renting households",
+      "statline": "eviction threats in {n} counties, 2000–2018",
+      "status": "pending",
+      "caveat": "modelled estimates (Eviction Lab, 2022); a threat is a court filing against a household, not always a removal; ends in 2018",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97, "time": {"from": "meta.series", "label": "Threatened in the year, per 100 renting households", "buckets": [[2000, 2000, "2000"], [2001, 2001, "2001"], [2002, 2002, "2002"], [2003, 2003, "2003"], [2004, 2004, "2004"], [2005, 2005, "2005"], [2006, 2006, "2006"], [2007, 2007, "2007"], [2008, 2008, "2008"], [2009, 2009, "2009"], [2010, 2010, "2010"], [2011, 2011, "2011"], [2012, 2012, "2012"], [2013, 2013, "2013"], [2014, 2014, "2014"], [2015, 2015, "2015"], [2016, 2016, "2016"], [2017, 2017, "2017"], [2018, 2018, "2018"]], "nd": 2, "vmaxQuantile": 0.97}},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "How often a renting household is taken to court to be put out: households threatened with eviction each year per 100 renting households, in 3,142 counties from 2000 to 2018. The median county sits near 2.6; the worst counties are ten times higher. About 3.7 million eviction cases were filed in an average year.",
+        "how": "The Princeton Eviction Lab's model estimates (Gromis, Fellows, Hendrickson, Edmonds, Leung, Porton & Desmond, 2022), which combine court records with a statistical model to fill counties whose courts do not report, published under ODC-BY 1.0. The map pools 2014–2018; the bar steps through each year. Maryland fills the top of the list: its rent courts let a landlord file again every month rent is late, so the same household is threatened many times over.",
+        "why": "Eviction is the sorting seen from below. The Great Sorting shows who leaves by choice; this shows who is pushed — densest in Maryland, the Virginia and Carolina cities, the Atlanta suburbs and the Deep South. Richmond, Petersburg and Clayton County, Georgia sit near the top; the Dakotas and Wyoming barely register."
+      },
+      "plateStats": [
+        {"label": "cases filed, average year", "value": "3.7 million"},
+        {"label": "median county", "value": "2.6 per 100 renting households"},
+        {"label": "highest", "value": "Prince George's County, MD — 45.9"},
+        {"label": "source", "value": "Princeton Eviction Lab (ODC-BY)"}
+      ]
+    },
+    {
+      "id": "motion-skyroads",
+      "title": "The Sky Roads",
+      "theme": "motion",
+      "accent": "#8fc3ff",
+      "scopes": ["world"],
+      "forms": {"points": false, "flows": true, "contours": false, "tint": false},
+      "flowStyle": {"alpha": 0.16, "width": 0.55, "noEnds": true},
+      "weight": 0.0,
+      "unit": "airlines on the route",
+      "statline": "{n} air corridors flown by two or more airlines",
+      "status": "pending",
+      "caveat": "a historic snapshot (OpenFlights route data, about 2014, no longer maintained); airline count, not passengers; single-airline routes not drawn",
+      "pack": {"kind": "flows", "min": 2},
+      "essay": {
+        "what": "8,362 air corridors, each flown by at least two airlines, drawn as great circles between their airports. The brightest arcs carry the most airlines: the trunk routes of Europe, the North Atlantic, the Gulf, East Asia. Atlanta, Chicago, Beijing, London and Paris are the knots with the most routes.",
+        "how": "OpenFlights' route database — 67,663 airline routes between 3,321 airports, from Airline Route Mapper — folded into airport pairs and weighted by how many airlines fly each one. Licensed ODbL with contents under the DbCL, so this derived layer is offered under the same terms. The route file has not been maintained for years: read it as a snapshot of about 2014. The 10,496 pairs flown by a single airline are left off to keep the arcs legible.",
+        "why": "The logistics bloodstream has an upper atmosphere. Lay it over the Last Speakers and the two maps of connection barely touch: the arcs crowd where a few large languages are spoken, and thin out over New Guinea, the Amazon and the Sahel, where languages are most numerous."
+      },
+      "plateStats": [
+        {"label": "corridors drawn", "value": "8,362 (of 18,858 pairs)"},
+        {"label": "routes in the source", "value": "67,663"},
+        {"label": "most-connected hub", "value": "Atlanta — 1,826 routes"},
+        {"label": "vintage", "value": "historic snapshot, about 2014"}
+      ]
+    },
+    {
+      "id": "motion-uprooted",
+      "title": "The Uprooted",
+      "theme": "motion",
+      "accent": "#f29bb7",
+      "scopes": ["world"],
+      "forms": {"points": false, "flows": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "people",
+      "statline": "{n} corridors of the displaced, end of 2024",
+      "status": "pending",
+      "caveat": "people living outside their country at end-2024 (stocks, not movements in the year); country centroids, not camps; Palestine refugees under UNRWA are outside UNHCR's count; corridors under 500 people not drawn",
+      "pack": {"kind": "flows", "min": 500},
+      "flowStyle": {"alpha": 0.85, "width": 1.5},
+      "essay": {
+        "what": "44.8 million people living outside the country they fled at the end of 2024 — refugees, asylum-seekers and others UNHCR counts as needing international protection — drawn as arcs from where they came from to where they are now. The 1,155 corridors of 500 people or more carry more than 99% of them. The brightest ends are where the arcs land: next door, far more often than across an ocean.",
+        "how": "UNHCR's Refugee Population Statistics Database, read through its public API (CC BY 4.0 under UNHCR's Terms of Use for Datasets). Each origin–asylum pair is summed across refugees, asylum-seekers and other people in need of international protection — the category that holds most displaced Venezuelans. Arcs run between country centroids on the map's own shapes; 254,406 people of unknown origin and 41,083 stateless people have no starting point and are not drawn.",
+        "why": "Venezuela (7.6 million), Afghanistan, Syria and Ukraine (5 to 6 million each) empty outward; Iran, Türkiye, Germany, Colombia and Uganda take the most in, and the United States leads the hosts mainly through pending asylum claims. Most of the uprooted live one border away. Lay the World at War beneath it: the arcs start where the reds are."
+      },
+      "plateStats": [
+        {"label": "people drawn", "value": "44.8 million"},
+        {"label": "largest origins", "value": "Venezuela · Afghanistan · Syria · Ukraine"},
+        {"label": "largest hosts", "value": "U.S. · Iran · Türkiye · Germany · Colombia"},
+        {"label": "source", "value": "UNHCR (CC BY 4.0)"}
+      ]
     },
     {
       "id": "company-socialcapital",
@@ -358,6 +557,7 @@
       "accent": "#f2b8c6",
       "scopes": ["us"],
       "forms": { "points": false, "contours": false, "tint": true, "regionKind": "county" },
+      "pack": {"kind": "regions", "regionKind": "county"},
       "weight": 0.0,
       "unit": "economic connectedness",
       "statline": "connectedness in {n} counties",
@@ -367,6 +567,112 @@
         "what": "Economic connectedness by county, from the Social Capital Atlas: the share of above-median-income friends in below-median-income people's networks — the strongest known community-level predictor of a poor child's chance of rising.",
         "how": "Chetty et al. (2022), built from anonymized Facebook friendship graphs for adults 25–44, published openly with differential-privacy noise. The measure is calibrated so 1.0 means class-blind friendship; the real range runs 0.29 to 1.36. Rose wash deepens where cross-class friendship is thick. It measures who knows whom — not kindness, not warmth, and only among people on the platform.",
         "why": "The loneliness layer, inverted: this is where the bridges are. Lay it over Despair and the argument starts by itself — the places where classes actually befriend each other are rarely the places the epidemics chose. Where the wash runs thin, the ladder is missing a rung."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-alone",
+      "title": "Tables for One",
+      "theme": "company",
+      "accent": "#9fb4d9",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "share of households",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the Census Bureau's API now answers every data query with a redirect to 'missing_key' — it requires an API key in the URL. The build environment holds none, and the Census bulk-file host (www2.census.gov) is not reachable. A free Census key, or access to the bulk host, opens this slot.",
+      "essay": {
+        "what": "The share of households that are one person living alone (ACS 5-year, table B11001), county by county.",
+        "how": "Will use the American Community Survey 5-year estimates with their margins of error; counties whose estimate is unreliable will be marked, not hidden.",
+        "why": "Solitude is not loneliness, but the map of who lives alone is the frame inside which loneliness happens. It belongs beside Company and the Quiet Hours."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-love",
+      "title": "Love, Counted",
+      "theme": "company",
+      "accent": "#e79ad6",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "per 1,000 households",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): same as Tables for One — the Census API requires a key in the URL and the bulk host is unreachable from the build environment.",
+      "essay": {
+        "what": "Same-sex couple households per 1,000 households (ACS 5-year), by county.",
+        "how": "Counts households, never people; small-county estimates carry wide margins and will say so.",
+        "why": "Where love has been counted openly. The survey shows rates for places, never anyone's household."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-gifts",
+      "title": "Gifts on the Return",
+      "theme": "company",
+      "accent": "#e8c27a",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "% of income given (itemized)",
+      "statline": "itemized charitable gifts in {n} counties, tax year 2022",
+      "status": "pending",
+      "caveat": "only itemized gifts: 9.6% of 2022 returns itemized and 7.6% claimed a gift — this maps where giving is recorded on tax returns, which tracks income and tax law, not generosity",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "How much of a county's income its taxpayers wrote off as charitable gifts in 2022 — itemized contributions as a share of adjusted gross income — and how many returns claimed one. Nationally, 1.45% of all income was given in itemized gifts, but only 7.6% of returns claimed any.",
+        "how": "IRS Statistics of Income county data for tax year 2022 (public domain): itemized charitable contributions divided by adjusted gross income; counties with fewer than 500 returns are left out. Since the 2017 tax law raised the standard deduction, about nine in ten filers no longer itemize, so their gifts — church plates, GoFundMe, the coat drive — are invisible here.",
+        "why": "Read it as two maps laid over each other. One is tithing: Utah holds twelve of the fifty highest counties. The other is wealth: Bentonville, Aspen, Jackson Hole and Manhattan sit near the top because large, itemized gifts follow large incomes. What it cannot show is kindness — that slot stays open until there is a measure that sees the gifts of people who do not itemize."
+      },
+      "plateStats": [
+        {"label": "income given, itemized (U.S.)", "value": "1.45%"},
+        {"label": "returns claiming a gift", "value": "7.6%"},
+        {"label": "highest", "value": "Benton County, AR — 7.6%"},
+        {"label": "Utah, among the top 50", "value": "12 counties"}
+      ]
+    },
+    {
+      "id": "company-kindness",
+      "title": "Kindness",
+      "theme": "company",
+      "accent": "#f0c27a",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "giving as a share of income",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06) is a measurement gate, not an access gate: IRS county data is reachable, but it counts only itemized charitable deductions. In 2022 only 9.6% of returns itemized and 7.6% claimed a gift; county itemization runs from 0% to 29% and tracks wealth (Marin, Falls Church). That itemized record now ships honestly as its own layer, Gifts on the Return; this slot waits for a measure of generosity that sees the gifts of people who do not itemize.",
+      "essay": {
+        "what": "Charitable giving as a share of income, by county.",
+        "how": "Waiting for a measure that sees the gifts of people who do not itemize.",
+        "why": "A survey that maps despair owes the reader a map of kindness — but only an honest one."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-commons",
+      "title": "The Commons",
+      "theme": "company",
+      "accent": "#8fd3a8",
+      "scopes": ["us", "world"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "public places",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the OpenStreetMap Overpass API (overpass-api.de and the kumi.systems mirror) does not complete a connection from the build environment (retried; server or route side, not a policy refusal).",
+      "essay": {
+        "what": "Public libraries, playgrounds, public pools, skateparks and community gardens — the places that belong to everyone.",
+        "how": "From OpenStreetMap via Overpass, with a lens by kind; ODbL.",
+        "why": "The light side of Motion and Power: where people gather without paying."
       },
       "plateStats": []
     },
@@ -381,7 +687,7 @@
       "unit": "licensed dealers",
       "statline": "{n} licensed gun dealers",
       "status": "pending",
-      "pendingNote": "Source verified open (ATF monthly FFL lists) but served behind a browser-only gate that outlasted this survey window. The ZIP gazetteer is staged; the slot is reserved for the retry.",
+      "pendingNote": "Source verified open (ATF monthly FFL lists), but www.atf.gov refuses scripts with a bot gate (403, retried 2026-11-06). The survey does not get around bot checks; the slot waits for a direct file. The ZIP gazetteer is staged.",
       "caveat": "retail license types 01 and 02 only; ZIP-centroid locations aggregated to cells",
       "essay": {
         "what": "Every federally licensed retail firearms dealer and pawnbroker in America, aggregated to cells — the storefront geography of the Second Amendment.",
@@ -391,22 +697,73 @@
       "plateStats": []
     },
     {
+      "id": "control-police",
+      "title": "When the State Kills",
+      "theme": "control",
+      "accent": "#e2554f",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "killed per 1M a year",
+      "statline": "people shot dead by police, 2015–2024, per county",
+      "status": "pending",
+      "protocol": "Rates for places, never points for people. Every number here is someone; none of them is named on this map.",
+      "caveat": "fatal shootings by on-duty police only (The Washington Post's scope); small counties rest on one or two deaths (counts shown); 1.6% of records could not be placed in a county",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.0, "vmaxQuantile": 0.97, "time": {"from": "meta.series", "label": "Killed in the year, per 1M", "buckets": [[2015, 2015, "2015"], [2016, 2016, "2016"], [2017, 2017, "2017"], [2018, 2018, "2018"], [2019, 2019, "2019"], [2020, 2020, "2020"], [2021, 2021, "2021"], [2022, 2022, "2022"], [2023, 2023, "2023"], [2024, 2024, "2024"]], "nd": 2, "vmaxQuantile": 0.985}},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "10,268 people shot and killed by on-duty police officers in the United States from 2015 to 2024, placed in the county where it happened and divided by its population: about a thousand a year, every year, and rising after 2022. The map shows rates per 100,000 residents over the decade; the bar shows each year per million.",
+        "how": "The Washington Post's Fatal Force database, which has logged every such killing since 2015 from news reports, public records and social media, licensed CC-BY-NC-SA 4.0 (this derived layer carries the same licence). Names, ages, race and exact locations are dropped before anything else happens; only counts per county and year are kept. Records are placed by their coordinates, else their county, else their city's centre; 162 could not be placed. Deaths by restraint, Tasers or vehicles are outside the Post's count.",
+        "why": "The highest rates are not where the crime headlines are. New Mexico (10.1 per 100,000 over the decade) and Alaska (9.1) lead the states, then Oklahoma and Colorado; Rhode Island, Connecticut, Massachusetts and New York sit near one — a tenfold gap inside one country, under one constitution. The map says where; the why is argued elsewhere, and the survey does not pretend to settle it."
+      },
+      "plateStats": [
+        {"label": "killed, 2015–2024", "value": "10,268"},
+        {"label": "highest state rates per 100k", "value": "NM 10.1 · AK 9.1 · OK 6.5"},
+        {"label": "most in absolute terms", "value": "California 1,400"},
+        {"label": "source", "value": "The Washington Post, Fatal Force"}
+      ]
+    },
+    {
+      "id": "control-war",
+      "title": "The World at War",
+      "theme": "control",
+      "accent": "#d6634a",
+      "scopes": ["world"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "country"},
+      "weight": 0.0,
+      "unit": "killed per 100k",
+      "statline": "organized violence since 1989, per 100,000 people",
+      "status": "pending",
+      "protocol": "Rates for countries, never points for people. No victim, perpetrator or place is named.",
+      "caveat": "UCDP best estimates of deaths in organized violence (state, non-state and one-sided); today's borders and today's populations; periods of five years",
+      "pack": {"kind": "regions", "regionKind": "country", "vmaxQuantile": 0.92, "time": {"from": "meta.series", "label": "Killed in the period, per 100k", "buckets": [[0, 0, "1989–94"], [1, 1, "1995–99"], [2, 2, "2000–04"], [3, 3, "2005–09"], [4, 4, "2010–14"], [5, 5, "2015–19"], [6, 6, "2020–24"], [7, 7, "2025"]], "nd": 2, "vmaxQuantile": 0.95}},
+      "tintMax": 0.65,
+      "essay": {
+        "what": "4.26 million people killed in organized violence since 1989 — wars between states and rebels, wars between armed groups, and massacres of civilians — in 119 countries, shown per 100,000 of today's population. The bar steps through five-year periods: Rwanda and Bosnia in the early 1990s, Congo at the decade's end, Ethiopia at the turn of the century, Syria through the 2010s, Ethiopia's Tigray war and Ukraine in the 2020s, Ukraine and Sudan in 2025.",
+        "how": "The Uppsala Conflict Data Program's Georeferenced Event Dataset 26.1 (CC BY 4.0): every event's best estimate of deaths, summed by country and period. Each GED country is matched to the map's own country shapes by its events' coordinates; populations are Wikidata's latest figures, one denominator for the whole span (so 1990s rates use today's population). Actors, places and sources are dropped.",
+        "why": "The survey's other layers are mostly about how people live; this one is about how many were not allowed to. Rwanda's 1994 rate — more than five thousand per hundred thousand in five years — is the darkest cell anywhere on the map. Read it with the Last Speakers: several of the deepest reds sit on the same ground as the languages closest to silence."
+      },
+      "plateStats": [
+        {"label": "killed since 1989", "value": "4.26 million"},
+        {"label": "largest tolls", "value": "Rwanda · Ethiopia · Syria · Ukraine · Afghanistan"},
+        {"label": "darkest period", "value": "Rwanda 1989–94 — 5,339 per 100k"},
+        {"label": "source", "value": "UCDP GED 26.1 (CC BY 4.0)"}
+      ]
+    },
+    {
       "id": "faith-altar",
       "title": "The Altar",
       "theme": "faith",
       "accent": "#ffe08a",
       "scopes": ["us"],
       "forms": { "points": false, "contours": false, "tint": true, "regionKind": "county" },
+      "pack": {"kind": "regions", "regionKind": "county", "category": {"from": "meta.largest_tradition_family", "label": "largest tradition family", "toggle": true, "values": ["Catholic", "Baptist", "Non-denominational", "Lutheran", "Methodist", "Latter-day Saint", "Anabaptist (Mennonite/Amish/Brethren)", "Pentecostal", "\u0000other"], "labels": ["Catholic", "Baptist", "Non-denominational", "Lutheran", "Methodist", "Latter-day Saint", "Anabaptist", "Pentecostal", "Other or unknown"], "colors": ["#d9a441", "#5f9fd8", "#b07ad8", "#59c3a3", "#e0705a", "#9fd36a", "#d88ab5", "#ff9f40", "#8796ad"], "default": 8}},
       "weight": 0.0,
       "unit": "adherents per 1k",
       "statline": "adherence in {n} counties",
       "status": "pending",
       "caveat": "congregation-reported adherence, 2020 census; traditions self-define membership; ~1% of counties exceed 1,000 per 1k where regional congregations draw worshippers across county lines",
-      "essay": {
-        "what": "Religious adherents per thousand residents in every county, from the 2020 U.S. Religion Census — the candle-gold wash of organized belief, with each county's largest tradition on the tooltip.",
-        "how": "Congregation-by-congregation counts assembled by the religion census, published at county level. Adherence is what congregations report; traditions define membership differently, and the unaffiliated are the negative space.",
-        "why": "The altar's geography is older than any other layer here — Utah's wash, the Baptist South, the Lutheran upper plains, the Catholic border counties are all still exactly where the nineteenth century left them. Belief, it turns out, is the slowest-moving thing the survey has ever mapped."
-      },
+      "essay": {"what": "Religious adherents per thousand residents in every county, from the 2020 U.S. Religion Census — the candle-gold wash of organized belief, with each county's largest tradition on the tooltip.", "how": "Congregation-by-congregation counts assembled by the religion census, published at county level. Adherence is what congregations report; traditions define membership differently, and the unaffiliated are the negative space. SHADE BY switches the map from adherents per 1,000 to each county's largest tradition family, drawn in nine colours from the same Religion Census group table.", "why": "The altar's geography is older than any other layer here — Utah's wash, the Baptist South, the Lutheran upper plains, the Catholic border counties are all still exactly where the nineteenth century left them. Belief, it turns out, is the slowest-moving thing the survey has ever mapped."},
       "plateStats": []
     },
     {
