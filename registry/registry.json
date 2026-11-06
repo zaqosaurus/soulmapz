@@ -342,6 +342,34 @@
       ]
     },
     {
+      "id": "wonder-darksky",
+      "title": "The Last Dark",
+      "theme": "wonder",
+      "accent": "#cfe0ff",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "dark-sky places",
+      "statline": "{n} places that promised to keep the night",
+      "status": "pending",
+      "caveat": "from Wikidata, which records only part of DarkSky International's register (darksky.org refuses scripts); one point per place, though reserves span whole regions",
+      "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 48}, {"name": "kd", "from": "meta.kind", "type": "enum", "values": ["sanctuary", "reserve", "park", "community", "urban", "preserve"], "labels": ["Sanctuary", "Reserve", "Park", "Community", "Urban night sky place", "Dark-sky preserve"], "default": 5}, {"name": "cc", "from": "meta.country", "type": "str", "max": 24}], "lenses": [{"field": "kd", "label": "Designation"}]},
+      "scopeFilter": {"us": {"field": "cc", "value": "United States"}},
+      "size": {"r": 3.2, "core": 0.9},
+      "tip": {"ti": "{name}", "s": "{kd} · {cc}"},
+      "essay": {
+        "what": "The places that have promised to keep the night: parks, reserves, sanctuaries and whole towns certified for dark skies, from Natural Bridges in Utah (the first, in 2007) to Aoraki Mackenzie in New Zealand. Turn on the World's Furnaces and the data centers beside it: the dark places are what is left between the lights.",
+        "how": "Wikidata's records of International Dark Sky Parks, Reserves, Sanctuaries, Communities and Urban Night Sky Places, plus items it calls dark-sky preserves (CC0). DarkSky International's own register sits behind a bot check that the survey does not get around, so this is a partial mirror: the real count is higher, and the gaps are Wikidata's, not the sky's.",
+        "why": "Most of the light layers on this map are ones we did not choose — crashes, overdoses, furnaces. These points were chosen. A town that dims its streetlights so its children can see the Milky Way is a small, stubborn kind of wonder, and it belongs on a survey of the soul."
+      },
+      "plateStats": [
+        {"label": "places on the map", "value": "164"},
+        {"label": "first park", "value": "Natural Bridges, Utah — 2007"},
+        {"label": "most places", "value": "United States"},
+        {"label": "source", "value": "Wikidata (CC0)"}
+      ]
+    },
+    {
       "id": "despair-overdoses",
       "title": "The Quiet Epidemic",
       "theme": "despair",
