@@ -285,24 +285,39 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 |---|---|---|
 | 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. |
 | 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. 2.95 MB, smoke 73/73. |
-| 2 · reachable acquisitions | not started | sources verified reachable 2026-11-05 |
-| 3 · network unlock | mostly unlocked 2026-11-05 | **Work:** api.census.gov, ucdp.uu.se, api.unhcr.org, www.irs.gov, query.wikidata.org (send an honest User-Agent naming the project). **ATF:** the site itself refuses scripts (a bot gate at the origin). The survey does not get around bot checks, so The Arsenal stays PENDING unless ATF publishes a direct file. **OpenStreetMap:** overpass-api.de is allowed but drops the connection during setup, and the overpass.kumi.systems mirror times out — a server or route problem, not policy; retry later before Phase 3.1, else PENDING. **Night lights:** eogdata.mines.edu fails certificate verification; look for another open source or keep PENDING. **Dark-sky places:** darksky.org shows a bot challenge; take the list from Wikidata instead. |
-| 4 · findings round 2 | not started | |
+| 2 · reachable acquisitions | **done** 2026-11-06 | **6 of 6 shipped**, each through the §4 loop (terms on file, SHA-256, `pipeline/validate.py`, known answers, 10-record spot check, render reviewed): The Last Speakers (Glottolog 5.3, 7,836 languages, CC-BY), The World's Furnaces (WRI v1.3.0, 34,936 plants, CC-BY), The Year Without Goodbyes (NYT county COVID, non-commercial licence), When the State Kills (WaPo Fatal Force, county rates only, CC-BY-NC-SA), The Price of Staying (Eviction Lab estimates, ODC-BY — gate passed), The Sky Roads (OpenFlights, ODbL). 4.06 MB after Phase 2. Fixes found on the way: permalinks now address layers in a frozen v0.6 order (adding layers no longer changes old links); era bar fits between rail and plate. |
+| 3 · network unlock | **done** 2026-11-06 | **Shipped:** The World at War (UCDP GED 26.1, CC BY, Wikidata populations), The Uprooted (UNHCR end-2024, 44.8M people, CC BY), The Last Dark (Wikidata, 164 dark-sky places, CC0). **PENDING with gates named on the plate and in the colophon:** Tables for One and Love, Counted (Census API now demands a key in the URL; bulk host unreachable), Kindness (IRS data reachable but counts only itemized gifts — 9.6% of returns — so it would map wealth: a measurement gate), The Banished Dark (VIIRS host fails certificates; raster engine ready), The Commons (Overpass connections do not complete), The Arsenal (ATF bot gate, 403, not circumvented). Blocked here and worked around: World Bank API, www.wikidata.org, openflights.org, www.unhcr.org (terms read from the repository source or a search excerpt). |
+| 4 · findings round 2 | not started | Next goal. New layers to lay against each other: COVID × connectedness, police killings × the Arsenal slot, eviction × the Sorting, war × languages. Pre-state each hypothesis in `correlate.py` before running. |
 | 5 · release v0.7 | not started | |
 
 ---
 
 ## 11. HANDOFF (read this first when resuming)
 
-**State on 2026-11-05.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
-v0.6 is done on the branch: Ledger lit, citizen readings, constellations, plunge, pinning,
-permalink v2, living log, Data API page, print atlas, two v0.6 findings, notice. Phase 0 of this
-plan has not started.
+**State on 2026-11-06.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
+Phases 0–3 of this plan are done (see STATUS). 33 live layers + 7 PENDING slots, page 4.11 MB of 8,
+smoke 82/82, atlas 31 pages reviewed page by page. Next: Phase 4 (findings round 2), then Phase 5
+(release: dist/docs commit, README/CONTRIBUTING/CLASSROOM, contact method for removal requests).
+
+**New tools since v0.6**
+- `pipeline/packer.py` — registry `pack` blocks (points/regions/flows/raster; enum, year, decade, str,
+  int, float; `aggregate`, `time`, `category`, `lenses`, `coordNd`). Per-layer branches remain only for
+  memory, desire, crashes, fortune500, fulfillment, ledger, sorting.
+- `pipeline/validate.py <id> [--protocol] [--us]` — acquisition step 4; island exceptions must be
+  hand-reviewed and recorded in the sidecar (`validation.reviewed_offshore`).
+- `pipeline/check_pack.py [ref]` — payload equivalence for engine refactors.
+- `tests/views.js <out> [baseline]` — canonical-view pixel comparison (re-baseline after content changes).
+- `pipeline/scratch/<id>.py` — one staging script per acquired layer; raw files in `data/raw/` (git-ignored).
+- Registry display keys: `colorBy`, `size`, `tip` (`ti`, `ti2`, `s`), `scopeFilter`, `tintMax`, `flowStyle`,
+  `time`, `categories` (toggle), `protocol`, `pendingNote`.
+
+**Headless caveats (not verifiable here):** sound, GPU performance on real devices, touch gestures,
+the print dialog itself (the PDF is produced by the test), clipboard.
 
 **Commands**
 ```bash
 python3 pipeline/build.py                       # ~3 s; prints the page size; regenerates docs/DATA_API.md
-NODE_PATH=$(npm root -g) node tests/smoke.js    # 49 checks; SHOTS=<dir> saves screenshots + atlas.pdf
+NODE_PATH=$(npm root -g) node tests/smoke.js    # 82 checks; SHOTS=<dir> saves screenshots + atlas.pdf
 python3 pipeline/correlate.py                   # v0.5 findings;  `python3 pipeline/correlate.py v06` for v0.6
 git checkout -- dist/index.html docs/index.html # after every build until a release commit
 ```
@@ -324,5 +339,5 @@ Fails — www.atf.gov (origin bot gate), overpass-api.de and overpass.kumi.syste
 retry), eogdata.mines.edu (certificate), darksky.org (bot challenge). Everything else is untested
 or blocked.
 
-**Next action:** Phase 0.1 (compressed payloads), with the Phase 0 QC loop: render the 8
-canonical views to PNG *before* changing code.
+**Next action:** Phase 4 — write the round-2 hypotheses into `correlate.py` (a `v08` block) before
+running anything, then the readings and atlas pages for the new layers.
