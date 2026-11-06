@@ -283,12 +283,37 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 
 | Phase | State | Notes |
 |---|---|---|
-| 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. (Sizes and smoke counts in rows 0–1 are as of each phase's end; current totals in the handoff.) |
-| 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. 2.95 MB, smoke 73/73 at the end of Phase 1. |
+| 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. Figures as of the end of Phase 0: 2.85 MB, smoke 64/64. **Current (2026-11-06): 4.11 MB, smoke 82/82.** |
+| 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. Figures as of the end of Phase 1: 2.95 MB, smoke 73/73. **Current (2026-11-06): 4.11 MB, smoke 82/82.** |
 | 2 · reachable acquisitions | **done** 2026-11-06 | **6 of 6 shipped**, each through the §4 loop (terms on file, SHA-256, `pipeline/validate.py`, known answers, 10-record spot check, render reviewed): The Last Speakers (Glottolog 5.3, 7,836 languages, CC-BY), The World's Furnaces (WRI v1.3.0, 34,936 plants, CC-BY), The Year Without Goodbyes (NYT county COVID, non-commercial licence), When the State Kills (WaPo Fatal Force, county rates only, CC-BY-NC-SA), The Price of Staying (Eviction Lab estimates, ODC-BY — gate passed), The Sky Roads (OpenFlights, ODbL). 4.06 MB after Phase 2. Fixes found on the way: permalinks now address layers in a frozen v0.6 order (adding layers no longer changes old links); era bar fits between rail and plate. |
 | 3 · network unlock | **done** 2026-11-06 | **Shipped:** The World at War (UCDP GED 26.1, CC BY, Wikidata populations), The Uprooted (UNHCR end-2024, 44.8M people, CC BY), The Last Dark (Wikidata, 164 dark-sky places, CC0). **PENDING with gates named on the plate and in the colophon:** Tables for One and Love, Counted (Census API now demands a key in the URL; bulk host unreachable), Kindness (IRS data reachable but counts only itemized gifts — 9.6% of returns — so it would map wealth: a measurement gate), The Banished Dark (VIIRS host fails certificates; raster engine ready), The Commons (Overpass connections do not complete), The Arsenal (ATF bot gate, 403, not circumvented). Blocked here and worked around: World Bank API, www.wikidata.org, openflights.org, www.unhcr.org (terms read from the repository source or a search excerpt). |
 | 4 · findings round 2 | not started | Next goal. New layers to lay against each other: COVID × connectedness, police killings × the Arsenal slot, eviction × the Sorting, war × languages. Pre-state each hypothesis in `correlate.py` before running. |
 | 5 · release v0.7 | not started | |
+
+**Goal scorecard (the v0.7 goal: Phases 0–3), verified 2026-11-06**
+
+| Goal item | Outcome | Evidence |
+|---|---|---|
+| Phase 0 foundations (0.1–0.9) | done | commits c3f5f0e…; smoke fixtures for country tint, world flows, timed layer, categorical legend, raster, tooltip template; `check_pack.py` equivalence; `tests/views.js` comparison |
+| Phase 1 unlocks 1.1–1.8 | done, all 8 live | lens and time counts reconcile with staging (script checks in the commit messages); smoke checks per lens/toggle |
+| Finding: price per head | **rejected** at its pre-stated bar (1.9× < 5×) | `correlate.py v07` H18; per-resident figure on 18 tooltips |
+| Finding: thrones exhaling | **rejected** at its pre-stated bar (7 < 10 points vs size-matched) | `correlate.py v07` H17 |
+| 2.1 Glottolog (mandatory) | shipped | layer(memory-languages) |
+| 2.2 WRI power plants (mandatory) | shipped | layer(power-plants) |
+| 2.3 Eviction Lab | shipped (terms gate passed: ODC-BY) | layer(motion-eviction) |
+| 2.4 NYT COVID | shipped | layer(loss-covid) |
+| 2.5 WaPo police shootings | shipped, county rates only | layer(control-police) |
+| 2.6 OpenFlights | shipped | layer(motion-skyroads) |
+| 3.3 Census — living alone | **PENDING** (Census API requires a key in the URL; bulk host unreachable) | registry `company-alone` pendingNote; colophon |
+| 3.4 Census — same-sex couples | **PENDING** (same gate) | registry `company-love` |
+| 3.2 IRS giving | **PENDING** — measurement gate (itemized-only data would map wealth) | registry `company-kindness`; 9.6% itemize (2022) |
+| 3.7 UCDP conflict deaths | shipped | layer(control-war) |
+| 3.8 UNHCR refugee flows | shipped | layer(motion-uprooted) |
+| 3.9 Wikidata dark-sky places | shipped | layer(wonder-darksky) |
+| Smoke green with checks per new form and layer | 82/82 | `tests/smoke.js` (fixtures section; every point/flow layer solo; every timed layer scrubs; Phase 1 lenses) |
+| Page under 8 MB | 4.11 MB | build ledger |
+| Atlas reviewed page by page | 31 pages at 75 dpi + text scan; 6 defects fixed | commits "atlas: plates use…", "atlas review: credit every v0.7 source…" |
+| STATUS updated, pushed to PR #1 | this table | branch `claude/trusting-sagan-wkfcpi` |
 
 ---
 
@@ -319,7 +344,9 @@ the print dialog itself (the PDF is produced by the test), clipboard.
 ```bash
 python3 pipeline/build.py                       # ~3 s; prints the page size; regenerates docs/DATA_API.md
 NODE_PATH=$(npm root -g) node tests/smoke.js    # 82 checks; SHOTS=<dir> saves screenshots + atlas.pdf
-python3 pipeline/correlate.py                   # v0.5 findings;  `python3 pipeline/correlate.py v06` for v0.6
+python3 pipeline/correlate.py                   # v0.5 findings; `... v06` for v0.6; `... v07` for H17/H18
+python3 pipeline/validate.py <layer-id> [--protocol] [--us]   # acquisition step 4
+python3 -I pipeline/scratch/<layer-id>.py       # re-stage an acquired layer from data/raw/ (re-download first)
 git checkout -- dist/index.html docs/index.html # after every build until a release commit
 ```
 
@@ -334,11 +361,13 @@ git checkout -- dist/index.html docs/index.html # after every build until a rele
   New DOM ids must exist in `site/template.html` or `init()` throws and the page dies.
 - Commit trailers come from the session's attribution reminder. No model ids anywhere in the repo.
 
-**Network (verified 2026-11-05):** works — raw.githubusercontent.com, the Eviction Lab S3 bucket,
-api.census.gov, www.irs.gov, ucdp.uu.se, api.unhcr.org (`/population/v1/...`), query.wikidata.org.
-Fails — www.atf.gov (origin bot gate), overpass-api.de and overpass.kumi.systems (server side;
-retry), eogdata.mines.edu (certificate), darksky.org (bot challenge). Everything else is untested
-or blocked.
+**Network (verified 2026-11-06):** works — raw.githubusercontent.com, the Eviction Lab S3 bucket,
+www.irs.gov, ucdp.uu.se, api.unhcr.org (`/population/v1/...`), query.wikidata.org (including its
+`wikibase:mwapi` entity search). **Changed since 11-05:** api.census.gov is reachable but every data
+query now redirects to `missing_key` (an API key in the URL is required). Fails — www.atf.gov (origin
+bot gate, 403), overpass-api.de and overpass.kumi.systems (connection never completes), eogdata.mines.edu
+(certificate), darksky.org (bot challenge), api.worldbank.org, www.wikidata.org, openflights.org,
+www.unhcr.org, www2.census.gov (proxy refuses: not on the allow list). Everything else is untested.
 
 **Next action:** Phase 4 — write the round-2 hypotheses into `correlate.py` (a `v08` block) before
 running anything, then the readings and atlas pages for the new layers.
