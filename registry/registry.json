@@ -273,6 +273,32 @@
       ]
     },
     {
+      "id": "loss-covid",
+      "title": "The Year Without Goodbyes",
+      "theme": "loss",
+      "accent": "#b9a3e3",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "tintMax": 0.62,
+      "weight": 0.0,
+      "unit": "deaths per 100k",
+      "statline": "COVID-19 deaths in {n} counties, per 100,000 residents",
+      "status": "pending",
+      "caveat": "deaths as states reported them, by county of residence; small counties rest on a few deaths (counts shown); Kansas City and Joplin, Mo. are reported apart from their counties",
+      "pack": {"kind": "regions", "regionKind": "county", "time": {"from": "meta.series", "label": "Deaths in the quarter, per 100k", "buckets": [[0, 0, "2020 Q1"], [1, 1, "2020 Q2"], [2, 2, "2020 Q3"], [3, 3, "2020 Q4"], [4, 4, "2021 Q1"], [5, 5, "2021 Q2"], [6, 6, "2021 Q3"], [7, 7, "2021 Q4"], [8, 8, "2022 Q1"], [9, 9, "2022 Q2"], [10, 10, "2022 Q3"], [11, 11, "2022 Q4"], [12, 12, "2023 Q1"]], "vmaxQuantile": 0.97}, "vminQuantile": 0.05},
+      "essay": {
+        "what": "1,122,747 deaths from COVID-19 in 3,137 counties, January 2020 to March 2023, shown as deaths per 100,000 residents. The bar steps through thirteen quarters so the waves can be watched moving: New Jersey, New York and southwest Georgia in the spring of 2020, Texas and the Deep South that summer, the Dakotas and the northern plains that winter. Some states reported deaths in batches long after they happened: when one whole state lights at once (Kansas in 2021 Q2, Nebraska in 2022 Q4), it may be paperwork arriving rather than a wave.",
+        "how": "The New York Times' county-level counts, compiled from state and local health departments, differenced into deaths per quarter and divided by each county's 2020 Census population. New York City's five boroughs are reported together, so each borough shows the city's combined rate. Licensed for non-commercial use with credit to The New York Times — this survey is non-commercial.",
+        "why": "No one is named here, and no one needs to be. The pale counties of the high plains are not spared places; they are places where a few deaths are a large share of everyone. Read with the Quiet Hours and the overdose layer, this is the survey's map of absence: chairs that stayed empty at tables the rest of the map never sees."
+      },
+      "plateStats": [
+        {"label": "deaths counted", "value": "1,122,747"},
+        {"label": "most deaths", "value": "Los Angeles County — 35,960"},
+        {"label": "first wave, highest rates", "value": "SW Georgia · New York City"},
+        {"label": "credit", "value": "The New York Times"}
+      ]
+    },
+    {
       "id": "omen-names",
       "title": "Devil's Land, Angel's Land",
       "theme": "omen",

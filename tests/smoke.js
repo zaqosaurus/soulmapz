@@ -164,7 +164,8 @@ async function openPlate(page, lid) {
     await page.click('#eraBar button[data-era="' + last + '"]'); await page.waitForTimeout(900);
     const st = await page.$eval('#statline', s => s.textContent);
     const lab = await page.evaluate(([lid, i]) => window.__REGISTRY__.layers.find(l => l.id === lid).time.buckets[i][2], [lid, last]);
-    check(`time: "${lid}" scrubs to ${lab}`, st.includes(lab) && (await litSamples(page)) > 0, st.slice(0, 90));
+    const isPts = await page.evaluate(lid => !!window.__REGISTRY__.layers.find(l => l.id === lid).forms.points, lid);
+    check(`time: "${lid}" scrubs to ${lab}`, st.includes(lab) && (!isPts || (await litSamples(page)) > 0), st.slice(0, 90));
     await page.click('#eraBar button[data-era="-1"]'); await page.keyboard.press('Escape'); await page.waitForTimeout(600);
   }
   await openPlate(page, 'faith-altar');

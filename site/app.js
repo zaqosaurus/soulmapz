@@ -1469,12 +1469,12 @@ function regionTintFor(C,lid){
    x.fill(b.p);
   }
  }else{
-  const vmax=d.vmax||60;
+  const ser=eraFor(lid)>=0,vmax=(ser&&d.vmaxT)||d.vmax||60,vmin=ser?0:(d.vmin||0);
   for(const b of boxes){
    const e=M[b.fips];if(!e)continue;
    const v=regionVal(lid,e);if(v==null)continue;
-   const norm=Math.max(0,Math.min(1,v/vmax));
-   x.fillStyle=hexA(l.accent,0.04+norm*0.30);
+   const norm=Math.max(0,Math.min(1,(v-vmin)/((vmax-vmin)||1)));
+   x.fillStyle=hexA(l.accent,0.04+norm*(l.tintMax||0.30));
    x.fill(b.p);
   }
  }
@@ -1606,6 +1606,10 @@ function eraRefresh(){
  const tl=lid?timeOf(lid):null;
  if(tl&&era>=tl.labels.length)era=-1;
  $('#eraBar').classList.toggle('show',!!tl);
+ // centre the bar on the map area (right of the rail), never under it
+ const pl=padLeft(),bar=$('#eraBar'),pe=$('#plate');
+ const right=(plateOpen&&pe&&W>760)?Math.min(W-46,W-26-(pe.offsetWidth||392)-16):W-46;
+ if(W>760){bar.style.left=((pl+right)/2)+'px';bar.style.maxWidth=Math.max(240,right-pl-24)+'px';}else{bar.style.left='';bar.style.maxWidth='';}
  document.querySelectorAll('#eraBar button[data-era]').forEach(b=>{
   b.classList.toggle('on',parseInt(b.dataset.era,10)===era);
  });

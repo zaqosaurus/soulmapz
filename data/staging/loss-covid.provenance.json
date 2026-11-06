@@ -1,0 +1,58 @@
+{
+ "layer": "loss-covid",
+ "retrieved": "2026-11-05",
+ "license": {
+  "text": "Copyright 2021 by The New York Times Company \n\nIn light of the current public health emergency, The New York Times Company is\nproviding this database under the following free-of-cost, perpetual,\nnon-exclusive license. Anyone may copy, distribute, and display the database, or\nany part thereof, and make derivative works based on it, provided  (a) any such\nuse is for non-commercial purposes only and (b) credit is given to The New York\nTimes in any public display of the database, in any publication derived in part\nor in full from the database, and in any other public use of the data contained\nin or derived from the database.\n  \nBy accessing or copying any part of the database, the user accepts the terms of\nthis license. Anyone seeking to use the database for other purposes is required\nto contact The New York Times Company at covid-data@nytimes.com to obtain\npermission.\n\nThe New York Times has made every effort to ensure the accuracy of the\ninformation. However, the database may contain typographic errors or\ninaccuracies and may not be complete or current at any given time. Licensees\nfurther agree to assume all liability for any claims that may arise from or\nrelate in any way to their use of the database and to hold The New York Times\nCompany harmless from any such claims.\n",
+  "read": "2026-11-05",
+  "use_here": "non-commercial; credit to The New York Times on the plate, in DATA_LICENSES.md and in the atlas"
+ },
+ "files": {
+  "us-counties-2020.csv": {
+   "url": "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties-2020.csv",
+   "bytes": 35871900,
+   "sha256": "fd98d6c3a062c9e7f0ed10bc7d249601e0b2ee570f76e89d41101ec3aede3f25"
+  },
+  "us-counties-2021.csv": {
+   "url": "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties-2021.csv",
+   "bytes": 50311433,
+   "sha256": "0241a7b280c2c8d0c748acf61407c93f5299fb24248232c8c82f203cd81b7793"
+  },
+  "us-counties-2022.csv": {
+   "url": "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties-2022.csv",
+   "bytes": 51200840,
+   "sha256": "aca2381564bc370f71002d8c92efccb67ff5eee2083ada7ed3b8b0466240ac59"
+  },
+  "us-counties-2023.csv": {
+   "url": "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties-2023.csv",
+   "bytes": 11541836,
+   "sha256": "e5a26692fa77b9fe5b83f059251252e93eed6422e5960dec8d9d8fb1aa609f0e"
+  }
+ },
+ "method": "Cumulative deaths per county at each quarter's end (last report on or before the date), differenced into deaths per quarter, divided by the county's 2020 Census population, per 100,000. Overall value: cumulative deaths at the final report date per 100,000. New York City's five boroughs are reported together by the source; the combined rate is shown on each borough.",
+ "counts": {
+  "counties": 3137,
+  "skipped": {
+   "Unknown county rows": 31937,
+   "no FIPS: Kansas City, Missouri": 1099,
+   "no FIPS: Joplin, Missouri": 1002,
+   "no 2020 population (territories, renamed counties)": 10
+  },
+  "negative_quarter_revisions_clamped_to_zero": 157,
+  "deaths_total_counted": 1122747
+ },
+ "caveats": [
+  "Kansas City, Mo. and Joplin, Mo. are reported separately by the source; Cass, Clay, Jackson, Platte, Jasper and Newton counties show only the parts outside those cities.",
+  "Deaths are counted by county of residence as states reported them; definitions changed over time (see the source README).",
+  "Puerto Rico does not report deaths by municipio; territories are not drawn.",
+  "Negative revisions within a quarter are shown as zero for that quarter; the overall rate uses the final cumulative count."
+ ],
+ "protocol": "Rates for places only. Nobody is named; no case-level data is used.",
+ "validation": {
+  "known_answers": {
+   "most deaths in absolute terms": "Los Angeles County, California 35,960 (expected Los Angeles County)",
+   "national total by March 2023 between 1.0 and 1.2 million": "1,122,747",
+   "spring-2020 hotspot": "expected New York City; observed: the highest 2020 Q2 rates are the southwest Georgia cluster around Albany (Randolph 389, Hancock 366, Early 276, Terrell 272 per 100k) — a documented early outbreak (a funeral cluster in Albany, GA) — with New York City close behind; the expectation was too narrow, the data is right"
+  }
+ },
+ "small_numbers": "Counties under 5,000 people carry their death count in every label: a handful of deaths moves their rate by hundreds per 100k (Loving County, TX: 64 residents)."
+}

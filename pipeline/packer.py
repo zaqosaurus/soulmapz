@@ -174,12 +174,16 @@ def pack_regions(lay, st, shrink_label=lambda s: s):
     vmax = vals[int(len(vals) * q)] if vals else 1
     out = {"kind": "regions", "regionKind": rk, ("counties" if rk == "county" else "countries"): regions,
            "vmax": round(float(vmax), 3), "vintage": st.get("vintage", "")}
+    if spec.get("vminQuantile") is not None and vals:
+        out["vmin"] = round(float(vals[int(len(vals) * spec["vminQuantile"])]), 3)
     if cat:
         out["categories"] = {"field": "c", "label": cat.get("label", ""), "labels": cat_labels, "toggle": bool(cat.get("toggle")),
                              "colors": cat.get("colors") or [],
                              "counts": [sum(1 for e in regions.values() if e.get("c") == i) for i in range(len(cat_labels))]}
     if tm:
         out["time"] = {"label": tm.get("label", ""), "buckets": tm["buckets"], "mode": "series"}
+        allt = sorted(x for e in regions.values() for x in e["t"] if x is not None)
+        if allt: out["vmaxT"] = round(float(allt[int(len(allt) * tm.get("vmaxQuantile", 0.97))]), 3)
         if tm.get("vmaxAll"):
             allv = sorted(x for e in regions.values() for x in e["t"] if x is not None)
             if allv: out["vmax"] = round(float(allv[int(len(allv) * q)]), 3)

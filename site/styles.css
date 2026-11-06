@@ -437,3 +437,4 @@ a.cc-btn{text-decoration:none;display:inline-block}
 .pl-legend .lg-item i{width:10px;height:10px;display:inline-block;border-radius:2px;opacity:.9}
 .pl-legend .lg-item b{color:var(--ink);font-weight:400}
 .pl-note{font-family:var(--mono);font-size:9px;color:var(--ink-dim);line-height:1.6;margin:2px 0 10px}
+#eraBar.show button{padding:8px 9px}
