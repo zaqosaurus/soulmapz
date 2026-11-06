@@ -4,7 +4,7 @@
 
 The survey's data lives in `data/staging/` as plain JSON with a provenance sidecar beside
 every file. GitHub serves them raw. Pin a release tag instead of `main` for a frozen vintage
-(`https://raw.githubusercontent.com/zaqosaurus/soulmapz/v0.6.0/...`). Licenses per layer are in
+(`https://raw.githubusercontent.com/zaqosaurus/soulmapz/v0.7.0-dev/...`). Licenses per layer are in
 [DATA_LICENSES.md](../DATA_LICENSES.md) — several require attribution and one is share-alike.
 
 ## Shapes

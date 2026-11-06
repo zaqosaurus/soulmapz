@@ -3,7 +3,7 @@
     "title": "THE SOUL SURVEY",
     "tagline": "A topographic survey of the collective soul, conducted in objective data.",
     "sheet": "SHEET NO. 1 — THE HUMAN SIGNAL",
-    "version": "0.6.0",
+    "version": "0.7.0-dev",
     "surveyed": "JULY 2026",
     "repo": "",
     "site": "",
@@ -337,7 +337,7 @@
       "plateStats": [
         { "label": "sightings reported", "value": "80,331" },
         { "label": "span", "value": "1906 – 2014" },
-        { "label": "top shapes", "value": "light 16,336 · triangle 7,734 · circle 7,547" },
+        { "label": "top shapes", "value": "light 16,495 · triangle 7,833 · circle 7,747" },
         { "label": "reported in the U.S.", "value": "91.4%" }
       ]
     },
@@ -355,7 +355,7 @@
       "caveat": "from Wikidata, which records only part of DarkSky International's register (darksky.org refuses scripts); one point per place, though reserves span whole regions",
       "pack": {"kind": "points", "fields": [{"name": "name", "type": "str", "max": 48}, {"name": "kd", "from": "meta.kind", "type": "enum", "values": ["sanctuary", "reserve", "park", "community", "urban", "preserve"], "labels": ["Sanctuary", "Reserve", "Park", "Community", "Urban night sky place", "Dark-sky preserve"], "default": 5}, {"name": "cc", "from": "meta.country", "type": "str", "max": 24}], "lenses": [{"field": "kd", "label": "Designation"}]},
       "scopeFilter": {"us": {"field": "cc", "value": "United States"}},
-      "size": {"r": 3.2, "core": 0.9},
+      "size": {"r": 4.6, "core": 1.0},
       "tip": {"ti": "{name}", "s": "{kd} · {cc}"},
       "essay": {
         "what": "The places that have promised to keep the night: parks, reserves, sanctuaries and whole towns certified for dark skies, from Natural Bridges in Utah (the first, in 2007) to Aoraki Mackenzie in New Zealand. Turn on the World's Furnaces and the data centers beside it: the dark places are what is left between the lights.",
