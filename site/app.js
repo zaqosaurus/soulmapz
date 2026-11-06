@@ -451,9 +451,9 @@ function drawPointsTo(ctx,lid,step){
    for(let i=0;i<L.gc.length;i+=st2){
     const g=L.gc[i];if(!g)continue;
     if(lzA&&lzA[i]!==lz.v)continue;
-    const f=Math.min(1,hh[i]/am);
-    ctx.globalAlpha=(0.10+0.55*Math.pow(f,0.6))*(st2>1?1.6:1);
-    ctx.lineWidth=0.5+2.2*f;
+    const f=Math.min(1,hh[i]/am),fs=byId[lid].flowStyle||{};
+    ctx.globalAlpha=(0.10+0.55*Math.pow(f,0.6))*(fs.alpha||1)*(st2>1?1.6:1);
+    ctx.lineWidth=(0.5+2.2*f)*(fs.width||1);
     ctx.beginPath();
     for(let j=0;j<g.length;j+=3){
      const m=g[j+2];if(!m)continue;
@@ -463,7 +463,7 @@ function drawPointsTo(ctx,lid,step){
     ctx.stroke();
     // the landing end glows: where people (or planes) arrive
     const e=g.length-3;
-    if(g[e+2]){const x=g[e]*k+t.x,y=g[e+1]*k+t.y;ctx.globalAlpha=Math.min(1,.25+.6*f);ctx.beginPath();ctx.arc(x,y,0.8+1.6*f,0,Math.PI*2);ctx.fillStyle=byId[lid].accent;ctx.fill();}
+    if(g[e+2]&&!fs.noEnds){const x=g[e]*k+t.x,y=g[e+1]*k+t.y;ctx.globalAlpha=Math.min(1,.25+.6*f)*(fs.alpha||1);ctx.beginPath();ctx.arc(x,y,0.8+1.6*f,0,Math.PI*2);ctx.fillStyle=byId[lid].accent;ctx.fill();}
    }
    ctx.globalAlpha=1;
    return;

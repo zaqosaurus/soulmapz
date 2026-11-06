@@ -451,6 +451,32 @@
       ]
     },
     {
+      "id": "motion-skyroads",
+      "title": "The Sky Roads",
+      "theme": "motion",
+      "accent": "#8fc3ff",
+      "scopes": ["world"],
+      "forms": {"points": false, "flows": true, "contours": false, "tint": false},
+      "flowStyle": {"alpha": 0.16, "width": 0.55, "noEnds": true},
+      "weight": 0.0,
+      "unit": "airlines on the route",
+      "statline": "{n} air corridors flown by two or more airlines",
+      "status": "pending",
+      "caveat": "a historic snapshot (OpenFlights route data, about 2014, no longer maintained); airline count, not passengers; single-airline routes not drawn",
+      "pack": {"kind": "flows", "min": 2},
+      "essay": {
+        "what": "8,362 air corridors, each flown by at least two airlines, drawn as great circles between their airports. The brightest arcs carry the most airlines: the trunk routes of Europe, the North Atlantic, the Gulf, East Asia. Atlanta, Chicago, Beijing, London and Paris are the knots with the most routes.",
+        "how": "OpenFlights' route database — 67,663 airline routes between 3,321 airports, from Airline Route Mapper — folded into airport pairs and weighted by how many airlines fly each one. Licensed ODbL with contents under the DbCL, so this derived layer is offered under the same terms. The route file has not been maintained for years: read it as a snapshot of about 2014. The 10,496 pairs flown by a single airline are left off to keep the arcs legible.",
+        "why": "The logistics bloodstream has an upper atmosphere. Lay it over the Last Speakers and the two maps of connection barely touch: the arcs crowd where a few large languages are spoken, and thin out over New Guinea, the Amazon and the Sahel, where languages are most numerous."
+      },
+      "plateStats": [
+        {"label": "corridors drawn", "value": "8,362 (of 18,858 pairs)"},
+        {"label": "routes in the source", "value": "67,663"},
+        {"label": "most-connected hub", "value": "Atlanta — 1,826 routes"},
+        {"label": "vintage", "value": "historic snapshot, about 2014"}
+      ]
+    },
+    {
       "id": "company-socialcapital",
       "title": "The Company We Keep",
       "theme": "company",
