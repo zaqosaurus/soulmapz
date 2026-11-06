@@ -2704,7 +2704,7 @@ function composeAtlas(){
  const worldIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('world')&&byId[id].status==='live');
  jobs.push(()=>{pages.push({k:'sheet',n:1,title:'The Human Signal — Conterminous United States',ids:usIds,img:renderSnapshot('us',usIds)});});
  jobs.push(()=>{pages.push({k:'sheet',n:2,title:'The Human Signal — The World',ids:worldIds,img:renderSnapshot('world',worldIds)});});
- for(const l of live)jobs.push(()=>{pages.push({k:'plate',l,img:renderSnapshot(l.scopes.includes('us')?'us':'world',[l.id])});});
+ for(const l of live)jobs.push(()=>{pages.push({k:'plate',l,img:renderSnapshot(l.scopes[0],[l.id])});});
  let i=0;
  toast('Composing the atlas — '+jobs.length+' renders…',20000);
  const step=()=>{
