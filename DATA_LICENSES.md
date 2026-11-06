@@ -38,6 +38,7 @@ on that basis.
 | motion-eviction | Princeton University Eviction Lab — Gromis, Fellows, Hendrickson, Edmonds, Leung, Porton & Desmond, *Estimating Eviction Prevalence across the United States* (2022), county estimates 2000–2018 | **ODC-BY 1.0** — attribution required | Published model estimates only (not the proprietary-count files) |
 | motion-skyroads | OpenFlights.org airports and routes (`jpatokal/openflights`), route data from Airline Route Mapper | **ODbL 1.0** (database) + **DbCL** (contents) — attribution, **share-alike: the derived flows are offered under ODbL**; route data public domain | Historic snapshot (~2014); 8,362 airport pairs with 2+ airlines |
 | control-war | Uppsala Conflict Data Program, Georeferenced Event Dataset 26.1 (Sundberg & Melander 2013; Davies et al. 2025); country populations from Wikidata | **CC BY 4.0** (UCDP); Wikidata **CC0** | Deaths per country and five-year period; actors, places and sources dropped |
+| motion-uprooted | UNHCR Refugee Population Statistics Database, via the Refugee Data Finder API (end-2024); ISO code table from Wikidata | **CC BY 4.0** under UNHCR's Terms of Use for Datasets; Wikidata **CC0** | Refugees + asylum-seekers + other people in need of international protection, by origin–asylum pair |
 
 **Distribution notes:** keep OSM (ODbL), GeoNames (CC-BY), and Laouenan et al. (CC-BY-SA)
 attribution visible — the site's About/Sources panel does this. The memory layer's

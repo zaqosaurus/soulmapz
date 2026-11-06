@@ -477,6 +477,32 @@
       ]
     },
     {
+      "id": "motion-uprooted",
+      "title": "The Uprooted",
+      "theme": "motion",
+      "accent": "#f29bb7",
+      "scopes": ["world"],
+      "forms": {"points": false, "flows": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "people",
+      "statline": "{n} corridors of the displaced, end of 2024",
+      "status": "pending",
+      "caveat": "people living outside their country at end-2024 (stocks, not movements in the year); country centroids, not camps; Palestine refugees under UNRWA are outside UNHCR's count; corridors under 500 people not drawn",
+      "pack": {"kind": "flows", "min": 500},
+      "flowStyle": {"alpha": 0.85, "width": 1.5},
+      "essay": {
+        "what": "44.8 million people living outside the country they fled at the end of 2024 — refugees, asylum-seekers and others UNHCR counts as needing international protection — drawn as arcs from where they came from to where they are now. The 1,155 corridors of 500 people or more carry more than 99% of them. The brightest ends are where the arcs land: next door, far more often than across an ocean.",
+        "how": "UNHCR's Refugee Population Statistics Database, read through its public API (CC BY 4.0 under UNHCR's Terms of Use for Datasets). Each origin–asylum pair is summed across refugees, asylum-seekers and other people in need of international protection — the category that holds most displaced Venezuelans. Arcs run between country centroids on the map's own shapes; 254,406 people of unknown origin and 41,083 stateless people have no starting point and are not drawn.",
+        "why": "Venezuela (7.6 million), Afghanistan, Syria and Ukraine (5 to 6 million each) empty outward; Iran, Türkiye, Germany, Colombia and Uganda take the most in, and the United States leads the hosts mainly through pending asylum claims. Most of the uprooted live one border away. Lay the World at War beneath it: the arcs start where the reds are."
+      },
+      "plateStats": [
+        {"label": "people drawn", "value": "44.8 million"},
+        {"label": "largest origins", "value": "Venezuela · Afghanistan · Syria · Ukraine"},
+        {"label": "largest hosts", "value": "U.S. · Iran · Türkiye · Germany · Colombia"},
+        {"label": "source", "value": "UNHCR (CC BY 4.0)"}
+      ]
+    },
+    {
       "id": "company-socialcapital",
       "title": "The Company We Keep",
       "theme": "company",

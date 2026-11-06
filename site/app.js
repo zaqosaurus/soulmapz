@@ -196,7 +196,9 @@ function buildScope(s){
      const ip=d3.geoInterpolate([d.arcs.alon[i],d.arcs.alat[i]],[d.arcs.blon[i],d.arcs.blat[i]]);
      const xy=new Float32Array((N+1)*3);let ok=0,px=null;
      for(let j=0;j<=N;j++){
-      const p=proj(ip(j/N));
+      const g=ip(j/N);
+      // over the pole a great circle hugs the sheet's top edge: lift the pen there instead
+      const p=Math.abs(g[1])>78?null:proj(g);
       if(!p){xy[j*3+2]=0;px=null;continue;}
       xy[j*3]=p[0];xy[j*3+1]=p[1];xy[j*3+2]=(px===null||Math.abs(p[0]-px)>jump)?1:2;px=p[0];ok++;
      }
