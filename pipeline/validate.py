@@ -75,6 +75,42 @@ def on(polys, lat, lon, tol):
                 if x0 <= x <= x1 and y0 <= y <= y1 and in_ring(x, y, p[0]) and not any(in_ring(x, y, h) for h in p[1:]): return True
     return False
 
+def country_polys(fp=None):
+    """Natural Earth 1:110m countries as {iso_numeric: [(bbox, polygon), ...]} — the same
+    shapes the page draws, so a point assigned here lands in the shape the reader sees."""
+    fp = fp or os.path.join(ROOT, "data", "ref", "countries-110m.json")
+    topo = json.load(open(fp))
+    tr = topo.get("transform")
+    arcs = []
+    for arc in topo["arcs"]:
+        pts, x, y = [], 0, 0
+        for dx, dy in arc:
+            if tr: x += dx; y += dy; pts.append((x*tr["scale"][0]+tr["translate"][0], y*tr["scale"][1]+tr["translate"][1]))
+            else: pts.append((dx, dy))
+        arcs.append(pts)
+    def ring(r):
+        out = []
+        for ai in r:
+            seg = arcs[ai] if ai >= 0 else arcs[~ai][::-1]
+            out.extend(seg if not out else seg[1:])
+        return out
+    res = {}
+    for g in topo["objects"]["countries"]["geometries"]:
+        if g.get("id") is None: continue
+        iso = str(g["id"]).zfill(3)
+        polys = [[ring(r) for r in g["arcs"]]] if g["type"] == "Polygon" else [[ring(r) for r in p] for p in g["arcs"]] if g["type"] == "MultiPolygon" else []
+        for p in polys:
+            xs = [q[0] for q in p[0]]; ys = [q[1] for q in p[0]]
+            res.setdefault(iso, []).append((min(xs), min(ys), max(xs), max(ys), p))
+    return res
+
+def country_of(lat, lon, cp, tol=0.0):
+    for iso, polys in cp.items():
+        for x0, y0, x1, y1, p in polys:
+            if x0 - tol <= lon <= x1 + tol and y0 - tol <= lat <= y1 + tol and in_ring(lon, lat, p[0]) and not any(in_ring(lon, lat, h) for h in p[1:]):
+                return iso
+    return None
+
 def main():
     lid = sys.argv[1]; prot = "--protocol" in sys.argv; us = "--us" in sys.argv
     st = json.load(open(os.path.join(ROOT, "data", "staging", f"{lid}.json")))

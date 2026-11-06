@@ -544,6 +544,33 @@
       ]
     },
     {
+      "id": "control-war",
+      "title": "The World at War",
+      "theme": "control",
+      "accent": "#d6634a",
+      "scopes": ["world"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "country"},
+      "weight": 0.0,
+      "unit": "killed per 100k",
+      "statline": "organized violence since 1989, per 100,000 people",
+      "status": "pending",
+      "protocol": "Rates for countries, never points for people. No victim, perpetrator or place is named.",
+      "caveat": "UCDP best estimates of deaths in organized violence (state, non-state and one-sided); today's borders and today's populations; periods of five years",
+      "pack": {"kind": "regions", "regionKind": "country", "vmaxQuantile": 0.92, "time": {"from": "meta.series", "label": "Killed in the period, per 100k", "buckets": [[0, 0, "1989–94"], [1, 1, "1995–99"], [2, 2, "2000–04"], [3, 3, "2005–09"], [4, 4, "2010–14"], [5, 5, "2015–19"], [6, 6, "2020–24"], [7, 7, "2025"]], "nd": 2, "vmaxQuantile": 0.95}},
+      "tintMax": 0.65,
+      "essay": {
+        "what": "4.26 million people killed in organized violence since 1989 — wars between states and rebels, wars between armed groups, and massacres of civilians — in 119 countries, shown per 100,000 of today's population. The bar steps through five-year periods: Rwanda and Bosnia in the early 1990s, Congo at the decade's end, Ethiopia at the turn of the century, Syria through the 2010s, Ethiopia's Tigray war and Ukraine in the 2020s, Ukraine and Sudan in 2025.",
+        "how": "The Uppsala Conflict Data Program's Georeferenced Event Dataset 26.1 (CC BY 4.0): every event's best estimate of deaths, summed by country and period. Each GED country is matched to the map's own country shapes by its events' coordinates; populations are Wikidata's latest figures, one denominator for the whole span (so 1990s rates use today's population). Actors, places and sources are dropped.",
+        "why": "The survey's other layers are mostly about how people live; this one is about how many were not allowed to. Rwanda's 1994 rate — more than five thousand per hundred thousand in five years — is the darkest cell anywhere on the map. Read it with the Last Speakers: several of the deepest reds sit on the same ground as the languages closest to silence."
+      },
+      "plateStats": [
+        {"label": "killed since 1989", "value": "4.26 million"},
+        {"label": "largest tolls", "value": "Rwanda · Ethiopia · Syria · Ukraine · Afghanistan"},
+        {"label": "darkest period", "value": "Rwanda 1989–94 — 5,339 per 100k"},
+        {"label": "source", "value": "UCDP GED 26.1 (CC BY 4.0)"}
+      ]
+    },
+    {
       "id": "faith-altar",
       "title": "The Altar",
       "theme": "faith",

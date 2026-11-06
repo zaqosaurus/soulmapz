@@ -1610,6 +1610,8 @@ function eraRefresh(){
  const pl=padLeft(),bar=$('#eraBar'),pe=$('#plate');
  const right=(plateOpen&&pe&&W>760)?Math.min(W-46,W-26-(pe.offsetWidth||392)-16):W-46;
  if(W>760){bar.style.left=((pl+right)/2)+'px';bar.style.maxWidth=Math.max(240,right-pl-24)+'px';}else{bar.style.left='';bar.style.maxWidth='';}
+ // too many steps for the room: the label tag gives way first (the plate names the series)
+ const tg=bar.querySelector('.eb-tag');if(tg){tg.style.display='';if(bar.scrollWidth>bar.clientWidth+2)tg.style.display='none';}
  document.querySelectorAll('#eraBar button[data-era]').forEach(b=>{
   b.classList.toggle('on',parseInt(b.dataset.era,10)===era);
  });
