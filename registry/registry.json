@@ -370,6 +370,26 @@
       ]
     },
     {
+      "id": "wonder-nightlights",
+      "title": "The Banished Dark",
+      "theme": "wonder",
+      "accent": "#ffe9a8",
+      "scopes": ["world", "us"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "night radiance",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the VIIRS annual night-lights composites at eogdata.mines.edu fail certificate verification from the build environment (retried; still unreachable). The raster engine for this layer is built and tested.",
+      "essay": {
+        "what": "Night-time light seen from orbit (VIIRS annual composite), as a quantized raster: the shape of every city, highway and gas flare.",
+        "how": "Will be aggregated to about 0.1° worldwide and 0.05° over the U.S., 8-bit, under 600 KB.",
+        "why": "The opposite of the Last Dark: what we did to the night."
+      },
+      "plateStats": []
+    },
+    {
       "id": "despair-overdoses",
       "title": "The Quiet Epidemic",
       "theme": "despair",
@@ -551,6 +571,86 @@
       "plateStats": []
     },
     {
+      "id": "company-alone",
+      "title": "Tables for One",
+      "theme": "company",
+      "accent": "#9fb4d9",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "share of households",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the Census Bureau's API now answers every data query with a redirect to 'missing_key' — it requires an API key in the URL. The build environment holds none, and the Census bulk-file host (www2.census.gov) is not reachable. A free Census key, or access to the bulk host, opens this slot.",
+      "essay": {
+        "what": "The share of households that are one person living alone (ACS 5-year, table B11001), county by county.",
+        "how": "Will use the American Community Survey 5-year estimates with their margins of error; counties whose estimate is unreliable will be marked, not hidden.",
+        "why": "Solitude is not loneliness, but the map of who lives alone is the frame inside which loneliness happens. It belongs beside Company and the Quiet Hours."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-love",
+      "title": "Love, Counted",
+      "theme": "company",
+      "accent": "#e79ad6",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "per 1,000 households",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): same as Tables for One — the Census API requires a key in the URL and the bulk host is unreachable from the build environment.",
+      "essay": {
+        "what": "Same-sex couple households per 1,000 households (ACS 5-year), by county.",
+        "how": "Counts households, never people; small-county estimates carry wide margins and will say so.",
+        "why": "Where love has been counted openly. The survey shows rates for places, never anyone's household."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-kindness",
+      "title": "Kindness",
+      "theme": "company",
+      "accent": "#f0c27a",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "giving as a share of income",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06) is a measurement gate, not an access gate: IRS county data is reachable, but it counts only itemized charitable deductions. In 2022 only 9.6% of returns itemized and 7.6% claimed a gift; county itemization runs from 0% to 29% and tracks wealth (Marin, Falls Church). A county map of it would measure income and tax law, not generosity — so it is not drawn. A source that counts non-itemized giving opens this slot.",
+      "essay": {
+        "what": "Charitable giving as a share of income, by county.",
+        "how": "Waiting for a measure that sees the gifts of people who do not itemize.",
+        "why": "A survey that maps despair owes the reader a map of kindness — but only an honest one."
+      },
+      "plateStats": []
+    },
+    {
+      "id": "company-commons",
+      "title": "The Commons",
+      "theme": "company",
+      "accent": "#8fd3a8",
+      "scopes": ["us", "world"],
+      "forms": {"points": true, "contours": false, "tint": false},
+      "weight": 0.0,
+      "unit": "public places",
+      "statline": "",
+      "status": "pending",
+      "caveat": "source gated; nothing shown rather than something invented",
+      "pendingNote": "Gate (2026-11-06): the OpenStreetMap Overpass API (overpass-api.de and the kumi.systems mirror) does not complete a connection from the build environment (retried; server or route side, not a policy refusal).",
+      "essay": {
+        "what": "Public libraries, playgrounds, public pools, skateparks and community gardens — the places that belong to everyone.",
+        "how": "From OpenStreetMap via Overpass, with a lens by kind; ODbL.",
+        "why": "The light side of Motion and Power: where people gather without paying."
+      },
+      "plateStats": []
+    },
+    {
       "id": "control-arsenal",
       "title": "The Arsenal",
       "theme": "control",
@@ -561,7 +661,7 @@
       "unit": "licensed dealers",
       "statline": "{n} licensed gun dealers",
       "status": "pending",
-      "pendingNote": "Source verified open (ATF monthly FFL lists) but served behind a browser-only gate that outlasted this survey window. The ZIP gazetteer is staged; the slot is reserved for the retry.",
+      "pendingNote": "Source verified open (ATF monthly FFL lists), but www.atf.gov refuses scripts with a bot gate (403, retried 2026-11-06). The survey does not get around bot checks; the slot waits for a direct file. The ZIP gazetteer is staged.",
       "caveat": "retail license types 01 and 02 only; ZIP-centroid locations aggregated to cells",
       "essay": {
         "what": "Every federally licensed retail firearms dealer and pawnbroker in America, aggregated to cells — the storefront geography of the Second Amendment.",
