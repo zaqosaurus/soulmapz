@@ -1,0 +1,35 @@
+{
+ "layer": "company-gifts",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "Public domain (U.S. government work, 17 U.S.C. § 105)",
+  "source_page": "https://www.irs.gov/statistics/soi-tax-stats-county-data"
+ },
+ "files": {
+  "22incyallnoagi.csv": {
+   "url": "https://www.irs.gov/pub/irs-soi/22incyallnoagi.csv",
+   "bytes": 5075247,
+   "sha256": "2c04ff235bcbacb990b316bf79c7c628089a9a4c1dd9593ac51f74a109b13343"
+  }
+ },
+ "method": "Itemized charitable contributions (A19700) divided by adjusted gross income (A00100), per county, tax year 2022; also the share of returns claiming the deduction (N19700/N1). Counties under 500 returns are not shown.",
+ "measurement_warning": "Only 9.6% of returns itemized in 2022 and 7.6% claimed a charitable deduction. Gifts by the other ~90% of filers are invisible here. This layer shows where giving is recorded on tax returns — tracking income, home values and state tax law — not how generous a place is. The 'Kindness' slot stays PENDING for that.",
+ "counts": {
+  "counties": 3104,
+  "dropped": {
+   "fewer than 500 returns or no income": 39
+  },
+  "national": {
+   "returns": 158707990,
+   "itemizing_pct": 9.6,
+   "claiming_gift_pct": 7.6,
+   "gifts_share_of_agi_pct": 1.45
+  }
+ },
+ "validation": {
+  "known_answers": {
+   "Utah counties over-represented among the highest (tithing)": "Utah holds 12 of the top 50 counties — PASS",
+   "the wealth effect expected from itemization": "Benton County AR (Bentonville) 7.6%, Pitkin CO (Aspen) 5.0%, Teton WY (Jackson) 4.6%, New York County 4.1% — PASS, and disclosed on the plate"
+  }
+ }
+}

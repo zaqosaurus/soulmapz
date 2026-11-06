@@ -611,6 +611,32 @@
       "plateStats": []
     },
     {
+      "id": "company-gifts",
+      "title": "Gifts on the Return",
+      "theme": "company",
+      "accent": "#e8c27a",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "% of income given (itemized)",
+      "statline": "itemized charitable gifts in {n} counties, tax year 2022",
+      "status": "pending",
+      "caveat": "only itemized gifts: 9.6% of 2022 returns itemized and 7.6% claimed a gift — this maps where giving is recorded on tax returns, which tracks income and tax law, not generosity",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "How much of a county's income its taxpayers wrote off as charitable gifts in 2022 — itemized contributions as a share of adjusted gross income — and how many returns claimed one. Nationally, 1.45% of all income was given in itemized gifts, but only 7.6% of returns claimed any.",
+        "how": "IRS Statistics of Income county data for tax year 2022 (public domain): itemized charitable contributions divided by adjusted gross income; counties with fewer than 500 returns are left out. Since the 2017 tax law raised the standard deduction, about nine in ten filers no longer itemize, so their gifts — church plates, GoFundMe, the coat drive — are invisible here.",
+        "why": "Read it as two maps laid over each other. One is tithing: Utah holds twelve of the fifty highest counties. The other is wealth: Bentonville, Aspen, Jackson Hole and Manhattan sit near the top because large, itemized gifts follow large incomes. What it cannot show is kindness — that slot stays open until there is a measure that sees the gifts of people who do not itemize."
+      },
+      "plateStats": [
+        {"label": "income given, itemized (U.S.)", "value": "1.45%"},
+        {"label": "returns claiming a gift", "value": "7.6%"},
+        {"label": "highest", "value": "Benton County, AR — 7.6%"},
+        {"label": "Utah, among the top 50", "value": "12 counties"}
+      ]
+    },
+    {
       "id": "company-kindness",
       "title": "Kindness",
       "theme": "company",
@@ -622,7 +648,7 @@
       "statline": "",
       "status": "pending",
       "caveat": "source gated; nothing shown rather than something invented",
-      "pendingNote": "Gate (2026-11-06) is a measurement gate, not an access gate: IRS county data is reachable, but it counts only itemized charitable deductions. In 2022 only 9.6% of returns itemized and 7.6% claimed a gift; county itemization runs from 0% to 29% and tracks wealth (Marin, Falls Church). A county map of it would measure income and tax law, not generosity — so it is not drawn. A source that counts non-itemized giving opens this slot.",
+      "pendingNote": "Gate (2026-11-06) is a measurement gate, not an access gate: IRS county data is reachable, but it counts only itemized charitable deductions. In 2022 only 9.6% of returns itemized and 7.6% claimed a gift; county itemization runs from 0% to 29% and tracks wealth (Marin, Falls Church). That itemized record now ships honestly as its own layer, Gifts on the Return; this slot waits for a measure of generosity that sees the gifts of people who do not itemize.",
       "essay": {
         "what": "Charitable giving as a share of income, by county.",
         "how": "Waiting for a measure that sees the gifts of people who do not itemize.",

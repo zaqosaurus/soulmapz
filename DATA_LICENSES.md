@@ -40,6 +40,7 @@ on that basis.
 | control-war | Uppsala Conflict Data Program, Georeferenced Event Dataset 26.1 (Sundberg & Melander 2013; Davies et al. 2025); country populations from Wikidata | **CC BY 4.0** (UCDP); Wikidata **CC0** | Deaths per country and five-year period; actors, places and sources dropped |
 | motion-uprooted | UNHCR Refugee Population Statistics Database, via the Refugee Data Finder API (end-2024); ISO code table from Wikidata | **CC BY 4.0** under UNHCR's Terms of Use for Datasets; Wikidata **CC0** | Refugees + asylum-seekers + other people in need of international protection, by origin–asylum pair |
 | wonder-darksky | Wikidata — items recorded as International Dark Sky Parks, Reserves, Sanctuaries, Communities, Urban Night Sky Places or dark-sky preserves | **CC0** | Partial mirror of DarkSky International's register (darksky.org refuses scripts; not circumvented) |
+| company-gifts | IRS Statistics of Income, county data, tax year 2022 (`22incyallnoagi.csv`) | **Public domain** (U.S. government work) | Itemized charitable contributions ÷ AGI; itemizers only (disclosed) |
 
 **Distribution notes:** keep OSM (ODbL), GeoNames (CC-BY), and Laouenan et al. (CC-BY-SA)
 attribution visible — the site's About/Sources panel does this. The memory layer's
