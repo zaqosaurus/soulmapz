@@ -283,10 +283,10 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 
 | Phase | State | Notes |
 |---|---|---|
-| 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. Figures as of the end of Phase 0: 2.85 MB, smoke 64/64. **Current (2026-11-06): 4.11 MB, smoke 82/82.** |
-| 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. Figures as of the end of Phase 1: 2.95 MB, smoke 73/73. **Current (2026-11-06): 4.11 MB, smoke 82/82.** |
+| 0 · foundations | **done** 2026-11-05 | 7.13 → 2.85 MB (gzip+base64, DecompressionStream; plain fallback written beside the page and checked for identical data). Page-weight ledger per payload. `pipeline/packer.py`: registry-declared packing (9 layers migrated; `check_pack.py` proved identical payloads). Time everywhere, county + country tint, categorical tint with legend, great-circle flows, raster, tooltip templates — each proven on smoke fixtures that never ship. Canonical views (`tests/views.js`) unchanged except the era-bar strip. Figures as of the end of Phase 0: 2.85 MB, smoke 64/64. **Current (2026-11-06): 4.17 MB, smoke 82/82.** |
+| 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. Figures as of the end of Phase 1: 2.95 MB, smoke 73/73. **Current (2026-11-06): 4.17 MB, smoke 82/82.** |
 | 2 · reachable acquisitions | **done** 2026-11-06 | **6 of 6 shipped**, each through the §4 loop (terms on file, SHA-256, `pipeline/validate.py`, known answers, 10-record spot check, render reviewed): The Last Speakers (Glottolog 5.3, 7,836 languages, CC-BY), The World's Furnaces (WRI v1.3.0, 34,936 plants, CC-BY), The Year Without Goodbyes (NYT county COVID, non-commercial licence), When the State Kills (WaPo Fatal Force, county rates only, CC-BY-NC-SA), The Price of Staying (Eviction Lab estimates, ODC-BY — gate passed), The Sky Roads (OpenFlights, ODbL). 4.06 MB after Phase 2. Fixes found on the way: permalinks now address layers in a frozen v0.6 order (adding layers no longer changes old links); era bar fits between rail and plate. |
-| 3 · network unlock | **done** 2026-11-06 | **Shipped:** The World at War (UCDP GED 26.1, CC BY, Wikidata populations), The Uprooted (UNHCR end-2024, 44.8M people, CC BY), The Last Dark (Wikidata, 164 dark-sky places, CC0). **PENDING with gates named on the plate and in the colophon:** Tables for One and Love, Counted (Census API now demands a key in the URL; bulk host unreachable), Kindness (IRS data reachable but counts only itemized gifts — 9.6% of returns — so it would map wealth: a measurement gate), The Banished Dark (VIIRS host fails certificates; raster engine ready), The Commons (Overpass connections do not complete), The Arsenal (ATF bot gate, 403, not circumvented). Blocked here and worked around: World Bank API, www.wikidata.org, openflights.org, www.unhcr.org (terms read from the repository source or a search excerpt). |
+| 3 · network unlock | **done** 2026-11-06 | **Shipped:** Gifts on the Return (IRS SOI 2022, itemized gifts, public domain), The World at War (UCDP GED 26.1, CC BY, Wikidata populations), The Uprooted (UNHCR end-2024, 44.8M people, CC BY), The Last Dark (Wikidata, 164 dark-sky places, CC0). **PENDING with gates named on the plate and in the colophon:** Tables for One and Love, Counted (Census API now demands a key in the URL; bulk host unreachable), Kindness (a true generosity measure; the IRS itemized record ships separately as Gifts on the Return), The Banished Dark (VIIRS host fails certificates; raster engine ready), The Commons (Overpass connections do not complete), The Arsenal (ATF bot gate, 403, not circumvented). Blocked here and worked around: World Bank API, www.wikidata.org, openflights.org, www.unhcr.org (terms read from the repository source or a search excerpt). |
 | 4 · findings round 2 | not started | Next goal. New layers to lay against each other: COVID × connectedness, police killings × the Arsenal slot, eviction × the Sorting, war × languages. Pre-state each hypothesis in `correlate.py` before running. |
 | 5 · release v0.7 | not started | |
 
@@ -304,14 +304,14 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 | 2.4 NYT COVID | shipped | layer(loss-covid) |
 | 2.5 WaPo police shootings | shipped, county rates only | layer(control-police) |
 | 2.6 OpenFlights | shipped | layer(motion-skyroads) |
-| 3.3 Census — living alone | **PENDING** (Census API requires a key in the URL; bulk host unreachable) | registry `company-alone` pendingNote; colophon |
-| 3.4 Census — same-sex couples | **PENDING** (same gate) | registry `company-love` |
-| 3.2 IRS giving | **PENDING** — measurement gate (itemized-only data would map wealth) | registry `company-kindness`; 9.6% itemize (2022) |
+| 3.3 Census — living alone | **PENDING by maintainer decision 2026-11-06** (Census API requires a key in the URL; bulk host unreachable; maintainer chose to keep the slot pending rather than supply a key or allow www2.census.gov) | registry `company-alone` pendingNote; colophon |
+| 3.4 Census — same-sex couples | **PENDING by maintainer decision 2026-11-06** (same gate) | registry `company-love` |
+| 3.2 IRS giving | **shipped** as Gifts on the Return (itemized gifts ÷ income, 3,104 counties, tax year 2022), named for what it measures; the separate Kindness slot stays PENDING for a generosity measure | layer(company-gifts); 9.6% itemize (2022) |
 | 3.7 UCDP conflict deaths | shipped | layer(control-war) |
 | 3.8 UNHCR refugee flows | shipped | layer(motion-uprooted) |
 | 3.9 Wikidata dark-sky places | shipped | layer(wonder-darksky) |
 | Smoke green with checks per new form and layer | 82/82 | `tests/smoke.js` (fixtures section; every point/flow layer solo; every timed layer scrubs; Phase 1 lenses) |
-| Page under 8 MB | 4.11 MB | build ledger |
+| Page under 8 MB | 4.17 MB | build ledger |
 | Atlas reviewed page by page | 31 pages at 75 dpi + text scan; 6 defects fixed | commits "atlas: plates use…", "atlas review: credit every v0.7 source…" |
 | STATUS updated, pushed to PR #1 | this table | branch `claude/trusting-sagan-wkfcpi` |
 
@@ -320,7 +320,7 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 ## 11. HANDOFF (read this first when resuming)
 
 **State on 2026-11-06.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
-Phases 0–3 of this plan are done (see STATUS). 24 live layers (9 new in v0.7) + 7 PENDING slots, page 4.11 MB of 8,
+Phases 0–3 of this plan are done (see STATUS). 25 live layers (10 new in v0.7) + 7 PENDING slots, page 4.17 MB of 8,
 smoke 82/82, atlas 31 pages reviewed page by page at 75 dpi (text scanned for template errors; colophon
 credits every new source and its share-alike duty). Version string is 0.7.0-dev until the Phase 5 release. Next: Phase 4 (findings round 2), then Phase 5
 (release: dist/docs commit, README/CONTRIBUTING/CLASSROOM, contact method for removal requests).
