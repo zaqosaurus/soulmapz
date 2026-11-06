@@ -425,6 +425,32 @@
       "plateStats": []
     },
     {
+      "id": "motion-eviction",
+      "title": "The Price of Staying",
+      "theme": "motion",
+      "accent": "#d9a45b",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "threatened per 100 renting households",
+      "statline": "eviction threats in {n} counties, 2000–2018",
+      "status": "pending",
+      "caveat": "modelled estimates (Eviction Lab, 2022); a threat is a court filing against a household, not always a removal; ends in 2018",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97, "time": {"from": "meta.series", "label": "Threatened in the year, per 100 renting households", "buckets": [[2000, 2000, "2000"], [2001, 2001, "2001"], [2002, 2002, "2002"], [2003, 2003, "2003"], [2004, 2004, "2004"], [2005, 2005, "2005"], [2006, 2006, "2006"], [2007, 2007, "2007"], [2008, 2008, "2008"], [2009, 2009, "2009"], [2010, 2010, "2010"], [2011, 2011, "2011"], [2012, 2012, "2012"], [2013, 2013, "2013"], [2014, 2014, "2014"], [2015, 2015, "2015"], [2016, 2016, "2016"], [2017, 2017, "2017"], [2018, 2018, "2018"]], "nd": 2, "vmaxQuantile": 0.97}},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "How often a renting household is taken to court to be put out: households threatened with eviction each year per 100 renting households, in 3,142 counties from 2000 to 2018. The median county sits near 2.6; the worst counties are ten times higher. About 3.7 million eviction cases were filed in an average year.",
+        "how": "The Princeton Eviction Lab's model estimates (Gromis, Fellows, Hendrickson, Edmonds, Leung, Porton & Desmond, 2022), which combine court records with a statistical model to fill counties whose courts do not report, published under ODC-BY 1.0. The map pools 2014–2018; the bar steps through each year. Maryland fills the top of the list: its rent courts let a landlord file again every month rent is late, so the same household is threatened many times over.",
+        "why": "Eviction is the sorting seen from below. The Great Sorting shows who leaves by choice; this shows who is pushed — densest in Maryland, the Virginia and Carolina cities, the Atlanta suburbs and the Deep South. Richmond, Petersburg and Clayton County, Georgia sit near the top; the Dakotas and Wyoming barely register."
+      },
+      "plateStats": [
+        {"label": "cases filed, average year", "value": "3.7 million"},
+        {"label": "median county", "value": "2.6 per 100 renting households"},
+        {"label": "highest", "value": "Prince George's County, MD — 45.9"},
+        {"label": "source", "value": "Princeton Eviction Lab (ODC-BY)"}
+      ]
+    },
+    {
       "id": "company-socialcapital",
       "title": "The Company We Keep",
       "theme": "company",

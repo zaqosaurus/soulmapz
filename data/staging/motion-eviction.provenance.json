@@ -1,0 +1,58 @@
+{
+ "layer": "motion-eviction",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "ODC-BY 1.0 (Open Data Commons Attribution License)",
+  "statement": "data-downloads.evictionlab.org (read 2026-11-06): 'This data is shared under the terms of the Open Data Commons Attribution License (ODC-BY 1.0).'",
+  "citation": "Ashley Gromis, Ian Fellows, James R. Hendrickson, Lavar Edmonds, Lillian Leung, Adam Porton, and Matthew Desmond. Estimating Eviction Prevalence across the United States. Princeton University Eviction Lab. Deposited May 13, 2022."
+ },
+ "gate": "PLAN_V07 2.3 required that redistribution of derived rates be allowed: ODC-BY 1.0 allows it with attribution. Only the published model estimates are used — not the proprietary-count files.",
+ "files": {
+  "county_eviction_estimates_2000_2018.csv": {
+   "bytes": 4193454,
+   "sha256": "c8c1c4c30395799079bb85741714fc5543cf68c4ce460abf6339a22461312971"
+  }
+ },
+ "method": "Households threatened with eviction (model estimate) divided by renting households, per 100. Overall value pools 2014–2018; the series gives each year. Counties with fewer than 50 renting households in a year are not shown for that year.",
+ "counts": {
+  "rows": 59717,
+  "counties": 3142,
+  "dropped": {
+   "fewer than 50 renting households (rate not shown)": 30
+  },
+  "national_filings_estimate_by_year": {
+   "2000": 3009812,
+   "2001": 3256776,
+   "2002": 3459477,
+   "2003": 3507369,
+   "2004": 3539019,
+   "2005": 3635562,
+   "2006": 3708803,
+   "2007": 3782637,
+   "2008": 3841043,
+   "2009": 3791645,
+   "2010": 3829349,
+   "2011": 3882095,
+   "2012": 3859946,
+   "2013": 3857735,
+   "2014": 3819357,
+   "2015": 3732997,
+   "2016": 3725794,
+   "2017": 3767285,
+   "2018": 3656429
+  }
+ },
+ "caveats": [
+  "These are modelled estimates with confidence intervals (in the source), filling counties where courts do not report.",
+  "A filing threatens a household; not every filing ends in a removal.",
+  "Ends in 2018: the pandemic moratoria and what came after are not here."
+ ],
+ "validation": {
+  "known_answers": {
+   "about 3.6 million filings a year": "mean 3,666,481",
+   "highest rates concentrated in the Southeast": "[('Virginia', 18), ('Maryland', 17), ('Georgia', 16), ('South Carolina', 15), ('Mississippi', 14)]",
+   "Richmond, VA near the top": "Richmond City ranks 37th of 3,142 (top 1.2%) — PASS; Petersburg City 13th"
+  },
+  "maryland": "Maryland counties fill the top of the list (Prince George's 45.9 per 100 renting households). Maryland's rent courts allow a landlord to file again each month rent is late, so the same household is threatened many times; the Eviction Lab counts households threatened, but the state's filing system still lifts its numbers. Disclosed on the plate."
+ }
+}

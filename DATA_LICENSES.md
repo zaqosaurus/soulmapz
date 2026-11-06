@@ -35,6 +35,7 @@ on that basis.
 | geocoding ref | GeoNames cities500 | CC-BY 4.0 | `data/ref/world_places.csv` is regenerable and excluded from the repo |
 | engine | d3 v7 (ISC), topojson-client (ISC) — vendored | ISC | |
 | control-police | The Washington Post, *Fatal Force* fatal police shootings database v2 (`washingtonpost/data-police-shootings`), 2015–2024 | **CC-BY-NC-SA 4.0** — non-commercial, attribution, **share-alike: the derived county layer is offered under the same licence** | Names, ages, race and exact points dropped at staging; county rates only |
+| motion-eviction | Princeton University Eviction Lab — Gromis, Fellows, Hendrickson, Edmonds, Leung, Porton & Desmond, *Estimating Eviction Prevalence across the United States* (2022), county estimates 2000–2018 | **ODC-BY 1.0** — attribution required | Published model estimates only (not the proprietary-count files) |
 
 **Distribution notes:** keep OSM (ODbL), GeoNames (CC-BY), and Laouenan et al. (CC-BY-SA)
 attribution visible — the site's About/Sources panel does this. The memory layer's
