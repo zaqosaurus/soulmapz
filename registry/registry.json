@@ -465,6 +465,33 @@
       "plateStats": []
     },
     {
+      "id": "control-police",
+      "title": "When the State Kills",
+      "theme": "control",
+      "accent": "#e2554f",
+      "scopes": ["us"],
+      "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "weight": 0.0,
+      "unit": "killed per 1M a year",
+      "statline": "people shot dead by police, 2015–2024, per county",
+      "status": "pending",
+      "protocol": "Rates for places, never points for people. Every number here is someone; none of them is named on this map.",
+      "caveat": "fatal shootings by on-duty police only (The Washington Post's scope); small counties rest on one or two deaths (counts shown); 1.6% of records could not be placed in a county",
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.0, "vmaxQuantile": 0.97, "time": {"from": "meta.series", "label": "Killed in the year, per 1M", "buckets": [[2015, 2015, "2015"], [2016, 2016, "2016"], [2017, 2017, "2017"], [2018, 2018, "2018"], [2019, 2019, "2019"], [2020, 2020, "2020"], [2021, 2021, "2021"], [2022, 2022, "2022"], [2023, 2023, "2023"], [2024, 2024, "2024"]], "nd": 2, "vmaxQuantile": 0.985}},
+      "tintMax": 0.6,
+      "essay": {
+        "what": "10,268 people shot and killed by on-duty police officers in the United States from 2015 to 2024, placed in the county where it happened and divided by its population: about a thousand a year, every year, and rising after 2022. The map shows rates per 100,000 residents over the decade; the bar shows each year per million.",
+        "how": "The Washington Post's Fatal Force database, which has logged every such killing since 2015 from news reports, public records and social media, licensed CC-BY-NC-SA 4.0 (this derived layer carries the same licence). Names, ages, race and exact locations are dropped before anything else happens; only counts per county and year are kept. Records are placed by their coordinates, else their county, else their city's centre; 162 could not be placed. Deaths by restraint, Tasers or vehicles are outside the Post's count.",
+        "why": "The highest rates are not where the crime headlines are. New Mexico (10.1 per 100,000 over the decade) and Alaska (9.1) lead the states, then Oklahoma and Colorado; Rhode Island, Connecticut, Massachusetts and New York sit near one — a tenfold gap inside one country, under one constitution. The map says where; the why is argued elsewhere, and the survey does not pretend to settle it."
+      },
+      "plateStats": [
+        {"label": "killed, 2015–2024", "value": "10,268"},
+        {"label": "highest state rates per 100k", "value": "NM 10.1 · AK 9.1 · OK 6.5"},
+        {"label": "most in absolute terms", "value": "California 1,400"},
+        {"label": "source", "value": "The Washington Post, Fatal Force"}
+      ]
+    },
+    {
       "id": "faith-altar",
       "title": "The Altar",
       "theme": "faith",

@@ -1,0 +1,54 @@
+{
+ "layer": "control-police",
+ "retrieved": "2026-11-06",
+ "license": {
+  "name": "CC-BY-NC-SA 4.0",
+  "text_file": "data/raw/wapo/LICENSE (read 2026-11-06)",
+  "share_alike": "the derived county layer is offered under the same licence (DATA_LICENSES.md)"
+ },
+ "files": {
+  "fatal-police-shootings-data.csv": {
+   "url": "https://raw.githubusercontent.com/washingtonpost/data-police-shootings/master/v2/fatal-police-shootings-data.csv",
+   "bytes": 1861881,
+   "sha256": "606745b7e5189d0291709390e04db1c7ea2f6f901db31584b3ceb22cc842d05c"
+  }
+ },
+ "method": "Each record is placed in a county (its point in the county polygon; else the source's county name; else its city's centre from the repo gazetteer), counted by year, and divided by the county's 2020 Census population. Value: killed per 100,000 over the decade; series: killed per 1,000,000 in each year.",
+ "protocol": "Names, ages, gender, race, mental-illness flags, agency ids and exact coordinates are dropped at staging. Nothing person-level reaches the page.",
+ "counts": {
+  "placed": 10268,
+  "placement": {
+   "point in county polygon": 9276,
+   "county name match": 332,
+   "city centre (repo gazetteer) in county polygon": 661
+  },
+  "dropped": {
+   "no county resolved": 162
+  },
+  "counties": 3143,
+  "per_year": {
+   "2015": 995,
+   "2016": 952,
+   "2017": 980,
+   "2018": 968,
+   "2019": 975,
+   "2020": 1007,
+   "2021": 997,
+   "2022": 1059,
+   "2023": 1161,
+   "2024": 1174
+  }
+ },
+ "caveats": [
+  "The Post tracks only fatal shootings by on-duty officers; deaths by other means (restraint, Tasers, vehicles) are outside this database.",
+  "The Post stopped adding new years after 2024 (README).",
+  "Counties with a few deaths and few people carry unstable rates; the count is in every label."
+ ],
+ "validation": {
+  "known_answers": {
+   "about 1,000 a year": "{'2015': 995, '2016': 952, '2017': 980, '2018': 968, '2019': 975, '2020': 1007, '2021': 997, '2022': 1059, '2023': 1161, '2024': 1174}",
+   "California most in absolute terms": "[('California', 1400), ('Texas', 1005), ('Florida', 669)]",
+   "New Mexico or Alaska highest per capita": "[('New Mexico', 10.11), ('Alaska', 9.14), ('Oklahoma', 6.52), ('Colorado', 6.41)]"
+  }
+ }
+}
