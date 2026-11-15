@@ -74,6 +74,31 @@
       "id": "who-knows-whom", "title": "Who Knows Whom", "kicker": "COMPANY — FRIENDSHIP ACROSS CLASS", "scope": "us",
       "layers": ["company-socialcapital"], "bbox": [[-125, 24], [-66, 50]],
       "text": "Economic connectedness asks one question of a county: do its poorer residents have friends who are not poor? At 1.0, friendship ignores class entirely. Only one county in six reaches it. The state averages run from 0.56 in South Carolina to 1.09 in New Hampshire, and the Upper Midwest and the mountain West glow while the Deep South stays pale. The map measures who knows whom, which is not the same as who helps whom."
+    },
+    {
+      "id": "last-speakers", "title": "The Last Speakers", "kicker": "MEMORY — ACROSS ONE STRAIT", "scope": "world",
+      "layers": ["memory-languages"], "bbox": [[112, -44], [158, 2]],
+      "text": "A strait about 150 kilometres wide divides two fates. North of it, Papua New Guinea holds 849 languages, more than any country on Earth, and nearly half of them are not endangered at all. South of it, of the 369 languages Glottolog places in Australia, 227 are extinct and 48 more are nearly so. Deep teal is a language still safely spoken; grey is one that no one alive can use."
+    },
+    {
+      "id": "powers-the-cloud", "title": "What Powers the Cloud", "kicker": "POWER × POWER — WORLD SHEET", "scope": "world",
+      "layers": ["power-plants", "power-datacenters"], "bbox": [[-11, 37], [24, 58]],
+      "text": "France lists 88% of its generating capacity as nuclear, water, wind, sun or other non-fossil plants. Ring its 356 mapped data centers at 50 km and the capacity inside averages 52% fossil. Part of that ring is a ghost: Porcheville, a 2,290 MW oil plant west of Paris, closed in May 2017 but still listed in a database frozen in 2021. Without it the figure is 43% — still nearly four times the national share. Across 24 countries the survey tested whether the cloud sits nearer fossil power than its country's grid; it held in only half. Proximity is not supply, and a map of power is only as current as the day it stopped."
+    },
+    {
+      "id": "price-of-staying", "title": "The Price of Staying", "kicker": "MOTION — THE THREAT OF LEAVING", "scope": "us",
+      "layers": ["motion-eviction"], "bbox": [[-125, 24], [-66, 50]],
+      "text": "In the typical county, about 2.6 of every 100 renting households are threatened with eviction in a year. In Prince George's County, Maryland, it is 46. Maryland holds 15 of the 50 highest rates because its rent courts let a landlord file every month the rent is late, and each filing is a threat counted, not always a family moved. In South Dakota the typical county is under 0.3. The map shows where the law makes leaving loud, as much as where people are made to leave."
+    },
+    {
+      "id": "year-without-goodbyes", "title": "The Year Without Goodbyes", "kicker": "LOSS — SPRING 2020", "scope": "us", "era": 1,
+      "layers": ["loss-covid"], "bbox": [[-89, 17], [-70, 42]],
+      "text": "The first full quarter of the pandemic. New York City lost 240 of every 100,000 people in three months — about 21,000 people. Yet four of the five darkest counties that spring were in rural Georgia — Randolph, Hancock, Early and Terrell, places of six to eleven thousand people — each losing more than 270 per 100,000. Step the bar forward and each wave lands somewhere else; the full map is the sum of them all. Lay economic connectedness beside it to meet the survey's newest finding."
+    },
+    {
+      "id": "one-border-away", "title": "One Border Away", "kicker": "MOTION × CONTROL — WORLD SHEET", "scope": "world",
+      "layers": ["motion-uprooted", "control-war"], "bbox": [[-95, -38], [100, 58]],
+      "text": "Of the 44.8 million people UNHCR counts as having fled across a border, six in ten are counted in a country whose centre lies within 1,500 km of the centre of home. The three largest corridors run Afghanistan to Iran, Syria to Türkiye and Venezuela to Colombia. The arcs do not always start where the reds are: Venezuela, the origin of two of the eight largest, barely registers in the count of organized violence. Battle deaths are one reason to leave; this map cannot see the others."
     }
   ],
   "layers": [

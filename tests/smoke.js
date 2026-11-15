@@ -86,8 +86,18 @@ async function openPlate(page, lid) {
     const k = await zoomK(page);
     check(`reading "${r}" lands on land`, k >= 1 && k < 26, 'k=' + k.toFixed(2));
     if (r === 'ledger-betrayals') { check('the Ledger draws light', (await litSamples(page)) > 50); await shot(page, 'ledger'); }
+    if (r === 'year-without-goodbyes') check('a reading can open on a time step (spring 2020)', await page.evaluate(() => { const b = document.querySelector('#eraBar button.on'); return !!b && b.dataset.era === '1' && document.querySelector('#eraBar').classList.contains('show'); }));
+    if (['last-speakers', 'powers-the-cloud', 'one-border-away'].includes(r)) check(`reading "${r}" draws light`, (await litSamples(page)) > 50);
+    if (['last-speakers', 'powers-the-cloud', 'price-of-staying', 'year-without-goodbyes', 'one-border-away'].includes(r)) await shot(page, 'reading-' + r);
     await page.keyboard.press('Escape'); await page.waitForTimeout(1700);
   }
+  // --- findings menu: every card, and the ledger of what was tested and not found ---
+  await page.click('#findingsBtn'); await page.waitForTimeout(250);
+  const fm = await page.evaluate(() => ({ cards: document.querySelectorAll('#findingsMenu .fm-card').length, want: window.__REGISTRY__.findings.findings.length,
+    tested: document.querySelectorAll('#fmTested .fm-tr').length, wantT: (window.__REGISTRY__.findings.tested || []).length }));
+  check('findings menu lists every card and the tested-and-not-found ledger', fm.cards === fm.want && fm.tested === fm.wantT && fm.wantT > 0, JSON.stringify(fm));
+  await page.evaluate(() => document.querySelector('#fmTested').open = true); await page.waitForTimeout(200); await shot(page, 'findings-tested');
+  await page.keyboard.press('Escape'); await page.evaluate(() => document.querySelector('#findingsMenu').classList.remove('open')); await page.waitForTimeout(300);
   const pointLayers = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live' && (l.forms.points || l.forms.flows)).map(l => l.id));
   for (const lid of pointLayers) {
     await openPlate(page, lid);

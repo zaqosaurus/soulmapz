@@ -1608,6 +1608,9 @@ function eraRefresh(){
  const tl=lid?timeOf(lid):null;
  if(tl&&era>=tl.labels.length)era=-1;
  $('#eraBar').classList.toggle('show',!!tl);
+ // a caption card sits where the bar does: lift the bar above it while both show
+ {const cc=$('#capCard'),eb=$('#eraBar');
+  if(tl&&cc&&cc.classList.contains('open')){eb.style.bottom=(parseFloat(getComputedStyle(cc).bottom)+cc.offsetHeight+10)+'px';}else eb.style.bottom='';}
  // centre the bar on the map area (right of the rail), never under it
  const pl=padLeft(),bar=$('#eraBar'),pe=$('#plate');
  const right=(plateOpen&&pe&&W>760)?Math.min(W-46,W-26-(pe.offsetWidth||392)-16):W-46;
@@ -1674,8 +1677,8 @@ function capBase(kicker,title,body,accent){
  return '<div class="cc-k" style="color:'+(accent||'#e8b34b')+'">'+kicker+'</div>'+
   '<div class="cc-t">'+title+'</div>'+(body?'<div class="cc-x">'+body+'</div>':'');
 }
-function showCap(html){const c=$('#capCard');c.innerHTML=html;c.classList.add('open');}
-function hideCap(){$('#capCard').classList.remove('open');}
+function showCap(html){const c=$('#capCard');c.innerHTML=html;c.classList.add('open');eraRefresh();}
+function hideCap(){$('#capCard').classList.remove('open');eraRefresh();}
 function wireCapNav(){
  const p=$('#ccPrev'),n=$('#ccNext'),e=$('#ccEnd');
  if(p)p.addEventListener('click',()=>stepReading(-1));
@@ -1701,6 +1704,7 @@ function startReading(i){
  if(era!==-1){era=-1;}
  for(const l of live)target[l.id]=(r.layers.indexOf(l.id)>=0?1:0);
  chipRefresh();updateStatline();eraRefresh();scheduleQt();
+ if(r.era!=null){const tl=timeLid()?timeOf(timeLid()):null;if(tl&&r.era<tl.labels.length)setEra(r.era);}
  terrainDirty=true;dirty=true;
  flyTo(r.bbox,2600);
  showCap(capForReading(r,i));

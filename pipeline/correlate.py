@@ -686,8 +686,9 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v08":
 # H21 what powers the cloud:        3,746 data centers in 24 countries; fossil share near DCs >=10 pts
 #                                   above national in 12/24 (bar 16/24); above the airport baseline
 #                                   by >=5 pts in 19/24                                      -> REJECTED
-#                                   (France the outlier: 52% fossil near DCs vs 12% national — Paris's
-#                                   gas and oil peakers; a plate observation, not a card)
+#                                   (France stands out: 52% fossil near DCs vs 12% national. Part of it is
+#                                   Porcheville, 2,290 MW of oil west of Paris, closed May 2017 but still in
+#                                   WRI's frozen database; without it 43%. A reading, not a card.)
 # H22 remembered births x languages: n=3,625 cells, r=+0.040 (stated sign negative); macro-areas mixed
 #                                   (+0.28 North America, -0.21 South America)              -> REJECTED (null)
 # H23 connectedness x COVID deaths: n=3,004, r=-0.437, spearman -0.460, within-state -0.393, every
