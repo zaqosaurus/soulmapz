@@ -74,7 +74,7 @@ corrected by the check.
   middling (the draft's "rural West" was wrong and was narrowed).
 - **War:** the five-year periods read Rwanda/Bosnia → Congo → Ethiopia → Syria → Tigray/Ukraine →
   Ukraine/Sudan (2025). Rwanda 1989–94 is the darkest cell on the map (5,339 per 100k).
-- **Refugees:** most of the uprooted live one border away. Venezuela only becomes the largest
+- **Refugees:** most of the uprooted live one border away. A draft line — "the arcs start where the reds are" (the war layer) — was false for the largest origin: Venezuela has almost no organized-violence deaths in UCDP. Corrected on the plate. Venezuela only becomes the largest
   origin once UNHCR's "other people in need of international protection" is counted.
 - **Gifts on the Return:** two maps in one — tithing (Utah holds 12 of the top 50 counties)
   and wealth (Bentonville, Aspen, Jackson Hole, Manhattan).
