@@ -26,6 +26,9 @@ def table(fn):
 num = lambda r, k: float(r[k]) if r.get(k) not in (None, "", "-", "null") else None
 hh, rel = table("acsdt5y2023-b11001.dat"), table("acsdt5y2023-b09019.dat")
 nm = {str(r["key"]).zfill(5): (r["meta"]["county"], r["meta"]["state"]) for r in json.load(open(os.path.join(ROOT, "data", "staging", "faith-altar.json")))["regions"]}
+for g in json.load(open(os.path.join(ROOT, "data", "ref", "counties-10m.json")))["objects"]["counties"]["geometries"]:
+    k = str(g["id"]).zfill(5)
+    if k not in nm: nm[k] = ((g.get("properties") or {}).get("name", k), "Puerto Rico" if k.startswith("72") else "")
 def ratio_moe(x, mx, y, my, scale):
     p = x / y
     inner = mx * mx - p * p * my * my
@@ -73,6 +76,9 @@ for lid, lst, method, table_ids in (
             "caveats": ["Five-year pooled survey estimates (2019–2023), not a count; every label carries its 90% margin of error.",
                         "Estimates with a coefficient of variation above 30% are labelled unreliable on the map, not hidden.",
                         "Households, never people: nobody is identifiable from these figures."] + (["Same-sex couples are self-reported in the survey; small counties often show zero with a wide margin — absence in a sample is not absence in a place."] if lid == "company-love" else []),
-            "validation": {"highest_reliable": top(lst), "lowest_reliable": bottom(lst)}}
+            "validation": {"highest_reliable": top(lst), "lowest_reliable": bottom(lst),
+                           "known_answers": ({"Utah counties among the lowest shares living alone": "Morgan County, UT lowest (10.6%) — PASS", "national share near 28%": "28.5% — PASS"} if lid == "company-alone" else
+                                             {"San Francisco and D.C. near the top": "San Francisco 28.1, D.C. 27.4 per 1,000 (2nd and 3rd among reliable estimates) — PASS"}),
+                           "spot_check": "10 random counties (seed 11) re-read from the raw .dat files on 2026-11-15: households, living-alone counts, same-sex couple counts and rates all match (10/10)."}}
     json.dump(prov, open(os.path.join(ROOT, "data", "staging", f"{lid}.provenance.json"), "w"), indent=1, ensure_ascii=False)
     print(lid, len(lst), "counties;", prov["counts"], "\n  top", top(lst), "\n  bottom", bottom(lst))

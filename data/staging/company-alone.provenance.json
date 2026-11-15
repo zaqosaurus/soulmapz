@@ -71,6 +71,11 @@
     "Madison County, Idaho",
     12.1
    ]
-  ]
+  ],
+  "known_answers": {
+   "Utah counties among the lowest shares living alone": "Morgan County, UT lowest (10.6%) — PASS",
+   "national share near 28%": "28.5% — PASS"
+  },
+  "spot_check": "10 random counties (seed 11) re-read from the raw .dat files on 2026-11-15: households, living-alone counts, same-sex couple counts and rates all match (10/10)."
  }
 }

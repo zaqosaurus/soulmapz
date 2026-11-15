@@ -312,7 +312,7 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 | 3.9 Wikidata dark-sky places | shipped | layer(wonder-darksky) |
 | Smoke green with checks per new form and layer | 82/82 | `tests/smoke.js` (fixtures section; every point/flow layer solo; every timed layer scrubs; Phase 1 lenses) |
 | Page under 8 MB | 4.28 MB | build ledger |
-| Atlas reviewed page by page | 31 pages at 75 dpi + text scan; 6 defects fixed | commits "atlas: plates use…", "atlas review: credit every v0.7 source…" |
+| Atlas reviewed page by page | final build 2026-11-15: 34 pages at 75 dpi + text scan of every page; 7 defects fixed across the reviews (the last: two Census plates missing their stats — a duplicate registry key, now refused by the build) | commits "atlas: plates use…", "atlas review: credit every v0.7 source…" |
 | STATUS updated, pushed to PR #1 | this table | branch `claude/trusting-sagan-wkfcpi` |
 
 ---
@@ -321,7 +321,7 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 
 **State on 2026-11-06.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
 Phases 0–3 of this plan are done (see STATUS). 27 live layers (12 new in v0.7) + 5 PENDING slots, page 4.28 MB of 8,
-smoke 82/82, atlas 31 pages reviewed page by page at 75 dpi (text scanned for template errors; colophon
+smoke 82/82, atlas 34 pages reviewed page by page at 75 dpi on the final build (text scanned for template errors; colophon
 credits every new source and its share-alike duty). Version string is 0.7.0-dev until the Phase 5 release. Next: Phase 4 (findings round 2), then Phase 5
 (release: dist/docs commit, README/CONTRIBUTING/CLASSROOM, contact method for removal requests).
 

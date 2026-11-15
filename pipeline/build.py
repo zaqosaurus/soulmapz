@@ -170,8 +170,16 @@ def _hook_social(lay, st, d):
 
 PLATE_HOOKS = {"omen-names": _hook_omen, "despair-suicide": _hook_suicide, "company-socialcapital": _hook_social}
 
+def _no_dupes(pairs):
+    seen = set()
+    for k, _ in pairs:
+        if k in seen: raise SystemExit(f"registry.json: duplicate key '{k}' — JSON keeps the last value silently; fix the registry")
+        seen.add(k)
+    return dict(pairs)
+
 def build():
-    registry = load(p("registry","registry.json"))
+    with open(p("registry","registry.json"), encoding="utf-8") as f:
+        registry = json.load(f, object_pairs_hook=_no_dupes)
     fpath = p("data","findings.json")
     if os.path.exists(fpath):
         registry["findings"] = load(fpath)

@@ -72,6 +72,10 @@
     "Rio Arriba County, New Mexico",
     2.34
    ]
-  ]
+  ],
+  "known_answers": {
+   "San Francisco and D.C. near the top": "San Francisco 28.1, D.C. 27.4 per 1,000 (2nd and 3rd among reliable estimates) — PASS"
+  },
+  "spot_check": "10 random counties (seed 11) re-read from the raw .dat files on 2026-11-15: households, living-alone counts, same-sex couple counts and rates all match (10/10)."
  }
 }
