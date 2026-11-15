@@ -1,0 +1,45 @@
+{
+  "release": "0.7.0",
+  "rendered": "2026-11-15",
+  "viewport": "1400x860 @1x, tests/views.js",
+  "noise_between_two_renders": {
+    "us-default": "0.013%",
+    "world-default": "0.063%",
+    "others": "0.000%"
+  },
+  "how_to_use": "Re-render this baseline from the 0.7.0 release commit (git checkout <release>; python3 pipeline/build.py; node tests/views.js <dir>), then compare a later build against it: node tests/views.js <out> <dir>. The hashes identify the reference renders; byte-identical re-renders are not expected (noise above).",
+  "views": {
+    "meta-constellation": {
+      "sha256": "fdd1fcc8e7fb2a306674f6f95195ced4fb8cccbb31ac20c115fb26e409a76657",
+      "bytes": 281997
+    },
+    "plate-ledger": {
+      "sha256": "5ae0895d6e6d7cb201f7d0ff50bead0f82777607df68134ec3bd7f99c25f92c1",
+      "bytes": 283961
+    },
+    "reading-corridor": {
+      "sha256": "3dc1b403e2fa5c48136a244c7dc81a07cd4ebabcc2c2b2e68ff2e3d918920e98",
+      "bytes": 792312
+    },
+    "reading-ledger": {
+      "sha256": "394b1c354498156b1cc4a743c274f382493756777ce40e860aff64a940301773",
+      "bytes": 257946
+    },
+    "reading-memory-pools": {
+      "sha256": "db3a84a939705cdd9503437c6a651fdca3d085c0b7cea7f903efc8c2ea4d6665",
+      "bytes": 1164994
+    },
+    "reading-sorting": {
+      "sha256": "d908598d3e98a822e51074393257a3f20a079d54738f527a85cb7c78ac71b465",
+      "bytes": 569396
+    },
+    "us-default": {
+      "sha256": "aaa6539f99a036343c7d544c29642ea16f76a9fdd7c0a81a7098dcd315822008",
+      "bytes": 892267
+    },
+    "world-default": {
+      "sha256": "4acba3d79fe48f37e5ed4636083252a3302ebe74d2c5fb4faefcdd2bbee482fb",
+      "bytes": 436521
+    }
+  }
+}

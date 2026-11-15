@@ -183,7 +183,7 @@ before code changes.
   fulfillment, ledger, sorting). Migrating them to `pack` blocks would finish Phase 0.3.
 - **The rail is long** (32 entries). With more layers, discovery suffers; themes may need to
   collapse, or sheets need curated layer sets.
-- ~~Canonical views need a re-baseline~~ — re-baselined at the 0.7.0 release (`tests/baseline/`).
+- ~~Canonical views need a re-baseline~~ — re-baselined at the 0.7.0 release (`tests/baseline/views-0.7.0.json`).
 - **Smoke takes several minutes**; a worker restart killed one run mid-way. A fast/slow split would
   make the loop cheaper.
 - **Phone width is checked only for the recorder and drawer.** The new era bar, plates with
