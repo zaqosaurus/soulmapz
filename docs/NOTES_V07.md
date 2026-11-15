@@ -327,6 +327,14 @@ per return (from the IRS gifts staging) held.
 change but the network gateway still answers CONNECT with 403 — a policy above the environment.
 `eogdata.mines.edu` now passes TLS, but every download redirects to an account login.
 
+### Release checks after the release commit
+- The release build compared against the new view baseline: one run showed a view at 1.98%, an
+  immediate re-run showed every view ≤ 0.069% — headless noise (the known progressive-bake
+  effect), not reproduced, so no code changed (headless rule).
+- The atlas closing pages re-rendered after the colophon fix and looked at as images: the heading
+  now travels with its text. Pages 1–31 were unchanged by the fix and were reviewed earlier the same day.
+- Geofabrik and NASA retried once more after the release: still refused by the gateway (403).
+
 ### Ideas from this round (added to §7's list)
 23. **Readings that step through time** — `era` opens one step; a `steps` list could walk a
     reading through quarters (spring 2020 → winter 2020 → …) with a sentence per step.
