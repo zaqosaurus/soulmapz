@@ -1926,6 +1926,13 @@ function buildFindingsMenu(){
   it.addEventListener('click',()=>applyFinding(f));
   m.appendChild(it);
  });
+ if(R.findings.tested&&R.findings.tested.length){
+  const t=document.createElement('details');t.className='fm-tested';t.id='fmTested';
+  t.innerHTML='<summary>TESTED AND NOT FOUND · '+R.findings.tested.length+'</summary><div class="fm-tn">'+R.findings.tested_note+'</div>'+
+   R.findings.tested.map(x=>'<div class="fm-tr"><span class="fm-tv">v'+x.v+'</span><div><div class="fm-tq">'+x.q+'</div><div class="fm-ta">'+x.r+'</div></div></div>').join('');
+  t.addEventListener('click',ev=>ev.stopPropagation());
+  m.appendChild(t);
+ }
 }
 function findingCap(f){
  const ac=f.spurious?'#8a94a6':(byId[f.layers[0]]?byId[f.layers[0]].accent:'#e8b34b');
@@ -2736,7 +2743,8 @@ function finishAtlas(pages,saved,today){
   '<div class="at-colo">THE PRINT ATLAS · v'+esc(M.version)+' · RENDERED '+today+' · '+esc(M.site)+'</div></section>';
  for(const s of sheets)html+='<section class="at-page at-sheet"><div class="at-run">SHEET '+s.n+' · '+esc(s.title.toUpperCase())+'</div><img src="'+s.img+'" alt="'+esc(s.title)+'"><div class="at-legend">'+legend(s.ids)+'</div></section>';
  for(const p of plates)html+=atlasPlateHTML(p.l,p.img);
- if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+'</section>';
+ if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+
+  (R.findings.tested?'<h3 class="at-th">TESTED AND NOT FOUND</h3><div class="at-disc">'+R.findings.tested_note+'</div><table class="at-tested">'+R.findings.tested.map(x=>'<tr><td>v'+x.v+'</td><td><b>'+x.q+'</b> '+x.r+'</td></tr>').join('')+'</table>':'')+'</section>';
  html+='<section class="at-page at-colophon"><div class="at-run">COLOPHON</div><h2>Method, sources, and the slots still empty</h2>'+
   '<p>Every layer is a real dataset with coordinates. Density becomes elevation: the relief on each sheet is computed from the layers shown, Gaussian-smoothed, contoured, and hillshaded in the browser that printed this atlas. Point layers render as additive light. Coordinates are quantized to about 110 m and giant datasets are aggregated to cells. Every staging file ships with a provenance sidecar naming its source, retrieval date, method, and caveats.</p>'+
   (pending.length?'<h3>PENDING SLOTS — SHOWN EMPTY RATHER THAN FAKED</h3>'+pending.map(l=>'<p><b>'+l.title+'.</b> '+(l.pendingNote||'Source gated; slot reserved.')+'</p>').join(''):'')+

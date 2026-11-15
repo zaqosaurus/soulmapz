@@ -425,3 +425,287 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v07":
 # H31 Same-sex couples x the sorting. Over the 763 counties with reliable estimates only:
 #     same-sex couple households per 1,000 vs net household migration per 1,000. Two-sided.
 #     County bar with n >= 500 required of the reliable counties that have migration data.
+
+def topo_polygons(name, obj):
+    """Generic TopoJSON decoder: {id: (bbox..., rings)} for one object of one reference file."""
+    topo = load(p("data","ref",name))
+    tr = topo.get("transform")
+    arcs = []
+    for arc in topo["arcs"]:
+        pts, x, y = [], 0, 0
+        for q in arc:
+            if tr:
+                x += q[0]; y += q[1]
+                pts.append((x*tr["scale"][0]+tr["translate"][0], y*tr["scale"][1]+tr["translate"][1]))
+            else: pts.append((q[0], q[1]))
+        arcs.append(pts)
+    def ring(r):
+        out = []
+        for ai in r:
+            seg = arcs[ai] if ai >= 0 else arcs[~ai][::-1]
+            out.extend(seg if not out else seg[1:])
+        return out
+    polys = {}
+    for g in topo["objects"][obj]["geometries"]:
+        if g["type"] == "Polygon": rings = [[ring(r) for r in g["arcs"]]]
+        elif g["type"] == "MultiPolygon": rings = [[ring(r) for r in poly] for poly in g["arcs"]]
+        else: continue
+        xs = [q[0] for poly in rings for q in poly[0]]; ys = [q[1] for poly in rings for q in poly[0]]
+        polys[str(g.get("id"))] = (min(xs), min(ys), max(xs), max(ys), rings)
+    return polys
+
+def v08():
+    import statistics as st
+    S = lambda n: load(p("data","staging",n+".json"))
+    Z = lambda k: str(k).zfill(5)
+    fa_st = S("faith-altar")["regions"]
+    pop = {Z(r["key"]): (r.get("meta") or {}).get("population_2020") for r in fa_st}
+    adh = {Z(r["key"]): r["value"] for r in fa_st if r["value"] is not None and r["value"] <= 1000}
+    od = {Z(r["key"]): r["value"] for r in S("despair-overdoses")["regions"] if r["value"] is not None}
+    ec = {Z(r["key"]): r["value"] for r in S("company-socialcapital")["regions"] if r["value"] is not None}
+    so = S("motion-sorting")
+    netr = {Z(c["fips"]): 1000.0*c["net"]/pop[Z(c["fips"])] for c in so["counties"] if pop.get(Z(c["fips"]))}
+    ev = {Z(r["key"]): r["value"] for r in S("motion-eviction")["regions"] if r["value"] is not None}
+    cov = {}
+    for r in S("loss-covid")["regions"]:
+        if r["value"] is None: continue
+        if (r.get("meta") or {}).get("nyc_combined"):
+            if "NYC" in cov: continue
+            cov["NYC"] = r["value"]; continue      # one unit, as the source reports it
+        cov[Z(r["key"])] = r["value"]
+    alone = {Z(r["key"]): r["value"] for r in S("company-alone")["regions"] if r["value"] is not None and not r["meta"].get("unreliable")}
+    love = {Z(r["key"]): r["value"] for r in S("company-love")["regions"] if r["value"] is not None and not r["meta"].get("unreliable")}
+    gf = S("company-gifts")["regions"]
+    gifts = {Z(r["key"]): r["value"] for r in gf if r["value"] is not None}
+    inc = {Z(r["key"]): math.log(1000.0*r["meta"]["agi_thousands"]/r["meta"]["returns"]) for r in gf
+           if r["meta"].get("returns") and r["meta"].get("agi_thousands", 0) > 0}
+    pol = {Z(r["key"]): r["value"] for r in S("control-police")["regions"] if r["value"] is not None}
+    # NYC: give the combined unit the five boroughs' summed population and mean income (for confound legs)
+    boroughs = ["36005", "36047", "36061", "36081", "36085"]
+    pop["NYC"] = sum(pop[b] for b in boroughs if pop.get(b))
+    inc["NYC"] = st.mean(inc[b] for b in boroughs if b in inc)
+    for d in (ec, adh, alone):
+        vals = [d[b] for b in boroughs if b in d]
+        if vals: d["NYC"] = st.mean(vals)
+    state = lambda k: "36" if k == "NYC" else k[:2]
+
+    def resid(ks, a, c):
+        xs = [c[k] for k in ks]; ys = [a[k] for k in ks]
+        mx, my = st.mean(xs), st.mean(ys)
+        b = sum((x-mx)*(y-my) for x, y in zip(xs, ys)) / (sum((x-mx)**2 for x in xs) or 1)
+        return [y - my - b*(x-mx) for x, y in zip(xs, ys)]
+    def within(ks, a, b, part=False):
+        g = defaultdict(list)
+        for k in ks: g[state(k)].append(k)
+        tot = n = 0
+        for s, sub in g.items():
+            if len(sub) < 15: continue
+            if part: r = pearson(resid(sub, a, inc), resid(sub, b, inc))
+            else: r = pearson([a[k] for k in sub], [b[k] for k in sub])
+            tot += r*len(sub); n += len(sub)
+        return tot/n if n else 0.0
+
+    verdicts = {}
+    def county(hid, name, a, b, expect=0, partial_primary=False, la="x", lb="y"):
+        ks = [k for k in a if k in b and k in inc and pop.get(k)]
+        xs = [a[k] for k in ks]; ys = [b[k] for k in ks]
+        r = pearson(xs, ys); rs = spearman(xs, ys)
+        rp = pearson(resid(ks, a, inc), resid(ks, b, inc))
+        rw = within(ks, a, b, part=partial_primary)
+        lo, hi, q = quintiles(list(zip(xs, ys)))
+        rel = (hi-lo)/lo if lo else float("inf")
+        bands = []
+        for b0, b1 in [(0, 10000), (10000, 50000), (50000, 250000), (250000, 1e12)]:
+            sub = [k for k in ks if b0 <= pop[k] < b1]
+            if len(sub) >= 30: bands.append((b0, len(sub), pearson([a[k] for k in sub], [b[k] for k in sub])))
+        prim = rp if partial_primary else r
+        sign = expect or (1 if prim > 0 else -1)
+        checks = {
+            "a": abs(prim) >= 0.20 and (partial_primary or (abs(rs) >= 0.20 and rs*r > 0)) and prim*sign > 0,
+            "b": rw*sign >= 0.15,
+            "c": len(ks) >= 500,
+            "d": abs(rel) >= 0.20 and (hi-lo)*sign > 0,
+            "e": sum(1 for _, _, rb in bands if rb*sign > 0) >= min(3, len(bands)) and rp*sign >= 0.15,
+        }
+        ok = all(checks.values())
+        print(f"\n{hid} {name}: n={len(ks)}  r={r:+.3f}  spearman={rs:+.3f}  partial|income={rp:+.3f}  within-state={rw:+.3f}")
+        print(f"   mean {lb}: bottom fifth of {la} {lo:.2f}  top fifth {hi:.2f}  ({rel*100:+.0f}%, n={q} each)")
+        print("   pop bands: " + "  ".join(f"{b0:,}+: r={rb:+.3f} (n={n})" for b0, n, rb in bands))
+        print("   gates: " + " ".join(f"{g}={'pass' if v else 'FAIL'}" for g, v in checks.items()) + f"  -> {'PASSES the county bar' if ok else 'fails the county bar'}")
+        verdicts[hid] = ok
+        return ks
+
+    print("--- v08: county pairs ---")
+    county("H19", "evictions x net migration", ev, netr, -1, la="eviction rate", lb="net/1k")
+    county("H20", "evictions x overdoses", ev, od, +1, la="eviction rate", lb="OD/100k")
+    county("H23", "connectedness x COVID deaths", ec, cov, -1, la="EC", lb="COVID/100k")
+    county("H24", "adherence x COVID deaths", adh, cov, 0, la="adherence", lb="COVID/100k")
+    county("H27", "living alone x overdoses", alone, od, +1, la="% alone", lb="OD/100k")
+    county("H28", "living alone x police killings", alone, pol, 0, la="% alone", lb="killed/100k")
+    county("H30", "adherence x itemized gifts (income controlled)", adh, gifts, +1, partial_primary=True, la="adherence", lb="gifts %")
+    ut = {k: v for k, v in adh.items() if not k.startswith("49")}
+    county("H30u", "  same, Utah removed", ut, gifts, +1, partial_primary=True, la="adherence", lb="gifts %")
+    county("H31", "same-sex couples (reliable only) x net migration", love, netr, 0, la="same-sex/1k", lb="net/1k")
+    print("\nH25 The Commons x connectedness: NOT RUN — The Commons is PENDING (gate unchanged).")
+    print("H26 Night lights x UFO sightings: NOT RUN — The Banished Dark is PENDING (gate unchanged).")
+
+    # ---------------- world ----------------
+    print("\n--- v08: world pairs ---")
+    # H21 what powers the cloud
+    cpoly = topo_polygons("countries-110m.json", "countries")
+    def country_of(la, lo):
+        for cid, (x0, y0, x1, y1, rings) in cpoly.items():
+            if not (x0 <= lo <= x1 and y0 <= la <= y1): continue
+            for poly in rings:
+                if _in_ring(lo, la, poly[0]) and not any(_in_ring(lo, la, h) for h in poly[1:]): return cid
+        return None
+    plants = S("power-plants")["records"]
+    FOS = {"coal", "gas", "oil"}
+    grid = defaultdict(list)
+    for pl in plants: grid[(int(pl["lat"]//1), int(pl["lon"]//1))].append(pl)
+    pl_country = {}
+    for pl in plants: pl_country[id(pl)] = pl["meta"]["iso3"]
+    def near(la, lo, km=50):
+        out = []
+        for dy in (-1, 0, 1):
+            for dx in (-2, -1, 0, 1, 2):
+                for pl in grid.get((int(la//1)+dy, int(lo//1)+dx), ()):
+                    if hav(la, lo, pl["lat"], pl["lon"]) <= km: out.append(pl)
+        return out
+    def fossil_share(pls):
+        tot = sum(x["v"] or 0 for x in pls); f = sum(x["v"] or 0 for x in pls if x["meta"]["fuel"] in FOS)
+        return f/tot if tot else None
+    def iso3_of(la, lo):
+        n = near(la, lo, 150)
+        if not n: return None
+        return min(n, key=lambda x: hav(la, lo, x["lat"], x["lon"]))["meta"]["iso3"]
+    nat = defaultdict(list)
+    for pl in plants: nat[pl["meta"]["iso3"]].append(pl)
+    dcs = S("power-datacenters")["records"]
+    dc_by = defaultdict(list)
+    for d in dcs:
+        c = iso3_of(d["lat"], d["lon"])
+        if c: dc_by[c].append(d)
+    aps = {}
+    for f in S("motion-skyroads")["flows"]:
+        aps[f["an"]] = f["a"]; aps[f["bn"]] = f["b"]
+    ap_by = defaultdict(list)
+    for code, (la, lo) in aps.items():
+        c = iso3_of(la, lo)
+        if c: ap_by[c].append((la, lo))
+    rows = []
+    for c, ds in sorted(dc_by.items(), key=lambda kv: -len(kv[1])):
+        if len(ds) < 25: continue
+        sh = [s for s in (fossil_share(near(d["lat"], d["lon"])) for d in ds) if s is not None]
+        ash = [s for s in (fossil_share(near(la, lo)) for la, lo in ap_by.get(c, [])) if s is not None]
+        rows.append((c, len(ds), len(sh), st.mean(sh) if sh else None, fossil_share(nat[c]), st.mean(ash) if ash else None, len(ash)))
+    pooled = sum(r[2] for r in rows)
+    print(f"H21 what powers the cloud: {len(rows)} countries with >=25 data centers, {pooled} data centers with a plant within 50 km")
+    print("   country  DCs  w/plant  fossil-near-DC  national  near-airports (n)")
+    for c, n, nw, dsh, nsh, ash, na in rows:
+        print(f"   {c:7} {n:4} {nw:7}   {dsh*100 if dsh is not None else float('nan'):6.1f}%      {nsh*100:5.1f}%   {ash*100 if ash is not None else float('nan'):5.1f}% ({na})")
+    valid = [r for r in rows if r[3] is not None and r[5] is not None]
+    up = sum(1 for r in valid if r[3]-r[4] >= 0.10); dn = sum(1 for r in valid if r[4]-r[3] >= 0.10)
+    upa = sum(1 for r in valid if r[3]-r[5] >= 0.05); dna = sum(1 for r in valid if r[5]-r[3] >= 0.05)
+    k = len(valid)
+    ok21 = pooled >= 500 and k and ((up >= 2*k/3 and upa >= 2*k/3) or (dn >= 2*k/3 and dna >= 2*k/3))
+    print(f"   DC fossil share >=10 pts above national in {up}/{k}, below in {dn}/{k}; >=5 pts above airports in {upa}/{k}, below in {dna}/{k} -> {'PASSES' if ok21 else 'fails'}")
+    verdicts["H21"] = bool(ok21)
+
+    # H22 the remembered and the many tongues (2-degree cells)
+    mem = S("memory-births")["cells"]; langs = S("memory-languages")["records"]
+    ck = lambda la, lo: (int(la//2), int(lo//2))
+    mc = defaultdict(int); lc = defaultdict(int); mac = defaultdict(lambda: defaultdict(int))
+    for c in mem: mc[ck(c["lat"], c["lon"])] += c["v"]
+    for l in langs:
+        k_ = ck(l["lat"], l["lon"]); lc[k_] += 1; mac[k_][l["meta"].get("macroarea") or "?"] += 1
+    cells = set(mc) | set(lc)
+    lpts = [(l["lat"], l["lon"], l["meta"].get("macroarea")) for l in langs if l["meta"].get("macroarea")]
+    lgrid = defaultdict(list)
+    for la, lo, m in lpts: lgrid[(int(la//5), int(lo//5))].append((la, lo, m))
+    def macro(k_):
+        if mac.get(k_): return max(mac[k_].items(), key=lambda kv: kv[1])[0]
+        la, lo = k_[0]*2+1, k_[1]*2+1
+        for rad in range(1, 8):
+            cand = [q for dy in range(-rad, rad+1) for dx in range(-rad, rad+1) for q in lgrid.get((int(la//5)+dy, int(lo//5)+dx), ())]
+            if cand: return min(cand, key=lambda q: hav(la, lo, q[0], q[1]))[2]
+        return "?"
+    cm = {k_: macro(k_) for k_ in cells}
+    X = lambda ks: [math.log1p(mc[k_]) for k_ in ks]; Y = lambda ks: [math.log1p(lc[k_]) for k_ in ks]
+    ks = list(cells)
+    r = pearson(X(ks), Y(ks)); rs = spearman(X(ks), Y(ks))
+    eu = lambda k_: -25 <= k_[1]*2 <= 45 and 34 <= k_[0]*2 <= 72
+    kn = [k_ for k_ in ks if not eu(k_)]
+    rn = pearson(X(kn), Y(kn))
+    byma = defaultdict(list)
+    for k_ in ks: byma[cm[k_]].append(k_)
+    mrs = {m: pearson(X(v), Y(v)) for m, v in byma.items() if len(v) >= 30 and m != "?"}
+    neg = sum(1 for v in mrs.values() if v < 0)
+    lo_, hi_, q_ = quintiles(list(zip(X(ks), [lc[k_] for k_ in ks])))
+    ok22 = len(ks) >= 500 and r <= -0.20 and rs <= -0.20 and neg >= 4 and rn <= -0.20
+    print(f"\nH22 remembered births x languages, 2-degree cells: n={len(ks)} r={r:+.3f} spearman={rs:+.3f}  without Europe r={rn:+.3f} (n={len(kn)})")
+    print("   within macro-areas: " + "  ".join(f"{m} {v:+.3f} (n={len(byma[m])})" for m, v in sorted(mrs.items())))
+    print(f"   mean languages per cell: bottom fifth of memory {lo_:.2f}, top fifth {hi_:.2f} -> {'PASSES' if ok22 else 'fails'}")
+    verdicts["H22"] = ok22
+
+    # H29 war x languages going silent, by country
+    iso = load(p("data","ref","iso2_numeric.json"))["map"]
+    war = {r["key"]: r["value"] for r in S("control-war")["regions"] if r["value"] is not None}
+    tot = defaultdict(int); endg = defaultdict(int); cma = defaultdict(lambda: defaultdict(int))
+    for l in langs:
+        for c2 in (l["meta"].get("countries") or "").split(";"):
+            n3 = iso.get(c2.strip())
+            if not n3: continue
+            tot[n3] += 1; endg[n3] += 1 if (l["meta"].get("aes") or 0) >= 3 else 0
+            cma[n3][l["meta"].get("macroarea") or "?"] += 1
+    cs = [c for c in war if tot.get(c, 0) >= 5]
+    sh = {c: endg[c]/tot[c] for c in cs}
+    xs = [war[c] for c in cs]; ys = [sh[c] for c in cs]
+    rs29 = spearman(xs, ys); r29 = pearson([math.log1p(x) for x in xs], ys)
+    lo29, hi29, q29 = quintiles(list(zip(xs, ys)))
+    g = defaultdict(list)
+    for c in cs: g[max(cma[c].items(), key=lambda kv: kv[1])[0]].append(c)
+    ms = {m: spearman([war[c] for c in v], [sh[c] for c in v]) for m, v in g.items() if len(v) >= 10}
+    pos = sum(1 for v in ms.values() if v > 0)
+    ok29 = rs29 >= 0.20 and (hi29-lo29) >= 0.10 and pos >= 3
+    print(f"\nH29 war deaths x share of languages shifting or worse, by country: n={len(cs)} (>=5 languages) spearman={rs29:+.3f}  pearson(log war, share)={r29:+.3f}")
+    print(f"   endangered share: bottom fifth of war {lo29*100:.1f}%  top fifth {hi29*100:.1f}%  (n={q29} each)")
+    print("   within macro-areas (spearman): " + "  ".join(f"{m} {v:+.3f} (n={len(g[m])})" for m, v in sorted(ms.items())))
+    print(f"   -> {'the essay may state it' if ok29 else 'NOT supported: the essay must say the test did not find it'}")
+    verdicts["H29"] = ok29
+    print("\nverdict summary (bar only; wording review and second read happen by hand):", verdicts)
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v08":
+    v08()
+# ---- v08 verdicts (run 2026-11-15, `python3 pipeline/correlate.py v08`; bars as pre-stated above) ----
+# H19 evictions x net migration:   r=+0.141 (sign opposite to the stated one: evicting counties
+#                                   GAIN households), spearman +0.261, within-state +0.131   -> REJECTED
+# H20 evictions x overdoses:        r=+0.188 (bar 0.20), spearman +0.329, within-state +0.260,
+#                                   quintiles 9.7 vs 20.6; pop bands +0.07..+0.16           -> REJECTED (narrow
+#                                   miss on the Pearson leg; not re-run with a transform — no fishing)
+# H21 what powers the cloud:        3,746 data centers in 24 countries; fossil share near DCs >=10 pts
+#                                   above national in 12/24 (bar 16/24); above the airport baseline
+#                                   by >=5 pts in 19/24                                      -> REJECTED
+#                                   (France the outlier: 52% fossil near DCs vs 12% national — Paris's
+#                                   gas and oil peakers; a plate observation, not a card)
+# H22 remembered births x languages: n=3,625 cells, r=+0.040 (stated sign negative); macro-areas mixed
+#                                   (+0.28 North America, -0.21 South America)              -> REJECTED (null)
+# H23 connectedness x COVID deaths: n=3,004, r=-0.437, spearman -0.460, within-state -0.393, every
+#                                   pop band negative (-0.33..-0.62), partial|income -0.196;
+#                                   quintiles 543 vs 332 per 100k (-39%)                     -> SHIPPED
+#                                   "The Goodbyes Fell Hardest Where Classes Kept Apart" (income
+#                                   carries more than half the link; age, vaccination, partisanship
+#                                   untested and named on the card)
+# H24 adherence x COVID deaths:     r=+0.233, partial|income +0.249, but within-state +0.125  -> REJECTED (regional)
+# H25 The Commons x connectedness:  NOT RUN — The Commons still PENDING (download.geofabrik.de refused
+#                                   by the gateway, 2026-11-15, even after the environment allowed it)
+# H26 night lights x UFO sightings: NOT RUN — The Banished Dark still PENDING (eoimages.gsfc.nasa.gov
+#                                   refused by the gateway; eogdata.mines.edu downloads need a login)
+# H27 living alone x overdoses:     r=-0.008                                                 -> REJECTED (null)
+#                                   (only counties of 250k+ show +0.55 — a subgroup, not tested further)
+# H28 living alone x police killings: r=+0.038                                               -> REJECTED (null)
+# H29 war x languages going silent: n=157 countries, spearman -0.092; macro-areas mixed       -> NOT SUPPORTED;
+#                                   the World at War essay now says the test did not find it
+# H30 gifts x adherence | income:   partial +0.188 (bar 0.20), within-state +0.129; Utah removed
+#                                   +0.162                                                   -> REJECTED
+# H31 same-sex couples x sorting:   n=749 reliable counties, r=-0.053                         -> REJECTED (null)

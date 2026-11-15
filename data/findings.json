@@ -1,6 +1,6 @@
 {
   "disclaimer": "WHERE, NOT WHY — every number on this page is descriptive. Geography correlates everything with everything; the survey shows where things coincide and never claims to know why.",
-  "computed": "2026-11-05 (v0.6: the never-correlated layers — faith, company, the sorting — run through pipeline/correlate.py v06 with nationwide, within-state, and population-band checks; two shipped, four rejected and recorded in correlate.py). Earlier: 2026-07-07 v0.5 review.",
+  "computed": "2026-11-15 (v0.7 round 2: thirteen hypotheses pre-stated in pipeline/correlate.py v08 before any run; one shipped, ten rejected, two waiting on PENDING layers). Earlier: 2026-11-05 v0.6 (two shipped, four rejected); 2026-07-07 v0.5 review.",
   "method_root": "pipeline/correlate.py — county centroids decoded from the counties TopoJSON; distances by haversine; correlations are Pearson on log-transformed values. All inputs are the survey's own staged, provenance-tracked layers.",
   "findings": [
     {
@@ -117,6 +117,19 @@
       "scope": "us"
     },
     {
+      "id": "covid-connectedness",
+      "title": "The Goodbyes Fell Hardest Where Classes Kept Apart",
+      "stat": "543 vs 332",
+      "statLabel": "COVID deaths per 100k, least vs most connected fifth of counties",
+      "body": "From 2020 to early 2023, the fifth of counties where poorer people's friendships least often reach across class lines recorded 543 COVID deaths per 100,000 people. The fifth where they reach most often recorded 332. The gap holds inside states and in counties of every size. It does not say friendship protected anyone: once income is accounted for, the link shrinks by more than half, and the age of a county's people, its vaccination rate and its politics are not on this map — any of them could carry the rest.",
+      "method": "3,004 counties with Social Capital Atlas economic connectedness (2022) and New York Times cumulative COVID deaths per 100k (Jan 2020 → Mar 2023); New York City's five boroughs counted once, as the source reports them. Pearson r = −0.44, Spearman −0.46; mean within-state r = −0.39; negative in all four population bands (−0.33 to −0.62); partial r holding log income per return (IRS SOI 2022) = −0.20. Crude rates, not age-adjusted. Pre-stated as H23 in correlate.py v08, with its bar, before it was run.",
+      "layers": [
+        "company-socialcapital",
+        "loss-covid"
+      ],
+      "scope": "us"
+    },
+    {
       "id": "sorting-pews",
       "title": "The Sorting Leaves the Pews Behind",
       "stat": "−15%",
@@ -153,6 +166,104 @@
           49.4
         ]
       ]
+    }
+  ],
+  "tested_note": "Every hypothesis the survey has tested, written down with its bar before it was run. Most did not hold. They stay listed, because a map that only shows what it found is hiding how it looked.",
+  "tested": [
+    {
+      "v": "0.5",
+      "q": "Do counties gaining households have different overdose rates?",
+      "r": "gainers 22.2 vs losers 19.3 per 100k, r = 0.15 — too weak"
+    },
+    {
+      "v": "0.5",
+      "q": "Does cross-class friendship track migration?",
+      "r": "r = 0.05 — nothing"
+    },
+    {
+      "v": "0.6",
+      "q": "Do churchgoing counties have fewer overdoses?",
+      "r": "r = −0.19 nationwide, −0.10 inside states — regional, not local"
+    },
+    {
+      "v": "0.6",
+      "q": "Do churchgoing counties have more cross-class friendship?",
+      "r": "r = −0.05 — nothing (a −0.31 in big counties alone would be forking paths)"
+    },
+    {
+      "v": "0.6",
+      "q": "Does migration track connectedness, or overdoses?",
+      "r": "r = 0.04 and 0.12 — nothing"
+    },
+    {
+      "v": "0.7",
+      "q": "Are the thrones exhaling? (Fortune 500 counties losing households)",
+      "r": "65% vs 58% of size-matched counties — the gap was mostly size"
+    },
+    {
+      "v": "0.7",
+      "q": "Is corruption costlier per head in small towns?",
+      "r": "$270 vs $141 per resident, 1.9× against a 5× bar — the early 70× died on careful denominators"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Do counties that evict more lose households?",
+      "r": "the opposite sign and weak (r = +0.14): growing Sunbelt counties evict more"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Is the price of staying paid where the epidemic is?",
+      "r": "r = 0.19 against a 0.20 bar, though top-fifth eviction counties average 20.6 overdose deaths per 100k against 9.7 — a near miss, logged as a miss"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Do data centers sit nearer fossil power than their country's grid?",
+      "r": "in 12 of 24 countries, against a bar of 16 — but nearer it than airports do in 19 of 24; France is the outlier (52% vs 12%)"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Does the world remember people where few languages are spoken?",
+      "r": "r = +0.04 over 3,625 cells — nothing"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Did congregations coincide with COVID deaths?",
+      "r": "r = +0.23 nationwide, +0.13 inside states — regional"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Do people living alone die more of overdoses?",
+      "r": "r = −0.01 — nothing"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Do isolation and fatal police encounters share ground?",
+      "r": "r = +0.04 — nothing"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Do the deepest war reds sit where languages fall silent?",
+      "r": "Spearman −0.09 over 157 countries — not found; the war essay now says so"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Does itemized giving track congregations once income is held?",
+      "r": "partial r = 0.19 against a 0.20 bar — Utah alone does not make it"
+    },
+    {
+      "v": "0.7·2",
+      "q": "Where do the reliable same-sex couple estimates sit on the migration map?",
+      "r": "r = −0.05 over 749 counties — nowhere in particular"
+    },
+    {
+      "v": "waiting",
+      "q": "Do places with more shared public space have more cross-class friendship?",
+      "r": "waits on The Commons (pending)"
+    },
+    {
+      "v": "waiting",
+      "q": "Do UFO sightings need dark skies, or people?",
+      "r": "waits on The Banished Dark (pending)"
     }
   ]
 }
