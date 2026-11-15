@@ -44,7 +44,9 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 
 - Wants **commits and pushes as you go**, not one big push at the end.
 - Wants **few chat messages**: report what matters, not every step. They are not watching live.
-- Likes `/goal` for long runs with a clear done-condition.
+- Likes `/goal` for long runs with a clear done-condition. **Suggest done-conditions that allow an
+  external blocker to be recorded** ("…shipped, or PENDING with the gate on file"): in round 2 a goal
+  that required two gated layers to ship could not be met and the stop hook looped until cleared.
 - Prefers **adding before polishing**; will tell you if they disagree.
 - Asks you to **ask questions first** when a decision is genuinely theirs (scope, publishing,
   credentials, allowing hosts). They add allowed hosts on request — name the exact host.
@@ -66,12 +68,13 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 
 ```bash
 python3 pipeline/build.py                        # ~5 s; weight ledger per payload; fails above 8 MB
-NODE_PATH=$(npm root -g) timeout 590 node tests/smoke.js   # 82 checks, several minutes; SHOTS=<dir> saves screenshots + atlas.pdf
+NODE_PATH=$(npm root -g) timeout 590 node tests/smoke.js   # 92 checks, several minutes; SHOTS=<dir> saves screenshots + atlas.pdf
 git checkout -- dist/index.html docs/index.html  # after every build until the release commit
 python3 pipeline/validate.py <id> [--protocol] [--us]      # acquisition step 4
 python3 pipeline/check_pack.py [ref]             # payload equivalence after packer/engine refactors
 NODE_PATH=$(npm root -g) node tests/views.js <out> [baseline]   # canonical-view pixel comparison
 NODE_PATH=$(npm root -g) node tests/look.js <id> <us|world> <out.png> [lens]   # solo one layer and screenshot it
+NODE_PATH=$(npm root -g) node tests/reading-shot.js <id,id> <outdir>   # open readings and screenshot them (check captions vs map)
 python3 pipeline/correlate.py v08                # round 2 (H19–H31); add a `v09` block for the next round
 python3 -I pipeline/scratch/<id>.py              # re-stage a layer from data/raw/ (re-download first; raw is git-ignored)
 ```
@@ -90,14 +93,22 @@ from regedit import set_key, add_layer
   `THE-SOUL-SURVEY/0.7 (non-commercial open data map; https://github.com/zaqosaurus/soulmapz)`.
 - **Reachable:** raw.githubusercontent.com, the Eviction Lab S3 bucket, www.irs.gov, ucdp.uu.se,
   api.unhcr.org, query.wikidata.org (its `wikibase:mwapi` service does entity search),
-  **www2.census.gov** (ACS summary files, no key). **Not:** api.census.gov data (needs a key),
-  www.census.gov, www.atf.gov (bot gate), Overpass, eogdata.mines.edu, darksky.org, World Bank,
+  **www2.census.gov** (ACS summary files, no key), **www.census.gov** (since 2026-11-15; the
+  allowlist entry `*.2census.gov` is a typo for `*.census.gov`). **Not:** api.census.gov data (needs a key),
+  www.atf.gov (bot gate), Overpass, eogdata.mines.edu downloads (account login), World Bank,
+  **download.geofabrik.de and eoimages.gsfc.nasa.gov** (allowed in the environment, refused by the
+  gateway above it — CONNECT 403; adding a host to the environment is not always enough), darksky.org,
   www.wikidata.org, openflights.org, www.unhcr.org, countyhealthrankings.org. Full log:
   NOTES_V07 §5. Firecrawl tools can read public pages (used to read UNHCR's terms).
 - Playwright + Chromium are pre-installed; use `NODE_PATH=$(npm root -g)`. Don't reinstall.
 - **The worker process can restart mid-task.** Commit and push small and often; a long smoke
   run can be killed (exit 137) — just rerun it. Untracked scratch work is lost on restart.
 - Put temporary files in the session scratchpad, not `/tmp`. Read downloaded data with `python3 -I`.
+- **Permission checks (auto mode) seen in v0.7 round 2:** force-push was refused (so a bad commit is
+  fixed by a follow-up commit, not a history rewrite); fetching a gateway-refused host through
+  Firecrawl was refused as a workaround (correctly — don't try); a shell line mixing `sleep` and
+  network calls before a goal was set was refused. Write node/python scripts with the Write tool
+  rather than shell heredocs containing `$` — one heredoc tripped the safety check.
 
 ## 7. Gotchas that cost time
 
@@ -138,7 +149,12 @@ maintainer's call. Candidates, strongest first (details in NOTES_V07 §7 and §9
 
 **Decisions only the maintainer can make** (ask, don't assume):
 - ~~Gated light layers~~ — the maintainer accepted The Commons and The Banished Dark as PENDING for v0.7 (2026-11-15). Revisit if the gateway opens or an account is offered.
-- The permanent removal-request address (issue@soupmap.org is a working demo).
+- The permanent removal-request address (issue@soupmap.org is a working demo; its spelling —
+  "soupmap", not "soulmap" — was asked about and not yet confirmed).
+- After PR #2 merges: **tag `v0.7.0`** on `main` (docs/DATA_API.md links to that tag) and
+  re-render the view baseline from the tag if it is ever needed (`tests/baseline/views-0.7.0.json`).
+- PR #2's history holds one accidental built-page commit (`a74c451`, reverted in `2546413`);
+  a squash-merge removes it, a merge commit keeps it (harmless).
 - The next version's scope.
 
 ## 9. How to finish a session well
