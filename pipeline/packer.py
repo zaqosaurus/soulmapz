@@ -168,7 +168,7 @@ def pack_regions(lay, st, shrink_label=lambda s: s):
             series = get(r, tm["from"]) or {}
             e["t"] = [(None if series.get(str(b[0])) is None else rnd(series.get(str(b[0])), tm.get("nd", 1))) for b in tm["buckets"]]
         regions[key] = e
-        vals.append(r["value"])
+        if r["value"] is not None: vals.append(r["value"])   # None = shown in the tooltip, not tinted
     vals.sort()
     q = spec.get("vmaxQuantile", 0.95)
     vmax = vals[int(len(vals) * q)] if vals else 1

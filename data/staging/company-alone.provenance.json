@@ -1,0 +1,76 @@
+{
+ "layer": "company-alone",
+ "retrieved": "2026-11-15",
+ "license": {
+  "name": "Public domain (U.S. government work, 17 U.S.C. § 105)",
+  "note": "www.census.gov (terms page) is not reachable from the build environment; Census Bureau data products are works of the U.S. government."
+ },
+ "gate_history": "2026-11-06: api.census.gov began requiring an API key in the URL and www2.census.gov was not allowed — slot PENDING. 2026-11-15: the maintainer allowed www2.census.gov; the table-based summary files need no key.",
+ "files": {
+  "acsdt5y2023-b11001.dat": {
+   "bytes": 45754553,
+   "sha256": "e7e08fc142c94611413e263f6c33a31cb7b5d6dcd08d76725acd4bbce51b6b01"
+  },
+  "acsdt5y2023-b09019.dat": {
+   "bytes": 59348397,
+   "sha256": "9dbace8c4362e10491f60325c76dee9f9726c942abaff9e5a391dc79a935fcf2"
+  }
+ },
+ "tables": "B11001",
+ "method": "Householders living alone (B11001_008) ÷ all households (B11001_001), per cent; MOE by the Census ratio formula.",
+ "counts": {
+  "counties": 3222,
+  "unreliable_cv_over_30pct": 11
+ },
+ "caveats": [
+  "Five-year pooled survey estimates (2019–2023), not a count; every label carries its 90% margin of error.",
+  "Estimates with a coefficient of variation above 30% are labelled unreliable on the map, not hidden.",
+  "Households, never people: nobody is identifiable from these figures."
+ ],
+ "validation": {
+  "highest_reliable": [
+   [
+    "Kalawao County, Hawaii",
+    77.3
+   ],
+   [
+    "Hooker County, Nebraska",
+    58.0
+   ],
+   [
+    "De Baca County, New Mexico",
+    53.8
+   ],
+   [
+    "Issaquena County, Mississippi",
+    53.5
+   ],
+   [
+    "Edwards County, Texas",
+    50.2
+   ],
+   [
+    "Petersburg city, Virginia",
+    48.4
+   ]
+  ],
+  "lowest_reliable": [
+   [
+    "Morgan County, Utah",
+    10.6
+   ],
+   [
+    "Borden County, Texas",
+    11.7
+   ],
+   [
+    "Kusilvak Census Area, Alaska",
+    12.0
+   ],
+   [
+    "Madison County, Idaho",
+    12.1
+   ]
+  ]
+ }
+}

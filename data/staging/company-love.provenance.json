@@ -1,0 +1,77 @@
+{
+ "layer": "company-love",
+ "retrieved": "2026-11-15",
+ "license": {
+  "name": "Public domain (U.S. government work, 17 U.S.C. § 105)",
+  "note": "www.census.gov (terms page) is not reachable from the build environment; Census Bureau data products are works of the U.S. government."
+ },
+ "gate_history": "2026-11-06: api.census.gov began requiring an API key in the URL and www2.census.gov was not allowed — slot PENDING. 2026-11-15: the maintainer allowed www2.census.gov; the table-based summary files need no key.",
+ "files": {
+  "acsdt5y2023-b11001.dat": {
+   "bytes": 45754553,
+   "sha256": "e7e08fc142c94611413e263f6c33a31cb7b5d6dcd08d76725acd4bbce51b6b01"
+  },
+  "acsdt5y2023-b09019.dat": {
+   "bytes": 59348397,
+   "sha256": "9dbace8c4362e10491f60325c76dee9f9726c942abaff9e5a391dc79a935fcf2"
+  }
+ },
+ "tables": "B09019, B11001",
+ "method": "Same-sex spouses (B09019_011) + same-sex unmarried partners (B09019_013) of householders ÷ all households (B11001_001), per 1,000. Each such person marks one same-sex couple household. MOEs combined in quadrature, then by the ratio formula.",
+ "counts": {
+  "counties": 3222,
+  "unreliable_cv_over_30pct": 2459
+ },
+ "caveats": [
+  "Five-year pooled survey estimates (2019–2023), not a count; every label carries its 90% margin of error.",
+  "Estimates with a coefficient of variation above 30% are labelled unreliable on the map, not hidden.",
+  "Households, never people: nobody is identifiable from these figures.",
+  "Same-sex couples are self-reported in the survey; small counties often show zero with a wide margin — absence in a sample is not absence in a place."
+ ],
+ "validation": {
+  "highest_reliable": [
+   [
+    "Austin County, Texas",
+    30.64
+   ],
+   [
+    "San Francisco County, California",
+    28.07
+   ],
+   [
+    "District of Columbia, District of Columbia",
+    27.35
+   ],
+   [
+    "Sussex County, Delaware",
+    24.02
+   ],
+   [
+    "Multnomah County, Oregon",
+    23.35
+   ],
+   [
+    "Columbia County, New York",
+    23.18
+   ]
+  ],
+  "lowest_reliable": [
+   [
+    "Barron County, Wisconsin",
+    1.73
+   ],
+   [
+    "Shawano County, Wisconsin",
+    2.01
+   ],
+   [
+    "Marquette County, Wisconsin",
+    2.18
+   ],
+   [
+    "Rio Arriba County, New Mexico",
+    2.34
+   ]
+  ]
+ }
+}

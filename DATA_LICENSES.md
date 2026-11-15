@@ -41,6 +41,7 @@ on that basis.
 | motion-uprooted | UNHCR Refugee Population Statistics Database, via the Refugee Data Finder API (end-2024); ISO code table from Wikidata | **CC BY 4.0** under UNHCR's Terms of Use for Datasets; Wikidata **CC0** | Refugees + asylum-seekers + other people in need of international protection, by origin–asylum pair |
 | wonder-darksky | Wikidata — items recorded as International Dark Sky Parks, Reserves, Sanctuaries, Communities, Urban Night Sky Places or dark-sky preserves | **CC0** | Partial mirror of DarkSky International's register (darksky.org refuses scripts; not circumvented) |
 | company-gifts | IRS Statistics of Income, county data, tax year 2022 (`22incyallnoagi.csv`) | **Public domain** (U.S. government work) | Itemized charitable contributions ÷ AGI; itemizers only (disclosed) |
+| company-alone, company-love | U.S. Census Bureau, American Community Survey 2019–2023 5-year, table-based summary file (B11001, B09019) | **Public domain** (U.S. government work) | Households, never people; 90% MOEs in every label; unreliable estimates flagged / untinted |
 
 **Distribution notes:** keep OSM (ODbL), GeoNames (CC-BY), and Laouenan et al. (CC-BY-SA)
 attribution visible — the site's About/Sources panel does this. The memory layer's

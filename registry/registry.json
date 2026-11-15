@@ -577,17 +577,15 @@
       "accent": "#9fb4d9",
       "scopes": ["us"],
       "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "plateStats": [{"label": "households living alone (U.S.)", "value": "28%"}, {"label": "lowest", "value": "Morgan County, UT — 10.6%"}, {"label": "vintage", "value": "ACS 2019–2023"}, {"label": "unreliable estimates flagged", "value": "11"}],
+      "tintMax": 0.55,
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97},
       "weight": 0.0,
-      "unit": "share of households",
-      "statline": "",
+      "unit": "% of households",
+      "statline": "one-person households in {n} counties",
       "status": "pending",
-      "caveat": "source gated; nothing shown rather than something invented",
-      "pendingNote": "Gate (2026-11-06): the Census Bureau's API now answers every data query with a redirect to 'missing_key' — it requires an API key in the URL. The build environment holds none, and the Census bulk-file host (www2.census.gov) is not reachable. A free Census key, or access to the bulk host, opens this slot.",
-      "essay": {
-        "what": "The share of households that are one person living alone (ACS 5-year, table B11001), county by county.",
-        "how": "Will use the American Community Survey 5-year estimates with their margins of error; counties whose estimate is unreliable will be marked, not hidden.",
-        "why": "Solitude is not loneliness, but the map of who lives alone is the frame inside which loneliness happens. It belongs beside Company and the Quiet Hours."
-      },
+      "caveat": "ACS 2019–2023 five-year survey estimates with 90% margins of error in every label; 11 county estimates are flagged unreliable; households, never people",
+      "essay": {"what": "The share of households that are one person living alone, county by county: 28% of American households. It runs from about one in ten in Utah's young, large-family counties to more than half in a few aging, emptied places on the plains and in the Delta.", "how": "The Census Bureau's American Community Survey, 2019–2023 five-year estimates (table B11001), read from the public summary files rather than the keyed API. Every label carries the 90% margin of error; the 11 estimates whose error is too wide to trust (coefficient of variation over 30%) are flagged as unreliable, not hidden.", "why": "Solitude is not loneliness, but it is the frame inside which loneliness happens. Lay it over The Company We Keep and the Quiet Hours: where people live alone, and where the bridges between them are few, the survey's darkest layers tend to gather. Where, not why."},
       "plateStats": []
     },
     {
@@ -597,17 +595,15 @@
       "accent": "#e79ad6",
       "scopes": ["us"],
       "forms": {"points": false, "contours": false, "tint": true, "regionKind": "county"},
+      "plateStats": [{"label": "highest (reliable)", "value": "San Francisco · D.C. · Multnomah"}, {"label": "estimates too uncertain to colour", "value": "2,459 of 3,222"}, {"label": "vintage", "value": "ACS 2019–2023"}, {"label": "source", "value": "U.S. Census Bureau (public domain)"}],
+      "tintMax": 0.6,
+      "pack": {"kind": "regions", "regionKind": "county", "vminQuantile": 0.05, "vmaxQuantile": 0.97},
       "weight": 0.0,
       "unit": "per 1,000 households",
-      "statline": "",
+      "statline": "same-sex couple households — 763 county estimates reliable enough to colour",
       "status": "pending",
-      "caveat": "source gated; nothing shown rather than something invented",
-      "pendingNote": "Gate (2026-11-06): same as Tables for One — the Census API requires a key in the URL and the bulk host is unreachable from the build environment.",
-      "essay": {
-        "what": "Same-sex couple households per 1,000 households (ACS 5-year), by county.",
-        "how": "Counts households, never people; small-county estimates carry wide margins and will say so.",
-        "why": "Where love has been counted openly. The survey shows rates for places, never anyone's household."
-      },
+      "caveat": "survey estimates; 2,459 of 3,222 county estimates are too uncertain to colour (CV over 30%) and stay untinted, their figures and margins still in the tooltip; households, never people",
+      "essay": {"what": "Same-sex couple households — married or not — per 1,000 households, by county. San Francisco, Washington, D.C. and Portland's Multnomah County are near the top, at more than twenty per thousand.", "how": "The Census Bureau's American Community Survey, 2019–2023 five-year estimates: same-sex spouses and same-sex unmarried partners of the householder (table B09019), each of whom marks one couple household, divided by all households (B11001). A survey of a few households per county cannot see small numbers well: three counties in four have estimates too uncertain to colour, so they stay dark on the map with their figures and margins in the tooltip. Absence in a sample is not absence in a place.", "why": "Where love has been counted openly. The bright places are cities and resort towns, but the honest reading of this layer is its dark: most of the country is too sparsely sampled to say anything at all, and the survey refuses to guess."},
       "plateStats": []
     },
     {
