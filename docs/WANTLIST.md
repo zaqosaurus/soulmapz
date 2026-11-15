@@ -52,6 +52,43 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 
 ---
 
+## THE v0.7 SLATE — result (2026-11-15)
+
+Twelve new layers, each through the acquisition loop (terms on file, SHA-256, validator, known
+answers, ten-record spot check, render reviewed). Details and judgment calls:
+[NOTES_V07.md](NOTES_V07.md).
+
+| Layer | Source · licence | Result |
+|---|---|---|
+| The Last Speakers | Glottolog 5.3 · CC-BY 4.0 | ✓ 7,836 languages, endangerment lens |
+| The World's Furnaces | WRI Global Power Plant Database v1.3.0 · CC-BY 4.0 | ✓ 34,936 plants, fuel lens (frozen 2021) |
+| The Year Without Goodbyes | NYT COVID county data · non-commercial | ✓ 1.12M deaths, 13 quarters |
+| When the State Kills | WaPo Fatal Force · CC-BY-NC-SA | ✓ county rates only |
+| The Price of Staying | Eviction Lab · ODC-BY | ✓ 3,142 counties, 2000–2018 |
+| The Sky Roads | OpenFlights · ODbL | ✓ 8,362 corridors (~2014 snapshot) |
+| The World at War | UCDP GED 26.1 · CC BY 4.0 | ✓ 4.26M deaths since 1989, by country and period |
+| The Uprooted | UNHCR · CC BY 4.0 | ✓ 44.8M people, origin → asylum |
+| The Last Dark | Wikidata · CC0 | ✓ 164 dark-sky places (partial mirror) |
+| Gifts on the Return | IRS SOI 2022 · public domain | ✓ itemized gifts, renamed for what it measures |
+| Tables for One | Census ACS 2019–2023 · public domain | ✓ 3,222 counties |
+| Love, Counted | Census ACS 2019–2023 · public domain | ✓ 763 reliable county estimates coloured |
+| The Banished Dark · The Commons · The Arsenal · Kindness · Notice of Mass Layoff | — | PENDING, gate named on each plate |
+
+### New wants surfaced by v0.7 (reachable now that www2.census.gov is open, unless noted)
+
+| Want | Believed source | Status | Form |
+|---|---|---|---|
+| Languages spoken at home — the U.S. half of The Last Speakers | ACS B16001 | OPEN (www2) | heat |
+| Where America was born — foreign-born by country of birth | ACS B05006 | OPEN (www2) | world → county flows |
+| Rent burden (≥ 50% of income) | ACS B25070 | OPEN (www2) | heat |
+| The long commute (60+ minutes) | ACS B08303 | OPEN (www2) | heat |
+| Bars vs. churches | County Business Patterns (NAICS 7224 vs 8131) | OPEN (www2) | heat pair |
+| Child poverty | Census SAIPE | OPEN (www2) | heat |
+| The Commons without Overpass | OpenStreetMap via Geofabrik extracts | needs host download.geofabrik.de | points |
+| Night lights without eogdata | NASA Black Marble (VNP46) | needs Earthdata account + host | raster |
+
+---
+
 ## THE FAMILIES
 
 ### I. BETRAYAL — trust, broken, with receipts
@@ -66,7 +103,7 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 | Want | Believed source | Status | Form |
 |---|---|---|---|
 | Suicide rates (county all-ages; state youth) — protocol-bound | CDC WONDER / NCHS | OPEN? (suppression honored) | heat |
-| Evictions per renter household | Eviction Lab (Princeton) | OPEN? | heat |
+| Evictions per renter household | Eviction Lab (Princeton) | ✓ **BUILT** (v0.7) — The Price of Staying, ODC-BY model estimates 2000–2018 | heat |
 | Debt in collections / medical debt share | Urban Institute debt map | OPEN? | heat |
 | Homelessness point-in-time counts by CoC | HUD PIT/HIC | OPEN? | heat/points |
 | Gambling: casinos, state lottery sales per capita, sports-betting handle | state regulators, annual reports | OPEN? (patchy) | points+heat |
@@ -76,7 +113,7 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 | Want | Believed source | Status | Form |
 |---|---|---|---|
 | Economic connectedness (who knows whom across class) | Social Capital Atlas | OPEN? | heat |
-| Living alone, by county | Census ACS | OPEN? | heat |
+| Living alone, by county | Census ACS | ✓ **BUILT** (v0.7) — Tables for One, B11001 via www2 summary files | heat |
 | Meta friendship-distance aggregates (SCI) | Data for Good / HDX | OPEN? | flows |
 | Bars per capita vs. churches per capita | County Business Patterns × ARDA | OPEN? | heat pair |
 | Marriage & divorce rates | state vital statistics | OPEN? (patchy) | heat |
@@ -85,7 +122,7 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 ### IV. KINDNESS
 | Want | Believed source | Status | Form |
 |---|---|---|---|
-| Charitable giving as share of income, by county | IRS SOI itemization | OPEN? | heat |
+| Charitable giving as share of income, by county | IRS SOI itemization | ◐ **BUILT as Gifts on the Return** (v0.7) — itemized gifts only (9.6% itemize); *Kindness* stays PENDING for a measure that sees non-itemized giving | heat |
 | Medical crowdfunding campaigns (the country that crowdfunds insulin) | GoFundMe | DARK/GATED? — ToS posture first | heat |
 | Volunteer rate by state | AmeriCorps / CPS supplement | OPEN? | heat |
 | Organ-donor registration rates | Donate Life registries | OPEN? (state) | heat |
@@ -102,10 +139,10 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 | Want | Believed source | Status | Form |
 |---|---|---|---|
 | Prisons & jails; county incarceration rates | HIFLD; Vera Institute | OPEN? | points+heat |
-| People killed by police | Mapping Police Violence / WaPo | OPEN? | points, careful |
+| People killed by police | Mapping Police Violence / WaPo | ✓ **BUILT** (v0.7) — When the State Kills, WaPo Fatal Force, county rates only, names dropped at staging | ~~points~~ heat, careful |
 | ICE detention facilities & populations | TRAC / ICE stats | OPEN?/GATED? | points |
 | The surveilled square (ALPRs, Ring partnerships, drones by agency) | EFF Atlas of Surveillance | OPEN? | points |
-| Licensed gun dealers (~50k FFLs) | ATF monthly lists | OPEN? | points |
+| Licensed gun dealers (~50k FFLs) | ATF monthly lists | GATED — www.atf.gov bot gate (403, retried 2026-11-06); not circumvented; PENDING | points |
 | Civil asset forfeiture takings | IJ Policing for Profit | OPEN? (state) | heat |
 
 ### VII. CHILDHOOD
@@ -122,7 +159,7 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 |---|---|---|---|
 | County-to-county migration flows | IRS SOI migration | OPEN? | **flows** |
 | U-Haul one-way price asymmetry (the price of leaving) | scrape | DARK-ish | flows/heat |
-| Refugee resettlement placements | State Dept WRAPS | OPEN? | points |
+| Refugee resettlement placements | State Dept WRAPS | OPEN? (the world view shipped instead: The Uprooted, UNHCR origin→asylum flows, v0.7) | points |
 | Container port volumes (TEUs) | port authorities / BTS | OPEN? | points sized |
 | Intermodal rail terminals; truck-parking scarcity | BTS; Jason's Law survey | OPEN? | points |
 | Import bills of lading (who ships what to whom) | Panjiva / ImportGenius | **GATED — the gate is money** | flows |
@@ -150,9 +187,9 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 ### XI. NIGHT & SILENCE — new render forms
 | Want | Believed source | Status | Form |
 |---|---|---|---|
-| Light at night (what we spend on banishing the dark) | VIIRS annual composites | OPEN? | **raster** |
+| Light at night (what we spend on banishing the dark) | VIIRS annual composites | PENDING — eogdata.mines.edu fails certificate checks; raster engine built and tested | **raster** |
 | The sound of America (anthropogenic noise model) | NPS soundscape model | OPEN? | **raster** |
-| Certified dark-sky places | DarkSky International | OPEN? | points |
+| Certified dark-sky places | DarkSky International | ✓ **BUILT** (v0.7) — The Last Dark, from Wikidata (darksky.org refuses scripts); partial mirror, disclosed | points |
 
 ### XII. LAST ADDRESSES — death & memory
 | Want | Believed source | Status | Form |
@@ -165,7 +202,7 @@ K-12 school shootings database · PEN America book bans · USALEEP tract life ex
 ### XIII. LOVE, COUNTED
 | Want | Believed source | Status | Form |
 |---|---|---|---|
-| Same-sex couple households | Census ACS | OPEN? | heat |
+| Same-sex couple households | Census ACS | ✓ **BUILT** (v0.7) — Love, Counted, B09019; 2,459 of 3,222 county estimates too uncertain to colour, left untinted | heat |
 | Romance-scam losses by state | FTC Consumer Sentinel | OPEN? | heat |
 | Where America elopes (wedding chapels) | POI | build | points |
 
