@@ -90,6 +90,7 @@ See PLAN_V07 §6. Additions and corrections from this build:
   **evictions × overdoses**, **power fuel × data centers**, **languages × remembered births**
   are all runnable now.
 - **Night lights × UFO sightings** and **The Commons × connectedness** wait on PENDING slots.
+- The World at War's essay stated the war × languages link as fact before any test; it now reads as an open question until Phase 4 runs it.
 - New, runnable: **police killings × living alone** (isolation and crisis calls), **war
   deaths × endangered languages by country** (the essay hints at it; test it), **gifts ×
   adherence** (does itemized giving track congregations once income is controlled?),

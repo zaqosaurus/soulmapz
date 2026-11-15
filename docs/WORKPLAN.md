@@ -1,4 +1,6 @@
 # THE WORKPLAN — v0.6
+
+> **Historical (v0.6).** Superseded by [PLAN_V07.md](PLAN_V07.md) for current work; the v0.7 notebook is [NOTES_V07.md](NOTES_V07.md).
 ### "the ledger lit, citizen readings, constellations, the plunge, the living log"
 
 This document is the working plan for the v0.6 release, written so that any session

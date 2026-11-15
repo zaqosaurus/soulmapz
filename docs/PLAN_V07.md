@@ -199,17 +199,23 @@ still-blocked host recorded as a PENDING slot with its gate; page under 7 MB.
 New layers exist to be laid against each other. Pre-stated hypotheses, written before
 running anything (the correlator records each with its verdict):
 
-| Pair | Question |
-|---|---|
-| Night lights × UFO sightings | Do sightings need dark skies, or people? (Sightings per capita by darkness band.) |
-| Evictions × the sorting | Do counties that evict more also exhale households? |
-| Evictions × overdoses | Is the price of staying paid in the same places as the epidemic? |
-| Power fuel × data centers | What powers the cloud: share of data-center cells within 50 km of coal vs hydro vs nuclear, by country |
-| Endangered languages × remembered births | Where the world remembers people versus where whole languages go silent |
-| COVID deaths × connectedness | Did cross-class friendship coincide with lower death rates? |
-| COVID deaths × adherence | Did congregational density coincide with higher or lower death rates? |
-| The Commons × connectedness | Do places with more shared public space have more cross-class friendship? |
-| Living alone × overdoses | The Empty Chair, handled gently (no suicide data, per protocol) |
+| Pair | Question | Runnable now? |
+|---|---|---|
+| Night lights × UFO sightings | Do sightings need dark skies, or people? (Sightings per capita by darkness band.) | waits — night lights PENDING |
+| Evictions × the sorting | Do counties that evict more also exhale households? | yes |
+| Evictions × overdoses | Is the price of staying paid in the same places as the epidemic? | yes |
+| Power fuel × data centers | What powers the cloud: share of data-center cells within 50 km of coal vs hydro vs nuclear, by country | yes |
+| Endangered languages × remembered births | Where the world remembers people versus where whole languages go silent | yes |
+| COVID deaths × connectedness | Did cross-class friendship coincide with lower death rates? | yes |
+| COVID deaths × adherence | Did congregational density coincide with higher or lower death rates? | yes |
+| The Commons × connectedness | Do places with more shared public space have more cross-class friendship? | waits — The Commons PENDING |
+| Living alone × overdoses | handled gently (no suicide data, per protocol) | yes — **rename**: "The Empty Chair" is already the connectedness finding |
+| Police killings × living alone | Do isolation and fatal encounters share ground? | yes (added 2026-11-15) |
+| War deaths × endangered languages, by country | The essay hints that the deepest reds sit where languages fall silent — test it before it stays in the essay | yes (added) |
+| Itemized gifts × adherence | Does recorded giving track congregations once income is controlled? | yes (added) |
+| Same-sex couples × the sorting | Where do the reliable estimates sit on the migration map? Use only the 763 reliable counties | yes (added) |
+
+Context, judgment calls and the reasoning behind each addition: [NOTES_V07.md](NOTES_V07.md) §2 and §7.
 
 New readings (titles from the expanded canon): *The Last Speakers*, *What Powers the
 Cloud*, *The Price of Staying*, *The Year Without Goodbyes*, *The Commons*, *Where the
