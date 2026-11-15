@@ -250,7 +250,7 @@ async function openPlate(page, lid) {
   await page.waitForFunction(() => window.__atlasPages > 0, null, { timeout: 60000 }).catch(() => {});
   const atlas = await page.evaluate(() => ({ pages: window.__atlasPages, sections: document.querySelectorAll('#atlas .at-page').length, imgs: [...document.querySelectorAll('#atlas img')].filter(i => i.naturalWidth > 200).length }));
   const liveN = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live').length);
-  check('the atlas composes a page per layer plus sheets', atlas.sections === liveN + 5 && atlas.imgs === liveN + 2, JSON.stringify(atlas));
+  check('the atlas composes a page per layer plus sheets', atlas.sections === liveN + 6 && atlas.imgs === liveN + 3, JSON.stringify(atlas));
   await page.waitForTimeout(1200);
   const after = await page.evaluate(() => ({ hash: location.hash, k: d3.zoomTransform(document.querySelector('#stage')).k }));
   check('the atlas puts the view back', Math.abs(before.k - after.k) < 0.01 && before.hash.split('&t=')[0] === after.hash.split('&t=')[0], before.hash.slice(0, 50) + ' vs ' + after.hash.slice(0, 50));

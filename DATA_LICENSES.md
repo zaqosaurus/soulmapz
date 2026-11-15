@@ -2,8 +2,9 @@
 
 **The Soul Survey is a non-commercial project.** It republishes facts that are already public,
 each traced to a named source with a retrieval date. Data is removed on request: anyone named
-or represented in it, or any rights holder, can ask through the repository's issue tracker (a
-dedicated contact method will be added). Non-commercial licenses such as CC-BY-NC are accepted
+or represented in it, or any rights holder, can ask through the repository's **removal-request form**
+(`.github/ISSUE_TEMPLATE/removal-request.yml`, public) or privately at **issue@soupmap.org**.
+Removals land in the next build. Non-commercial licenses such as CC-BY-NC are accepted
 on that basis.
 
 | Layer | Source | License / Terms | Notes |

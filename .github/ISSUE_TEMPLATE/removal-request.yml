@@ -1,0 +1,41 @@
+name: Removal request
+description: Ask for something to be taken off the Soul Survey — a person represented in the data, or a rights holder.
+title: "[REMOVAL] "
+labels: ["removal-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Soul Survey is non-commercial and removes anything on request from a person represented in it or a rights holder. Removals land in the next build.
+
+        **This form is public.** If your request should not be public — for example because it names you or someone close to you — do not use it. Write to **issue@soupmap.org** instead; a private request stays private.
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who is asking?
+      options:
+        - I am (or represent) a person shown in the data
+        - I hold rights in a source the survey uses
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: layer
+    attributes:
+      label: Which layer?
+      description: The layer's title as the map shows it (for example "The Ledger of Betrayals").
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What should be removed?
+      description: Enough to find it — a place, a tooltip's text, a permalink. You do not need to give a reason.
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+    validations:
+      required: false
