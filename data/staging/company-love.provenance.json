@@ -3,7 +3,23 @@
  "retrieved": "2026-11-15",
  "license": {
   "name": "Public domain (U.S. government work, 17 U.S.C. § 105)",
-  "note": "www.census.gov (terms page) is not reachable from the build environment; Census Bureau data products are works of the U.S. government."
+  "terms_read": "2026-11-15",
+  "note": "The survey uses the ACS table-based summary files on www2.census.gov, not the Census Data API, so the API agreement does not bind it directly; its confidentiality and endorsement clauses are honoured anyway. No Census page read claims copyright in the data.",
+  "verbatim": [
+   {
+    "url": "https://www.census.gov/about/policies/citation.html",
+    "text": "Data users who create their own estimates using data from disseminated tables and other data should cite the Census Bureau as the source of the original data only. Conclusions drawn from any analysis of these data are the sole responsibility of the performing party."
+   },
+   {
+    "url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+    "text": "users will not use these data, alone or in combination with any other Census or non-Census data, to identify any individual person, household, business or other entity"
+   },
+   {
+    "url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+    "text": "You may not use the Census Bureau name, or the like to imply endorsement of any product, service, or entity, not-for-profit, commercial or otherwise."
+   }
+  ],
+  "how_honoured": "County aggregates only, from published tables; the shares (living alone, same-sex couples per 1,000) are the survey's own estimates computed from those tables, credited to the Census Bureau as the source of the original data; the survey claims no endorsement."
  },
  "gate_history": "2026-11-06: api.census.gov began requiring an API key in the URL and www2.census.gov was not allowed — slot PENDING. 2026-11-15: the maintainer allowed www2.census.gov; the table-based summary files need no key.",
  "files": {

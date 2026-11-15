@@ -381,7 +381,7 @@
       "statline": "",
       "status": "pending",
       "caveat": "source gated; nothing shown rather than something invented",
-      "pendingNote": "Gate (2026-11-06): the VIIRS annual night-lights composites at eogdata.mines.edu fail certificate verification from the build environment (retried; still unreachable). The raster engine for this layer is built and tested.",
+      "pendingNote": "Gate (2026-11-15): eogdata.mines.edu now answers, but every VIIRS composite sits behind an account login (eogauth), and the survey does not log in on anyone's behalf. NASA's open Black Marble files (eoimages.gsfc.nasa.gov) were allowed in the environment but are still refused by the network gateway. The raster engine for this layer is built and tested.",
       "essay": {
         "what": "Night-time light seen from orbit (VIIRS annual composite), as a quantized raster: the shape of every city, highway and gas flare.",
         "how": "Will be aggregated to about 0.1° worldwide and 0.05° over the U.S., 8-bit, under 600 KB.",
@@ -662,7 +662,7 @@
       "statline": "",
       "status": "pending",
       "caveat": "source gated; nothing shown rather than something invented",
-      "pendingNote": "Gate (2026-11-06): the OpenStreetMap Overpass API (overpass-api.de and the kumi.systems mirror) does not complete a connection from the build environment (retried; server or route side, not a policy refusal).",
+      "pendingNote": "Gate (2026-11-15): the OpenStreetMap Overpass API (overpass-api.de and the kumi.systems mirror) still does not complete a connection, and the Geofabrik extracts (download.geofabrik.de), allowed in the environment, are refused by the network gateway. Nothing is shown rather than something guessed.",
       "essay": {
         "what": "Public libraries, playgrounds, public pools, skateparks and community gardens — the places that belong to everyone.",
         "how": "From OpenStreetMap via Overpass, with a lens by kind; ODbL.",
