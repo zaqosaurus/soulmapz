@@ -357,3 +357,71 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "v07":
 #                        $141 (25k+, n=7), 1.9x -> REJECTED as a size contrast (< 5x). The
 #                        early "$312 vs $4.27" did not survive careful denominators. The
 #                        per-resident figure itself ships as a fact on each Ledger tooltip.
+
+# ======================= v0.8 — PLAN_V07 Phase 4, findings round 2 =======================
+# PRE-STATED 2026-11-15, before any of these pairs was run. Run: python3 pipeline/correlate.py v08
+#
+# THE COUNTY BAR (§8 Loop C), applied to every U.S. county pair unless a pair says otherwise:
+#   (a) |Pearson r| >= 0.20 nationwide AND |Spearman| >= 0.20 (same sign);
+#   (b) mean within-state r (states with >= 15 counties, weighted by n) keeps the sign at >= 0.15;
+#   (c) n >= 500 counties;
+#   (d) bottom vs top quintile means of the outcome differ by >= 20% (relative) — "reads in
+#       plain numbers";
+#   (e) confounds: the sign holds in at least 3 of the 4 population bands (<10k, 10–50k,
+#       50–250k, 250k+; bands with n < 30 skipped), and the partial r controlling for log
+#       income per return (IRS SOI 2022, AGI ÷ returns, from company-gifts) stays >= 0.15.
+#   Any failure -> REJECTED. A pair that passes only partly may ship as a LESSON card only if
+#   the failure itself teaches something the reader can use (as the Lutheran card did).
+# THE WORLD BAR: >= 500 units (grid cells or points); |r| >= 0.20 and |Spearman| >= 0.20;
+#   the sign holds within at least 4 of the 6 macro-areas that have >= 30 units; a named
+#   confound tested. Country-level pairs (~170 units) can never reach n >= 500: they cannot
+#   ship as finding cards; their result may only decide what an essay is allowed to say.
+#
+# H19 Evictions x the sorting. Counties with higher eviction-threat rates (Eviction Lab,
+#     2014-18 mean, per 100 renting households) have lower net household migration per
+#     1,000 residents (IRS 2022-23). Expected sign: negative. County bar.
+# H20 Evictions x overdoses. Counties with higher eviction-threat rates have higher 2024
+#     overdose death rates. Expected sign: positive. County bar.
+# H21 What powers the cloud. For each country with >= 25 data centers: the fossil share
+#     (coal+gas+oil) of power-plant capacity within 50 km of its data centers, against the
+#     country's overall fossil share. Named confound: data centers sit in cities, and so do
+#     gas peakers — the same measure is taken around the country's airports (OpenFlights
+#     endpoints) as an urban baseline. SHIP only if pooled over >= 500 data centers, the
+#     data-center fossil share departs from the national share by >= 10 points in the same
+#     direction in >= 2/3 of those countries AND departs from the airport baseline by
+#     >= 5 points in that direction in >= 2/3. Proximity is not supply; the card must say so.
+# H22 The remembered and the many tongues. On 2-degree land cells holding at least one
+#     remembered birth or one language: log(remembered births) vs log(languages) is negative
+#     (memory pools where few languages are spoken). World bar; macro-areas from Glottolog;
+#     named confound: Europe — the result must survive with Europe's cells removed.
+# H23 COVID deaths x connectedness. Counties with higher economic connectedness had lower
+#     COVID death rates 2020-23 (NYT, per 100k). Expected sign: negative. County bar; NYC's
+#     five boroughs counted once.
+# H24 COVID deaths x adherence. Congregational adherence (capped at 1,000 per 1,000) and
+#     COVID death rates. Two-sided: no direction stated. County bar.
+# H25 The Commons x connectedness. Public libraries, playgrounds and pools per 10,000
+#     residents vs economic connectedness, positive. County bar. WAITS on The Commons layer
+#     (PENDING): runs only if the layer ships this round.
+# H26 Night lights x UFO sightings. Do sightings need dark skies or people? County UFO
+#     reports per 100,000 residents vs mean night-light brightness: darker counties report
+#     more per resident (negative). County bar. WAITS on The Banished Dark (PENDING).
+# H27 Tables for One, Again (living alone x overdoses; the title "The Empty Chair" is taken).
+#     Counties where more households are one person have higher 2024 overdose rates.
+#     Expected sign: positive. County bar; handled gently — no suicide data, per protocol.
+# H28 Police killings x living alone. Fatal police shootings per 100k (2015-24) vs share
+#     living alone. Two-sided. County bar, with killings this rare the Spearman leg decides
+#     ties; counties under 10,000 people are reported but not required for (e).
+# H29 War x the languages going silent, by country (the World at War essay's open question).
+#     Countries with higher organized-violence death rates since 1989 hold a larger share of
+#     their languages at "shifting" or worse (AES >= 3). Country level: cannot ship as a card.
+#     The essay may state the link only if Spearman >= 0.20 over countries with >= 5
+#     languages, the top-vs-bottom quintile gap in that share is >= 10 points, and the sign
+#     holds within at least 3 of the macro-areas with >= 10 such countries. Otherwise the
+#     essay says plainly that the test did not find it.
+# H30 Gifts x adherence, income controlled. Itemized gifts as a share of income track
+#     congregational adherence once log income per return is controlled: partial r >= 0.20,
+#     within-state partial >= 0.15. Rest of the county bar applies. Utah is reported with and
+#     without (12 of the top 50 gift counties are there).
+# H31 Same-sex couples x the sorting. Over the 763 counties with reliable estimates only:
+#     same-sex couple households per 1,000 vs net household migration per 1,000. Two-sided.
+#     County bar with n >= 500 required of the reliable counties that have migration data.
