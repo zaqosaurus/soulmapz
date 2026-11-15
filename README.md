@@ -18,14 +18,21 @@ Alone, each map is a curiosity. Stacked, they are a relief map of us.
 ## Architecture
 
 ```
-registry/registry.json     ← the contract. every layer is one entry here.
-pipeline/layers/<id>.py    ← one fetch/transform script per layer → data/staging/<id>.json
-pipeline/build.py          ← packs staging → data/layers/*.json, injects everything
-                             into site/index.html → dist/index.html (fully self-contained)
-site/                      ← the map engine (vanilla JS + d3, canvas compositing)
-data/staging/              ← clean, verified records + provenance (committed)
-data/layers/               ← packed, quantized layer files (committed, build output)
-dist/index.html            ← THE SURVEY. one file. zero runtime network calls.
+registry/registry.json       ← the contract. every layer is one entry here, including its
+                               `pack` block (how its staging data becomes a payload)
+pipeline/scratch/<id>.py     ← one fetch/stage script per acquired layer → data/staging/<id>.json
+                               (+ <id>.provenance.json: licence, SHA-256, method, known answers)
+pipeline/packer.py           ← registry-declared packing (points, regions, flows, raster)
+pipeline/validate.py         ← acquisition checks: coordinates, duplicates, protocol fields
+pipeline/build.py            ← packs staging → data/layers/*.json, compresses, injects everything
+                               into site/template.html → dist/index.html (+ a plain fallback)
+pipeline/correlate.py        ← findings, each hypothesis written down before it is run
+site/                        ← the engine (vanilla JS + d3, canvas compositing); boot.js inflates
+                               the gzip payloads in the browser before the survey starts
+tests/smoke.js, views.js     ← headless checks (82) and canonical-view pixel comparison
+data/staging/                ← clean, verified records + provenance (committed)
+data/layers/                 ← packed, quantized layer files (committed, build output)
+dist/index.html              ← THE SURVEY. one file, ~4.3 MB, zero runtime network calls.
 ```
 
 Principles (do not reverse casually):
@@ -42,17 +49,23 @@ Principles (do not reverse casually):
 ## Adding a layer
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ADDING_A_LAYER.md](docs/ADDING_A_LAYER.md).
-Short version: write a pipeline script that emits `data/staging/<id>.json` (points, or
-region values), add a registry entry (accent color, theme, essay: what/how/why), run
-`python3 pipeline/build.py`. **Page-weight ceiling: the built page stays a single
+Short version: read the source's terms, write a staging script that emits
+`data/staging/<id>.json` and its provenance sidecar, validate it, add a registry entry with a
+`pack` block (accent, theme, essay: what/how/why), run `python3 pipeline/build.py` and look at
+the result. **Page-weight ceiling: the built page stays a single
 self-contained file under 8 MB** — aggregate to cells, not rows.
 
 ## Where this is going
 
+- [docs/PLAN_V07.md](docs/PLAN_V07.md) — the current plan in phases, its QC loops, the
+  status table, the goal scorecard and the handoff. **Start here when resuming work.**
+- [docs/NOTES_V07.md](docs/NOTES_V07.md) — the surveyor's notebook for v0.7: findings
+  kept and rejected, judgment calls, bugs and how they were caught, debt, and new ideas.
 - [docs/WANTLIST.md](docs/WANTLIST.md) — the data grocery list, organized by soul
-  question, with the binding ethics protocol and the Next Five acquisition slate.
+  question, with the binding ethics protocol and each slate's result.
 - [docs/EXPERIENCE.md](docs/EXPERIENCE.md) — the feature vision: entity lenses,
   citizen readings, star bios, dossier diffs, the print atlas, and the expanded canon.
+- [docs/DATA_API.md](docs/DATA_API.md) — every staging file as a stable raw endpoint.
 
 ## Findings
 
@@ -66,7 +79,7 @@ included as the epistemic control.
 
 The build also writes `docs/index.html`. Enable Pages once:
 repo **Settings → Pages → Deploy from a branch → `main` / `docs`** — the survey then
-lives at `https://<owner>.github.io/soulmap/`.
+lives at `https://zaqosaurus.github.io/soulmapz/` (forks: `https://<owner>.github.io/<repo>/`).
 
 ## Provenance & licenses
 
@@ -74,5 +87,10 @@ See [DATA_LICENSES.md](DATA_LICENSES.md). Sources include NHTSA FARS, USGS GNIS,
 OpenStreetMap (ODbL), the cross-verified database of notable people (Laouenan et al.,
 *Scientific Data* 2022, CC-BY-SA), Pornhub Insights 2025 (archived official data,
 press-verified), fba.wiki Amazon facility codes, Fortune's 2025 ranking, and GeoNames
-(CC-BY). Every layer ships with a provenance file; one layer (WARN layoffs) is
-deliberately pending rather than faked. Review licenses before distributing.
+(CC-BY), and since v0.7 Glottolog, the WRI power-plant database, The New York Times'
+COVID data, The Washington Post's Fatal Force, the Princeton Eviction Lab, OpenFlights,
+UCDP, UNHCR, IRS Statistics of Income, the Census Bureau's ACS and Wikidata. Several are
+non-commercial or share-alike; this survey is non-commercial, and anything is removed on
+request (open an issue). Every layer ships with a provenance file; five slots are
+deliberately pending rather than faked, each naming its gate. Review licenses before
+distributing.

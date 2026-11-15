@@ -21,14 +21,18 @@ Open an issue with the **Layer proposal** template. A good proposal answers:
 
 ## Build a layer
 
-1. Write `pipeline/layers/<id>.py` (or a scratch script) that emits
-   `data/staging/<id>.json` and `data/staging/<id>.provenance.json`
-   (see [docs/ADDING_A_LAYER.md](docs/ADDING_A_LAYER.md) for schemas).
-2. Add a registry entry in `registry/registry.json`: id, title, theme, accent,
-   scopes, forms, weight, unit, statline, caveat, and the what/how/why essay.
-3. `python3 pipeline/build.py` — the engine picks it up automatically: rail chip,
-   plate, terrain contribution, statline, audio voice (add one in `app.js` if you
-   want it to sing), and eligibility for readings and findings.
+The full, current workflow is in [docs/ADDING_A_LAYER.md](docs/ADDING_A_LAYER.md). In short:
+
+1. **Gate:** read the source's licence or terms and record them. A source that forbids
+   redistribution, or a site that refuses scripts, becomes a visible `PENDING` slot.
+2. **Stage:** `pipeline/scratch/<id>.py` writes `data/staging/<id>.json` and
+   `data/staging/<id>.provenance.json` (licence, SHA-256, method, counts, caveats).
+3. **Validate:** `python3 pipeline/validate.py <id> [--protocol] [--us]`, then three known
+   answers written down before looking, and a ten-record spot check against the source.
+4. **Register:** a registry entry with a `pack` block (no build or engine code needed for
+   points, county/country regions, flows or rasters), plus a `DATA_LICENSES.md` row.
+5. **Build, look, test:** `python3 pipeline/build.py`, solo the layer and read its plate,
+   check every number the essay states, run `tests/smoke.js`, read its atlas page.
 
 ## Rules that keep the survey honest
 
