@@ -41,6 +41,15 @@ The full, current workflow is in [docs/ADDING_A_LAYER.md](docs/ADDING_A_LAYER.md
 - **Caveats are content.** Every plate carries a FIELD NOTE naming the layer's biases.
 - **Findings are descriptive.** New correlations go through `pipeline/correlate.py`,
   get hand-reviewed, and carry the where-not-why disclaimer. The spurious exhibit stays.
+  Write the hypothesis and its pass bar into `correlate.py` *before* running it; a result
+  that fails its bar is logged, added to the `tested` ledger in `data/findings.json`, and
+  never softened into a card.
+- **Readings** live in `registry.json → readings`: `id`, `title`, `kicker`, `scope`,
+  `layers`, `bbox`, `text`, and optionally `era` (open on that time step of the first timed
+  layer). Check every number in a reading against staging before it ships.
+- **Removal on request.** Anyone represented in the data, or a rights holder, can ask
+  through the removal-request issue form or privately at issue@soupmap.org; honour it in
+  the next build.
 - **Page-weight ceiling: 8 MB.** The built page must stay a single self-contained file
   under 8 MB with zero runtime network calls. Aggregate aggressively (cells, not rows)
   — the memory layer compresses 1.7M births into 41.5k cells; yours can too.

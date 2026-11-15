@@ -86,8 +86,18 @@ async function openPlate(page, lid) {
     const k = await zoomK(page);
     check(`reading "${r}" lands on land`, k >= 1 && k < 26, 'k=' + k.toFixed(2));
     if (r === 'ledger-betrayals') { check('the Ledger draws light', (await litSamples(page)) > 50); await shot(page, 'ledger'); }
+    if (r === 'year-without-goodbyes') check('a reading can open on a time step (spring 2020)', await page.evaluate(() => { const b = document.querySelector('#eraBar button.on'); return !!b && b.dataset.era === '1' && document.querySelector('#eraBar').classList.contains('show'); }));
+    if (['last-speakers', 'powers-the-cloud', 'one-border-away'].includes(r)) check(`reading "${r}" draws light`, (await litSamples(page)) > 50);
+    if (['last-speakers', 'powers-the-cloud', 'price-of-staying', 'year-without-goodbyes', 'one-border-away'].includes(r)) await shot(page, 'reading-' + r);
     await page.keyboard.press('Escape'); await page.waitForTimeout(1700);
   }
+  // --- findings menu: every card, and the ledger of what was tested and not found ---
+  await page.click('#findingsBtn'); await page.waitForTimeout(250);
+  const fm = await page.evaluate(() => ({ cards: document.querySelectorAll('#findingsMenu .fm-card').length, want: window.__REGISTRY__.findings.findings.length,
+    tested: document.querySelectorAll('#fmTested .fm-tr').length, wantT: (window.__REGISTRY__.findings.tested || []).length }));
+  check('findings menu lists every card and the tested-and-not-found ledger', fm.cards === fm.want && fm.tested === fm.wantT && fm.wantT > 0, JSON.stringify(fm));
+  await page.evaluate(() => document.querySelector('#fmTested').open = true); await page.waitForTimeout(200); await shot(page, 'findings-tested');
+  await page.keyboard.press('Escape'); await page.evaluate(() => document.querySelector('#findingsMenu').classList.remove('open')); await page.waitForTimeout(300);
   const pointLayers = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live' && (l.forms.points || l.forms.flows)).map(l => l.id));
   for (const lid of pointLayers) {
     await openPlate(page, lid);
@@ -240,7 +250,7 @@ async function openPlate(page, lid) {
   await page.waitForFunction(() => window.__atlasPages > 0, null, { timeout: 60000 }).catch(() => {});
   const atlas = await page.evaluate(() => ({ pages: window.__atlasPages, sections: document.querySelectorAll('#atlas .at-page').length, imgs: [...document.querySelectorAll('#atlas img')].filter(i => i.naturalWidth > 200).length }));
   const liveN = await page.evaluate(() => window.__REGISTRY__.layers.filter(l => l.status === 'live').length);
-  check('the atlas composes a page per layer plus sheets', atlas.sections === liveN + 5 && atlas.imgs === liveN + 2, JSON.stringify(atlas));
+  check('the atlas composes a page per layer plus sheets', atlas.sections === liveN + 6 && atlas.imgs === liveN + 3, JSON.stringify(atlas));
   await page.waitForTimeout(1200);
   const after = await page.evaluate(() => ({ hash: location.hash, k: d3.zoomTransform(document.querySelector('#stage')).k }));
   check('the atlas puts the view back', Math.abs(before.k - after.k) < 0.01 && before.hash.split('&t=')[0] === after.hash.split('&t=')[0], before.hash.slice(0, 50) + ' vs ' + after.hash.slice(0, 50));

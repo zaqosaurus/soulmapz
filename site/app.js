@@ -1324,13 +1324,13 @@ function buildAbout(){
   '<div class="ab-h">CITIZEN READINGS</div>'+
   '<div class="ab-body" style="font-size:13px">Readings are no longer author-only. From READINGS, <i>compose a reading</i>: frame a view, write a line, capture a stop, set a benchmark by clicking the map, and finish — the whole tour is encoded into the link itself. No server, no account. Anyone who opens the link can answer with a counter-reading. Citizen readings are marked as a reader\'s, never as the survey\'s canon.</div>'+
   '<div class="ab-h">NON-COMMERCIAL · REMOVAL ON REQUEST</div>'+
-  '<div class="ab-body" style="font-size:13px">The Soul Survey is a non-commercial project. It republishes facts that are already public, each traced to its source. If you are named or represented in this data and want something removed, or a rights holder objects to how a source is used, ask and it will be taken down. Open an issue at <a href="https://github.com/'+R.meta.repo+'/issues" target="_blank" rel="noopener noreferrer">github.com/'+R.meta.repo+'/issues</a>.</div>'+
+  '<div class="ab-body" style="font-size:13px">The Soul Survey is a non-commercial project. It republishes facts that are already public, each traced to its source. If you are named or represented in this data and want something removed, or a rights holder objects to how a source is used, ask and it will be taken down. Use the <a href="https://github.com/'+R.meta.repo+'/'+(R.meta.removalForm||'issues')+'" target="_blank" rel="noopener noreferrer">removal-request form</a> (public, on GitHub), or, if the request should not be public, write to <a href="mailto:'+R.meta.contact+'">'+R.meta.contact+'</a>. Removals land in the next build, and a private request stays private.</div>'+
   '<div class="ab-h">CITE THIS SURVEY</div>'+
-  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. '+R.meta.site+' — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · IRS SOI 2022–23 · NCHS/CHR&amp;R 2018–22 · Social Capital Atlas 2022 · U.S. Religion Census 2020 · Laouenan et al. 2022 (CC-BY-SA).</div>'+
+  '<div class="ab-cite" id="abCiteText">The Soul Survey (v'+R.meta.version+', '+R.meta.surveyed.toLowerCase()+'). A topographic survey of the collective soul, conducted in objective data. '+R.meta.site+' — Layer vintages: FARS 2023 · CDC MIOV 2024 · Fortune 2025 · Pornhub Insights 2025 · NUFORC 1906–2014 · EPA NPL 2026-07 · USGS GNIS 2026-07 · IRS SOI 2022–23 · NCHS/CHR&amp;R 2018–22 · Social Capital Atlas 2022 · U.S. Religion Census 2020 · Laouenan et al. 2022 (CC-BY-SA) · Glottolog 5.3 · WRI GPPD 1.3 · NYT COVID-19 2020–23 · Washington Post Fatal Force 2015–24 · Eviction Lab 2000–18 · OpenFlights 2014 · UCDP GED 26.1 · UNHCR end-2024 · IRS SOI 2022 · Census ACS 2019–23 · Wikidata 2026.</div>'+
   '<button class="ab-copy" id="abCopy">COPY CITATION</button>'+
   '<div class="ab-h">SURVEY LOG</div>'+
   '<table class="ab-log">'+live.map(l=>'<tr><td>'+l.title+'</td><td>'+(l.retrieved?String(l.retrieved).slice(0,10):'—')+'</td><td>'+(l.statline||l.unit)+'</td></tr>').join('')+
-  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v0.5 the sorting, the ledger, lenses &amp; bios · v'+R.meta.version+' the ledger lit, citizen readings, constellations, the plunge, the living log</td></tr></table>'+
+  '<tr><td>Releases</td><td colspan="2">v0.1 first light · v0.2 readings, eras, three layers · v0.3 findings, sound, curation · v0.3.1 reference &amp; zoom crossfade · v0.4 the Index, dossiers, trust kit · v0.5 the sorting, the ledger, lenses &amp; bios · v0.6 the ledger lit, citizen readings, constellations, the plunge, the living log · v0.7 the diverse map: twelve new layers, the world sheet filled, time on any layer, findings round two and the ledger of what was not found</td></tr></table>'+
   (R.meta.log&&R.meta.log.length?'<div class="ab-h">THE LIVING LOG</div><div class="ab-body" style="font-size:12px;margin-bottom:6px">The survey\'s memory of itself, straight from its history: every refresh, every correction, in public.</div><div class="ab-livelog">'+R.meta.log.map(r=>'<div><span>'+esc(r[0])+'</span>'+esc(r[1])+'</div>').join('')+'</div>':'')+
   '<div class="ab-h">CONTROLS</div>'+
   '<div class="ab-kbd"><b>/</b> search the Index &nbsp; <b>?</b> random plunge &nbsp; <b>1–'+Math.min(10,railOrder.length)+'</b> toggle layers &nbsp; <b>click</b> hold a tooltip &nbsp; <b>G</b> place names &nbsp; <b>R</b> readings &nbsp; <b>F</b> findings &nbsp; <b>E</b> everything &nbsp; <b>C</b> curated &nbsp; <b>U</b>/<b>W</b> sheets &nbsp; <b>scroll</b> zoom &nbsp; <b>ESC</b> close</div>';
@@ -1608,6 +1608,9 @@ function eraRefresh(){
  const tl=lid?timeOf(lid):null;
  if(tl&&era>=tl.labels.length)era=-1;
  $('#eraBar').classList.toggle('show',!!tl);
+ // a caption card sits where the bar does: lift the bar above it while both show
+ {const cc=$('#capCard'),eb=$('#eraBar');
+  if(tl&&cc&&cc.classList.contains('open')){eb.style.bottom=(parseFloat(getComputedStyle(cc).bottom)+cc.offsetHeight+10)+'px';}else eb.style.bottom='';}
  // centre the bar on the map area (right of the rail), never under it
  const pl=padLeft(),bar=$('#eraBar'),pe=$('#plate');
  const right=(plateOpen&&pe&&W>760)?Math.min(W-46,W-26-(pe.offsetWidth||392)-16):W-46;
@@ -1674,8 +1677,8 @@ function capBase(kicker,title,body,accent){
  return '<div class="cc-k" style="color:'+(accent||'#e8b34b')+'">'+kicker+'</div>'+
   '<div class="cc-t">'+title+'</div>'+(body?'<div class="cc-x">'+body+'</div>':'');
 }
-function showCap(html){const c=$('#capCard');c.innerHTML=html;c.classList.add('open');}
-function hideCap(){$('#capCard').classList.remove('open');}
+function showCap(html){const c=$('#capCard');c.innerHTML=html;c.classList.add('open');eraRefresh();}
+function hideCap(){$('#capCard').classList.remove('open');eraRefresh();}
 function wireCapNav(){
  const p=$('#ccPrev'),n=$('#ccNext'),e=$('#ccEnd');
  if(p)p.addEventListener('click',()=>stepReading(-1));
@@ -1701,6 +1704,7 @@ function startReading(i){
  if(era!==-1){era=-1;}
  for(const l of live)target[l.id]=(r.layers.indexOf(l.id)>=0?1:0);
  chipRefresh();updateStatline();eraRefresh();scheduleQt();
+ if(r.era!=null){const tl=timeLid()?timeOf(timeLid()):null;if(tl&&r.era<tl.labels.length)setEra(r.era);}
  terrainDirty=true;dirty=true;
  flyTo(r.bbox,2600);
  showCap(capForReading(r,i));
@@ -1926,6 +1930,13 @@ function buildFindingsMenu(){
   it.addEventListener('click',()=>applyFinding(f));
   m.appendChild(it);
  });
+ if(R.findings.tested&&R.findings.tested.length){
+  const t=document.createElement('details');t.className='fm-tested';t.id='fmTested';
+  t.innerHTML='<summary>TESTED AND NOT FOUND · '+R.findings.tested.length+'</summary><div class="fm-tn">'+R.findings.tested_note+'</div>'+
+   R.findings.tested.map(x=>'<div class="fm-tr"><span class="fm-tv">v'+x.v+'</span><div><div class="fm-tq">'+x.q+'</div><div class="fm-ta">'+x.r+'</div></div></div>').join('');
+  t.addEventListener('click',ev=>ev.stopPropagation());
+  m.appendChild(t);
+ }
 }
 function findingCap(f){
  const ac=f.spurious?'#8a94a6':(byId[f.layers[0]]?byId[f.layers[0]].accent:'#e8b34b');
@@ -2704,6 +2715,9 @@ function composeAtlas(){
  const worldIds=CURATED.filter(id=>byId[id]&&byId[id].scopes.includes('world')&&byId[id].status==='live');
  jobs.push(()=>{pages.push({k:'sheet',n:1,title:'The Human Signal — Conterminous United States',ids:usIds,img:renderSnapshot('us',usIds)});});
  jobs.push(()=>{pages.push({k:'sheet',n:2,title:'The Human Signal — The World',ids:worldIds,img:renderSnapshot('world',worldIds)});});
+ // Sheet 3 lays two world layers alone against each other: who speaks, and what burns
+ const s3=['memory-languages','power-plants'].filter(id=>byId[id]&&byId[id].status==='live');
+ if(s3.length)jobs.push(()=>{pages.push({k:'sheet',n:3,title:'The World\u2019s Voices and Furnaces',ids:s3,img:renderSnapshot('world',s3)});});
  for(const l of live)jobs.push(()=>{pages.push({k:'plate',l,img:renderSnapshot(l.scopes[0],[l.id])});});
  let i=0;
  toast('Composing the atlas — '+jobs.length+' renders…',20000);
@@ -2736,12 +2750,13 @@ function finishAtlas(pages,saved,today){
   '<div class="at-colo">THE PRINT ATLAS · v'+esc(M.version)+' · RENDERED '+today+' · '+esc(M.site)+'</div></section>';
  for(const s of sheets)html+='<section class="at-page at-sheet"><div class="at-run">SHEET '+s.n+' · '+esc(s.title.toUpperCase())+'</div><img src="'+s.img+'" alt="'+esc(s.title)+'"><div class="at-legend">'+legend(s.ids)+'</div></section>';
  for(const p of plates)html+=atlasPlateHTML(p.l,p.img);
- if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+'</section>';
+ if(fnd)html+='<section class="at-page at-findings"><div class="at-run">FINDINGS · COMPUTED AT BUILD · HAND-REVIEWED</div><h2>Findings</h2><div class="at-disc">'+R.findings.disclaimer+'</div>'+fnd+
+  (R.findings.tested?'<h3 class="at-th">TESTED AND NOT FOUND</h3><div class="at-disc">'+R.findings.tested_note+'</div><table class="at-tested">'+R.findings.tested.map(x=>'<tr><td>v'+x.v+'</td><td><b>'+x.q+'</b> '+x.r+'</td></tr>').join('')+'</table>':'')+'</section>';
  html+='<section class="at-page at-colophon"><div class="at-run">COLOPHON</div><h2>Method, sources, and the slots still empty</h2>'+
   '<p>Every layer is a real dataset with coordinates. Density becomes elevation: the relief on each sheet is computed from the layers shown, Gaussian-smoothed, contoured, and hillshaded in the browser that printed this atlas. Point layers render as additive light. Coordinates are quantized to about 110 m and giant datasets are aggregated to cells. Every staging file ships with a provenance sidecar naming its source, retrieval date, method, and caveats.</p>'+
   (pending.length?'<h3>PENDING SLOTS — SHOWN EMPTY RATHER THAN FAKED</h3>'+pending.map(l=>'<p><b>'+l.title+'.</b> '+(l.pendingNote||'Source gated; slot reserved.')+'</p>').join(''):'')+
   '<h3>LICENSES</h3><p>Basemaps: Natural Earth (public domain). Reference places: GeoNames (CC-BY 4.0). Notable people: Laouenan et al., <i>Scientific Data</i> 2022 (CC-BY-SA 4.0). Data centers: © OpenStreetMap contributors (ODbL). Social Capital Atlas: Meta custom permissive license, no re-identification. U.S. Religion Census: facts reproduced with attribution. FARS, GNIS, EPA, CDC, IRS SOI: U.S. public data. Languages: Glottolog 5.3, Max Planck Institute for Evolutionary Anthropology (CC-BY 4.0). Power plants: World Resources Institute (CC-BY 4.0). COVID-19 deaths: The New York Times (non-commercial licence, credit to The New York Times). Fatal police shootings: The Washington Post, Fatal Force (CC-BY-NC-SA 4.0 — the derived county layer is shared alike). Evictions: Princeton University Eviction Lab (ODC-BY 1.0). Air routes: OpenFlights.org (ODbL; derived flows shared alike). Conflict deaths: Uppsala Conflict Data Program GED 26.1 (CC BY 4.0). Refugees: UNHCR Refugee Population Statistics Database (CC BY 4.0). Itemized gifts: IRS Statistics of Income (public domain). Living alone and same-sex couples: U.S. Census Bureau, ACS 2019–2023 (public domain). Dark-sky places, populations and codes: Wikidata (CC0). Full table: DATA_LICENSES.md in the repository.</p>'+
-  '<h3>NON-COMMERCIAL · REMOVAL ON REQUEST</h3><p>A non-commercial project. Public facts, each traced to its source; anything will be removed on request. Requests: github.com/'+esc(M.repo)+'/issues</p>'+
+  '<h3>NON-COMMERCIAL · REMOVAL ON REQUEST</h3><p>A non-commercial project. Public facts, each traced to its source; anything will be removed on request. Requests: the removal-request form at github.com/'+esc(M.repo)+'/issues, or privately to '+esc(M.contact||'')+'.</p>'+
   '<h3>CITE</h3><p class="at-cite">The Soul Survey (v'+esc(M.version)+', '+esc(M.surveyed.toLowerCase())+'). A topographic survey of the collective soul, conducted in objective data. '+esc(M.site)+' — source: github.com/'+esc(M.repo)+'</p>'+
   '<div class="at-colo">WHERE, NOT WHY.</div></section>';
  let el=$('#atlas');if(!el){el=document.createElement('div');el.id='atlas';document.body.appendChild(el);}

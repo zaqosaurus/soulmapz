@@ -59,6 +59,9 @@ self-contained file under 8 MB** — aggregate to cells, not rows.
 
 - [docs/HANDOFF.md](docs/HANDOFF.md) — **start here when resuming work**: state, rules,
   commands, environment, gotchas, what's next.
+- [docs/NEXT.md](docs/NEXT.md) — what to do after v0.7: the light side, legible legends,
+  sharper findings, the one magic thing, and the long view (a portrait of every reader's place,
+  guess-before-you-look, the exceptions, the living record).
 - [docs/PLAN_V07.md](docs/PLAN_V07.md) — the current plan in phases, its QC loops, the
   status table and the goal scorecard.
 - [docs/NOTES_V07.md](docs/NOTES_V07.md) — the surveyor's notebook for v0.7: findings
@@ -75,7 +78,14 @@ self-contained file under 8 MB** — aggregate to cells, not rows.
 time (county joins, cell-grid correlations). Hand-reviewed results ship in
 `data/findings.json` and render as FINDINGS cards — each with its method note and the
 standing disclaimer: **where, not why**. One deliberately spurious correlation is
-included as the epistemic control.
+included as the epistemic control. Every hypothesis is written down with its pass bar
+*before* it is run (`correlate.py` blocks `v06`, `v07`, `v08`); the findings menu and the
+atlas also list every hypothesis that was **tested and not found**, so the map shows how
+it looked, not only what it found. Round two (v0.7) pre-stated thirteen pairs: one
+shipped, ten were rejected, two wait on pending layers.
+
+For teachers: [CLASSROOM.md](CLASSROOM.md) — three lessons keyed to the lesson cards
+and the tested-and-not-found ledger, plus guided readings.
 
 ## Deploy (GitHub Pages)
 
@@ -93,6 +103,7 @@ press-verified), fba.wiki Amazon facility codes, Fortune's 2025 ranking, and Geo
 COVID data, The Washington Post's Fatal Force, the Princeton Eviction Lab, OpenFlights,
 UCDP, UNHCR, IRS Statistics of Income, the Census Bureau's ACS and Wikidata. Several are
 non-commercial or share-alike; this survey is non-commercial, and anything is removed on
-request (open an issue). Every layer ships with a provenance file; five slots are
+request — through the repository's removal-request issue form, or privately at
+issue@soupmap.org. Every layer ships with a provenance file; five slots are
 deliberately pending rather than faked, each naming its gate. Review licenses before
 distributing.

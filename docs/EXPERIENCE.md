@@ -5,11 +5,12 @@ The survey is an instrument. This document is about making it a companion: the
 features that turn one more visit into a habit, and a viewer into a co-surveyor.
 Each entry carries **NEEDS** (data or engine), **EFFORT** (S/M/L), **IMPACT** (1–5).
 
-**Status (2026-11-15, v0.7.0-dev):** built — 1 Star Bios, 2 Entity Lenses (now registry-declared
+**Status (2026-11-15, v0.7.0):** built — 1 Star Bios, 2 Entity Lenses (now registry-declared
 for 9 layers), 3 Constellations, 4 Citizen Readings, 5 Dossier Diff, 6 Time Everywhere (any
 layer, points or county/country series), 7 Pins & Field Notes (benchmarks in readings), 8 Embed
-Kit (SHARE), 9 Data API page, 10 Print Atlas, 12 Random Plunge, 14 Living Log. Open — 11 Sound
-Solos, 13 Classroom Packet. New engine ideas from v0.7 (legends that count, bivariate counties,
+Kit (SHARE), 9 Data API page, 10 Print Atlas, 12 Random Plunge, 14 Living Log. 13 Classroom Packet
+(as [CLASSROOM.md](../CLASSROOM.md); readings can now open on a time step). Open — 11 Sound
+Solos. New engine ideas from v0.7 (legends that count, bivariate counties,
 arc hover, computed plate stats, layer downloads) are in [NOTES_V07.md](NOTES_V07.md) §7.
 
 ---

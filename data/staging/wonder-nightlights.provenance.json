@@ -1,0 +1,27 @@
+{
+  "layer": "wonder-nightlights",
+  "status": "PENDING",
+  "loop_attempt": "2026-11-15, PLAN_V07 §4 acquisition loop",
+  "steps": [
+    {
+      "step": "1 gate",
+      "state": "VIIRS composites (EOG, Colorado School of Mines): CC BY 4.0 per EOG, but every download now requires an EOG account login; NASA Black Marble (Earth Observatory): NASA imagery, generally not copyrighted — the image-use-policy URL now redirects to a page without the policy text, so nothing verbatim is on file yet"
+    },
+    {
+      "step": "2 fetch",
+      "state": "refused",
+      "detail": "eogdata.mines.edu: TLS now passes, but /nighttime_light/ answers 302 to eogauth.mines.edu (OpenID login) — the survey does not log in on anyone's behalf. eoimages.gsfc.nasa.gov (BlackMarble_2016_01deg_gray_geo.tif): allowed in the environment 2026-11-15, refused by the network gateway (CONNECT 403), retried four times."
+    },
+    {
+      "step": "3–10",
+      "state": "not reached"
+    }
+  ],
+  "not_done_on_purpose": [
+    "no 'Earth at night' texture from a JavaScript package — a picture of unknown vintage, not data"
+  ],
+  "unblocks_when": "the gateway allows eoimages.gsfc.nasa.gov, or the maintainer provides an EOG/Earthdata account credential",
+  "raster_engine": "built and smoke-tested since Phase 0.9",
+  "waiting_hypothesis": "H26 in pipeline/correlate.py v08",
+  "loop_state": "stopped at step 2 (fetch) — PENDING per PLAN_V07 §5: 'If a host stays blocked, its layer ships as a PENDING slot with the gate named — never a substitute guess.'"
+}
