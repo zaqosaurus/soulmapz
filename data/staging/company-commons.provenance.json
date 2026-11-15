@@ -1,0 +1,27 @@
+{
+  "layer": "company-commons",
+  "status": "PENDING",
+  "loop_attempt": "2026-11-15, PLAN_V07 §4 acquisition loop",
+  "steps": [
+    {
+      "step": "1 gate",
+      "state": "licence known in principle: OpenStreetMap data, ODbL 1.0 (already honoured for the data-center layer); Geofabrik's own terms page could not be read — download.geofabrik.de refused (see step 2)"
+    },
+    {
+      "step": "2 fetch",
+      "state": "refused",
+      "detail": "download.geofabrik.de added to the environment's allowed hosts 2026-11-15 (maintainer-approved); the network gateway still answers CONNECT with 403 (retried four times, last after the release build). overpass-api.de and overpass.kumi.systems: connection never completes."
+    },
+    {
+      "step": "3–10",
+      "state": "not reached"
+    }
+  ],
+  "not_done_on_purpose": [
+    "no third-party mirror of OSM extracts of unknown provenance",
+    "no Wikidata substitute: its playground, pool and garden coverage is near zero, so the layer would map coverage, not commons"
+  ],
+  "unblocks_when": "the gateway allows download.geofabrik.de (then: US state extracts, filtered offline with pyosmium for amenity=library, leisure=playground|swimming_pool (access!=private)|skatepark|garden (garden:type=community))",
+  "waiting_hypothesis": "H25 in pipeline/correlate.py v08",
+  "loop_state": "stopped at step 2 (fetch) — PENDING per PLAN_V07 §5: 'If a host stays blocked, its layer ships as a PENDING slot with the gate named — never a substitute guess.'"
+}
