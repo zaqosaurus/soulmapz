@@ -325,6 +325,8 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 
 ## 11. HANDOFF (read this first when resuming)
 
+> **The living handoff is now [`docs/HANDOFF.md`](HANDOFF.md)** — current state, maintainer preferences, commands, environment, gotchas and what's next. This section is the v0.7 build-time record.
+
 **State on 2026-11-06.** Branch `claude/trusting-sagan-wkfcpi`, PR #1 open (not merged, by choice).
 Phases 0–3 of this plan are done (see STATUS). 27 live layers (12 new in v0.7) + 5 PENDING slots, page 4.28 MB of 8,
 smoke 82/82, atlas 34 pages reviewed page by page at 75 dpi on the final build (text scanned for template errors; colophon

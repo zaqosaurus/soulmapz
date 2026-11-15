@@ -57,8 +57,10 @@ self-contained file under 8 MB** — aggregate to cells, not rows.
 
 ## Where this is going
 
+- [docs/HANDOFF.md](docs/HANDOFF.md) — **start here when resuming work**: state, rules,
+  commands, environment, gotchas, what's next.
 - [docs/PLAN_V07.md](docs/PLAN_V07.md) — the current plan in phases, its QC loops, the
-  status table, the goal scorecard and the handoff. **Start here when resuming work.**
+  status table and the goal scorecard.
 - [docs/NOTES_V07.md](docs/NOTES_V07.md) — the surveyor's notebook for v0.7: findings
   kept and rejected, judgment calls, bugs and how they were caught, debt, and new ideas.
 - [docs/WANTLIST.md](docs/WANTLIST.md) — the data grocery list, organized by soul
