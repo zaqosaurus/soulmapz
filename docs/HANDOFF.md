@@ -26,18 +26,19 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 5. [`docs/WANTLIST.md`](WANTLIST.md) — the protocol (binding) and the data wish list.
 6. Skim `pipeline/correlate.py` (findings and their logged verdicts) and `registry/registry.json`.
 
-## 3. State on 2026-11-15
+## 3. State on 2026-11-15 (v0.7.0 released)
 
 | | |
 |---|---|
-| Version string | `0.7.0-dev` (the Phase 5 release sets `0.7.0`) |
+| Version string | `0.7.0` |
 | Live layers / PENDING slots | 27 / 5 (The Banished Dark, The Commons, The Arsenal, Kindness, Notice of Mass Layoff) |
-| Page weight | 4.28 MB of an 8 MB ceiling (compressed payloads) |
-| Smoke test | 82/82 (`tests/smoke.js`) |
-| Atlas | 34 pages, reviewed page by page on the final build |
-| Findings | 10 cards on the page; v0.7's two hypotheses (H17, H18) were **rejected** and logged |
-| Branch | `claude/trusting-sagan-wkfcpi`, fast-forwarded into `main` on 2026-11-15 |
-| Built page in git | **still the v0.5 build** in `dist/index.html` and `docs/index.html` — by the maintainer's rule the built page is committed only in the release commit (Phase 5). GitHub Pages therefore still shows v0.5 until then. |
+| Page weight | 4.30 MB of an 8 MB ceiling (compressed payloads) |
+| Smoke test | 92/92 (`tests/smoke.js`) |
+| Atlas | 36 pages (3 sheets, 27 plates, findings + tested ledger, colophon), reviewed page by page |
+| Findings | 11 cards; 19 tested-and-not-found entries shown on the page; round 2 (`correlate.py v08`): 1 shipped, 10 rejected, 2 waiting |
+| Readings | 14 + orientation (5 new in round 2; readings may open on a time step via `era`) |
+| Branch / PR | `claude/pensive-sagan-59tix4`, PR [zaqosaurus/soulmapz#2](https://github.com/zaqosaurus/soulmapz/pull/2) — carries the **release commit** (`dist/index.html`, `docs/index.html`). GitHub Pages shows v0.7 once it is merged into `main`. |
+| Removal requests | issue form `.github/ISSUE_TEMPLATE/removal-request.yml`, or privately issue@soupmap.org (`registry.meta.contact`; a demo address the maintainer may change) |
 
 ## 4. The maintainer — how they work
 
@@ -48,8 +49,8 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 - Asks you to **ask questions first** when a decision is genuinely theirs (scope, publishing,
   credentials, allowing hosts). They add allowed hosts on request — name the exact host.
 - Binding project rules they set (also in PLAN_V07 §1):
-  - Non-commercial; CC-BY-NC sources are fine; removal on request (contact via the issue tracker
-    until a contact method exists — Phase 5 adds one; ask them what it should be).
+  - Non-commercial; CC-BY-NC sources are fine; removal on request (issue form, or privately
+    at the address in `registry.meta.contact`).
   - **The dead are not named unless notable** (in the memory layer or on Wikidata with a
     Wikipedia article). Death data ships as rates or counts for places; name fields are dropped
     at staging.
@@ -58,7 +59,8 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
   - **Headless rule:** a failing headless check says where to look; change code only when the
     cause is visible in the code or reproduces on the previous build. Don't over-correct for
     headless quirks.
-  - No `dist/index.html` or `docs/index.html` commits except the release commit.
+  - No `dist/index.html` or `docs/index.html` commits except a release commit. **Stage paths
+    explicitly after a build** — `git add -A` once swept the built page into a normal commit.
 
 ## 5. Commands
 
@@ -70,7 +72,7 @@ python3 pipeline/validate.py <id> [--protocol] [--us]      # acquisition step 4
 python3 pipeline/check_pack.py [ref]             # payload equivalence after packer/engine refactors
 NODE_PATH=$(npm root -g) node tests/views.js <out> [baseline]   # canonical-view pixel comparison
 NODE_PATH=$(npm root -g) node tests/look.js <id> <us|world> <out.png> [lens]   # solo one layer and screenshot it
-python3 pipeline/correlate.py v07                # H17/H18; add a `v08` block for Phase 4
+python3 pipeline/correlate.py v08                # round 2 (H19–H31); add a `v09` block for the next round
 python3 -I pipeline/scratch/<id>.py              # re-stage a layer from data/raw/ (re-download first; raw is git-ignored)
 ```
 
@@ -123,25 +125,21 @@ from regedit import set_key, add_layer
 
 ## 8. What's next
 
-**Phase 4 — findings, readings, atlas (round 2).** PLAN_V07 §6 lists 13 hypothesis pairs; 11 are
-runnable now (two wait on PENDING slots). Write each hypothesis and its bar into a `v08` block in
-`pipeline/correlate.py` *before* running it; ship only what passes §8; log every verdict. Build at
-least 4 new readings, add atlas Sheet 3, and re-verify The World at War essay's open question
-(war × endangered languages) — it is phrased as untested on purpose.
+v0.7 is complete (PLAN_V07 Phases 0–5). There is no v0.8 plan yet; the roadmap is the
+maintainer's call. Candidates, strongest first (details in NOTES_V07 §7 and §9):
 
-**Phase 5 — release v0.7** (PLAN_V07 §7): version `0.7.0`, the release commit with `dist/` and
-`docs/index.html`, README/CONTRIBUTING/CLASSROOM, a removal-request contact method, re-baselined
-canonical views.
+1. **Unblock the two gated light layers.** `download.geofabrik.de` and `eoimages.gsfc.nasa.gov`
+   are allowed in the environment but refused by the network gateway (CONNECT 403) — ask the
+   maintainer whether that can be lifted. Then run H25 and H26, already pre-stated in `v08`.
+2. **Legends that count** on every sequential tint; **arc hover** for flows; **computed plate stats**.
+3. **Age-adjusted COVID rates** to test the shipped card's biggest named confound.
+4. **CI**: build + smoke on every PR push.
+5. More ACS layers from www2.census.gov (languages at home, rent burden, long commutes).
 
 **Decisions only the maintainer can make** (ask, don't assume):
-- The removal-request contact method (an email, a form, the issue tracker?).
-- When to cut the release commit (it makes GitHub Pages show v0.7).
-- Allowing more hosts for PENDING slots: `www.census.gov` (to read the Census terms page),
-  `download.geofabrik.de` (The Commons from OpenStreetMap extracts), an Earthdata host
-  (night lights).
-
-**Good next ideas** are ranked in NOTES_V07 §7 — the strongest: numeric legends on every tint,
-bivariate county maps, arc hover, plate stats computed from data, CI running the smoke test.
+- Whether the gateway refusal of Geofabrik / NASA can be lifted, or an Earthdata/EOG account used.
+- The permanent removal-request address (issue@soupmap.org is a working demo).
+- The next version's scope.
 
 ## 9. How to finish a session well
 

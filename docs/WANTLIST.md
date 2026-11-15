@@ -84,7 +84,7 @@ answers, ten-record spot check, render reviewed). Details and judgment calls:
 | The long commute (60+ minutes) | ACS B08303 | OPEN (www2) | heat |
 | Bars vs. churches | County Business Patterns (NAICS 7224 vs 8131) | OPEN (www2) | heat pair |
 | Child poverty | Census SAIPE | OPEN (www2) | heat |
-| The Commons without Overpass | OpenStreetMap via Geofabrik extracts | needs host download.geofabrik.de | points |
+| The Commons without Overpass | OpenStreetMap via Geofabrik extracts | GATED — download.geofabrik.de allowed in the environment 2026-11-15 but refused by the network gateway (CONNECT 403); retry when it opens | points |
 | Night lights without eogdata | NASA Black Marble (VNP46) | needs Earthdata account + host | raster |
 
 ---
@@ -187,7 +187,7 @@ answers, ten-record spot check, render reviewed). Details and judgment calls:
 ### XI. NIGHT & SILENCE — new render forms
 | Want | Believed source | Status | Form |
 |---|---|---|---|
-| Light at night (what we spend on banishing the dark) | VIIRS annual composites | PENDING — eogdata.mines.edu fails certificate checks; raster engine built and tested | **raster** |
+| Light at night (what we spend on banishing the dark) | VIIRS annual composites; NASA Black Marble | PENDING — eogdata.mines.edu answers since 2026-11-15 but its downloads need an account login (the survey does not log in on anyone's behalf); NASA's open Black Marble GeoTIFFs (eoimages.gsfc.nasa.gov) allowed in the environment but refused by the network gateway; raster engine built and tested | **raster** |
 | The sound of America (anthropogenic noise model) | NPS soundscape model | OPEN? | **raster** |
 | Certified dark-sky places | DarkSky International | ✓ **BUILT** (v0.7) — The Last Dark, from Wikidata (darksky.org refuses scripts); partial mirror, disclosed | points |
 

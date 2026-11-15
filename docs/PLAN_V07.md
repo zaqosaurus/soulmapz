@@ -217,6 +217,8 @@ running anything (the correlator records each with its verdict):
 
 Context, judgment calls and the reasoning behind each addition: [NOTES_V07.md](NOTES_V07.md) §2 and §7.
 
+**Verdicts (run 2026-11-15, `python3 pipeline/correlate.py v08`):** H23 COVID × connectedness **shipped**; evictions × sorting, evictions × overdoses (r 0.19, a near miss logged as a miss), power fuel × data centers, languages × births, COVID × adherence (regional), living alone × overdoses, police × living alone, gifts × adherence, same-sex couples × sorting **rejected**; war × languages **not supported** (essay updated); night lights × UFOs and the Commons × connectedness **not run** (layers still gated). Full numbers in `correlate.py`; plain-language versions in `data/findings.json → tested`.
+
 New readings (titles from the expanded canon): *The Last Speakers*, *What Powers the
 Cloud*, *The Price of Staying*, *The Year Without Goodbyes*, *The Commons*, *Where the
 Wild Things Are Seen* (night lights × sightings).
@@ -293,8 +295,22 @@ with Phase 2 the moment hosts are allowed. Phase 4 needs the new layers. Phase 5
 | 1 · unlock what we have | **done** 2026-11-05 | All 8 unlocks live; lens/time counts reconcile with staging (Superfund 2026 = EPA's 1,343 final). Findings: H17 thrones and H18 price-per-head both **rejected** at their pre-stated bars (logged in `correlate.py v07`); per-resident theft now on 18 Ledger tooltips. **Gate found:** api.census.gov now requires an API key in the URL (redirects to missing_key) — affects Phase 3.3/3.4. Figures as of the end of Phase 1: 2.95 MB, smoke 73/73. **Current (2026-11-15): 4.28 MB, smoke 82/82.** |
 | 2 · reachable acquisitions | **done** 2026-11-06 | **6 of 6 shipped**, each through the §4 loop (terms on file, SHA-256, `pipeline/validate.py`, known answers, 10-record spot check, render reviewed): The Last Speakers (Glottolog 5.3, 7,836 languages, CC-BY), The World's Furnaces (WRI v1.3.0, 34,936 plants, CC-BY), The Year Without Goodbyes (NYT county COVID, non-commercial licence), When the State Kills (WaPo Fatal Force, county rates only, CC-BY-NC-SA), The Price of Staying (Eviction Lab estimates, ODC-BY — gate passed), The Sky Roads (OpenFlights, ODbL). 4.06 MB after Phase 2. Fixes found on the way: permalinks now address layers in a frozen v0.6 order (adding layers no longer changes old links); era bar fits between rail and plate. |
 | 3 · network unlock | **done** 2026-11-06 | **Shipped:** Gifts on the Return (IRS SOI 2022, itemized gifts, public domain), The World at War (UCDP GED 26.1, CC BY, Wikidata populations), The Uprooted (UNHCR end-2024, 44.8M people, CC BY), The Last Dark (Wikidata, 164 dark-sky places, CC0). **Shipped 2026-11-15:** Tables for One and Love, Counted (ACS summary files from www2.census.gov, allowed by the maintainer; the API still demands a key). **PENDING with gates named on the plate and in the colophon:** Kindness (a true generosity measure; the IRS itemized record ships separately as Gifts on the Return), The Banished Dark (VIIRS host fails certificates; raster engine ready), The Commons (Overpass connections do not complete), The Arsenal (ATF bot gate, 403, not circumvented). Blocked here and worked around: World Bank API, www.wikidata.org, openflights.org, www.unhcr.org (terms read from the repository source or a search excerpt). |
-| 4 · findings round 2 | not started | Next goal. New layers to lay against each other: COVID × connectedness, police killings × the Arsenal slot, eviction × the Sorting, war × languages. Pre-state each hypothesis in `correlate.py` before running. |
-| 5 · release v0.7 | not started | |
+| 4 · findings round 2 | **done** 2026-11-15 | Thirteen pairs pre-stated in `correlate.py v08` (bars written before any run, own commit). **1 shipped** (H23 connectedness × COVID deaths: r −0.44, within-state −0.39, every population band, partial with income −0.20), **10 rejected**, **2 not run** (H25, H26 wait on The Commons and The Banished Dark, still gated). H29 war × languages not supported (Spearman −0.09, 157 countries): the World at War essay now says so. Every verdict also ships on the page as a *tested and not found* ledger (findings menu + atlas). 5 new readings (one opens on a time step), atlas Sheet 3. Night lights and the Commons retried with new hosts: refused by the network gateway; gates updated. Census terms read and recorded. 4.30 MB, smoke 92/92, atlas 36 pages reviewed. |
+| 5 · release v0.7 | **done** 2026-11-15 | Version 0.7.0. Removal requests: an issue form (`.github/ISSUE_TEMPLATE/removal-request.yml`) or privately at issue@soupmap.org — in About, the atlas colophon, README, DATA_LICENSES, CONTRIBUTING. CLASSROOM.md (three lessons + guided readings). About credits every v0.7 source and the release line. Canonical views re-baselined (`tests/baseline/`). Release commit with `dist/index.html` + `docs/index.html` on PR #2. |
+
+**Goal scorecard (Phases 4–5), verified 2026-11-15**
+
+| Goal item | Outcome | Evidence |
+|---|---|---|
+| Every runnable pair pre-stated, run and logged | 11 run, 2 waiting (gated layers); bars committed before the run | commit "correlate: v08 block…", then the verdict commit |
+| Shipped cards pass §8 | 1 card (H23): all five county gates; wording names income, age, vaccination, politics; crude rates disclosed; skeptical read done | `data/findings.json` covid-connectedness |
+| War × languages essay claim | tested: not supported; essay rewritten to say so | registry control-war `why` |
+| The Commons / Banished Dark via §4 loop | tried; gates are network-side (gateway refuses the newly allowed hosts; EOG needs a login) — PENDING with dated gates | registry `pendingNote`, WANTLIST |
+| ≥ 4 new readings | 5 (Last Speakers, What Powers the Cloud, Price of Staying, Year Without Goodbyes, One Border Away), every number checked | smoke: lands, draws light, era step |
+| Atlas Sheet 3 | *The World's Voices and Furnaces* | smoke: sections = live + 6 |
+| Release 0.7.0 | version, removal contact, docs, CLASSROOM, views re-baselined, release commit | this table, PR #2 |
+| Smoke green, page < 8 MB | 92/92, 4.30 MB | `tests/smoke.js`, build ledger |
+| Atlas reviewed page by page | 36 pages at 60 dpi + full text scan; 1 defect fixed (colophon heading stranded at a page foot) | release build |
 
 **Goal scorecard (the v0.7 goal: Phases 0–3), verified 2026-11-06**
 

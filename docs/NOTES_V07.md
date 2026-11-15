@@ -183,15 +183,14 @@ before code changes.
   fulfillment, ledger, sorting). Migrating them to `pack` blocks would finish Phase 0.3.
 - **The rail is long** (32 entries). With more layers, discovery suffers; themes may need to
   collapse, or sheets need curated layer sets.
-- **Canonical views need a re-baseline** — the v0.6 baseline no longer matches by design
-  (new layers in the rail). Do it at release and commit the PNG hashes.
+- ~~Canonical views need a re-baseline~~ — re-baselined at the 0.7.0 release (`tests/baseline/`).
 - **Smoke takes several minutes**; a worker restart killed one run mid-way. A fast/slow split would
   make the loop cheaper.
 - **Phone width is checked only for the recorder and drawer.** The new era bar, plates with
   toggles, and world flows were not checked at 390 px.
 - **Two atlas plates are very dim** (Fulfillment, Ledger) — legible on screen, faint in print.
-- **The Census terms page** has not been read (host refused).
-- **Version string** is 0.7.0-dev until the Phase 5 release.
+- ~~The Census terms page~~ read 2026-11-15 and recorded verbatim in the two Census sidecars.
+- ~~Version string~~ 0.7.0 since the release.
 
 ---
 
@@ -271,3 +270,71 @@ and the commons still pending. Phase 4 and the next acquisitions should lean tow
 — the commons, kindness that does not require itemizing, the places people gather — not to
 balance the books but because a survey of the soul that only measures wounds is not
 complete.
+
+---
+
+## 9. Round 2 and the release (2026-11-15)
+
+### Findings round 2 — thirteen pre-stated, one shipped
+The hypotheses and their bars went into `correlate.py v08` in their own commit before any
+were run. The county bar: |r| ≥ 0.20 with Spearman agreeing, within-state ≥ 0.15, n ≥ 500, a
+≥ 20% quintile gap, the sign in 3 of 4 population bands, and a partial r ≥ 0.15 with log income
+per return (from the IRS gifts staging) held.
+
+- **Shipped — H23, "The Goodbyes Fell Hardest Where Classes Kept Apart."** r −0.44, within-state
+  −0.39, every band negative, partial with income −0.20; 543 vs 332 COVID deaths per 100k by
+  connectedness fifth. The card says income carries more than half of it and names age,
+  vaccination and politics as untested. Crude rates, not age-adjusted: the biggest open confound.
+- **Near misses logged as misses:** evictions × overdoses (r 0.188 against 0.20 — Spearman 0.33,
+  within-state 0.26, quintiles 9.7 vs 20.6); gifts × adherence with income held (0.188).
+  Neither was re-run with a different transform. If a future round wants them, it must
+  pre-state a new question (e.g. ranks), not re-run this one.
+- **Surprise:** evicting counties *gain* households (r +0.14) — the opposite of H19's sign. Sunbelt
+  growth and heavy filing go together. Not a finding; a direction for a future hypothesis.
+- **H21 (what powers the cloud):** data centers sit nearer fossil capacity than airports do in 19
+  of 24 countries, but nearer than their national grid only in 12 — the stated bar was 16.
+  France's 52%-vs-12% is partly **Porcheville**, a 2,290 MW oil plant closed in May 2017 that the
+  WRI database (frozen 2021) still lists; without it 43%. A reading tells that story honestly.
+- **H29 war × languages: not supported** (Spearman −0.09 over 157 countries; macro-areas mixed).
+  The World at War essay now says the test did not find it. The essay draft that replaced it
+  first said languages go quiet "under schools, cities, settlers and markets" — a causal
+  sentence the data cannot carry; cut before commit.
+- **New on the page: the ledger of what was not found** — every pre-stated hypothesis since
+  v0.5 with its plain-number result, in the findings menu and the atlas. The survey's honesty
+  was in `correlate.py` comments; now readers can see it.
+
+### Judgment calls
+| Call | Reason |
+|---|---|
+| NYC counted once in county pairs | The NYT reports the five boroughs as one unit; counting it five times would weight one number fivefold. |
+| Income control from IRS AGI ÷ returns | The only county income measure already in the repo with provenance; log scale. |
+| World pairs at country level cannot ship cards | n ≥ 500 is unreachable with ~170 countries; stated before running so the essay test could not be upgraded to a card afterwards. |
+| No substitute night-lights image | A texture of "Earth at night" from a JavaScript package would have been a picture, not data, of unknown vintage. The slot stays PENDING. |
+| Email spelled as given: issue@soupmap.org | The maintainer chose it as a working demo address; it lives in `registry.meta.contact` and two docs lines, easy to change. |
+
+### Bugs and slips, and how they were caught
+| Bug | Caught by | Fix |
+|---|---|---|
+| A reading's caption card covered the era bar | reading screenshot | the bar lifts above an open caption (`eraRefresh`) |
+| A draft reading said one closed plant explained France's ring | recomputing without it (52% → 43%) | reworded with both numbers |
+| "Darkest counties" named three where four of the top five were Georgian | re-reading the ranked list | named all four |
+| The built page went into a non-release commit (`git add -A` after a build) | `git show --stat` | reverted in the next commit (history rewrite was not allowed); stage paths explicitly after any build |
+| Colophon heading stranded at a page foot | atlas review | `break-after: avoid` on atlas headings |
+
+### Access, 2026-11-15
+`www.census.gov` opened once the environment allowed it (the old `*.2census.gov` entry was a typo).
+`download.geofabrik.de` and `eoimages.gsfc.nasa.gov` were added to the environment in the same
+change but the network gateway still answers CONNECT with 403 — a policy above the environment.
+`eogdata.mines.edu` now passes TLS, but every download redirects to an account login.
+
+### Ideas from this round (added to §7's list)
+23. **Readings that step through time** — `era` opens one step; a `steps` list could walk a
+    reading through quarters (spring 2020 → winter 2020 → …) with a sentence per step.
+24. **Pair cards for near misses** — a muted card style for results that failed by a hair, so a
+    reader sees the 9.7-vs-20.6 gap *and* why it was not called a finding.
+25. **Age-adjusted COVID rates** — the CDC publishes age-adjusted county mortality; it would
+    test the biggest confound the shipped card names.
+26. **Stale-record flags** — a registry list of known-closed plants (Porcheville first) shown
+    dimmed, so a frozen database's ghosts are visible rather than silently counted.
+27. **A removal-request log** — a public, anonymized count of requests received and honoured,
+    in About.

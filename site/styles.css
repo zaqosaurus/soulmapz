@@ -416,6 +416,8 @@ a.cc-btn{text-decoration:none;display:inline-block}
   .at-stat b{display:block;font-size:9.5pt}
   .at-stat span{font-family:var(--mono);font-size:5.8pt;letter-spacing:.1em;color:#666;text-transform:uppercase}
   #atlas h3{font-family:var(--mono);font-size:6.5pt;letter-spacing:.28em;color:#8a6a1e;margin:.09in 0 .02in;font-weight:500}
+  #atlas h3{break-after:avoid;page-break-after:avoid}
+  .at-colophon p{break-inside:avoid}
   #atlas p{margin:0 0 .05in}
   .at-note{font-family:var(--mono);font-size:6.3pt;line-height:1.5;color:#555;border:1px dashed #bbb;padding:.05in .07in;margin-top:.08in}
   .at-protocol{font-family:var(--mono);font-size:7pt;line-height:1.5;border:1px solid #b8862a;padding:.06in .08in;margin-bottom:.08in}
