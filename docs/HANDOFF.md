@@ -138,8 +138,15 @@ from regedit import set_key, add_layer
 
 ## 8. What's next
 
-v0.7 is complete (PLAN_V07 Phases 0–5). There is no v0.8 plan yet; the roadmap is the
-maintainer's call. Candidates, strongest first (details in NOTES_V07 §7 and §9):
+v0.7 is complete (PLAN_V07 Phases 0–5). **Read [NEXT.md](NEXT.md)** — the recommended v0.8
+("The Light Side": a legible map, reachable light layers, sharper findings, CI) with a starting
+`/goal`, and §5, the long view: what would make people come back — **the portrait of a place**
+("where are you from?" answered by an honest letter and a soul fingerprint), **guess before you
+look** (a daily question; readers pre-state like the survey does), **the exceptions** (places that
+break each pattern, and their residents as correspondents), and **the living record** (monthly
+refresh and dispatch). If only one: the portrait. The roadmap is the maintainer's call.
+
+Smaller candidates, strongest first (details in NOTES_V07 §7 and §9):
 
 1. **Unblock the two gated light layers.** `download.geofabrik.de` and `eoimages.gsfc.nasa.gov`
    are allowed in the environment but refused by the network gateway (CONNECT 403) — ask the
