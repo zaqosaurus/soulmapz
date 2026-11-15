@@ -137,7 +137,7 @@ maintainer's call. Candidates, strongest first (details in NOTES_V07 §7 and §9
 5. More ACS layers from www2.census.gov (languages at home, rent burden, long commutes).
 
 **Decisions only the maintainer can make** (ask, don't assume):
-- Whether the gateway refusal of Geofabrik / NASA can be lifted, or an Earthdata/EOG account used.
+- ~~Gated light layers~~ — the maintainer accepted The Commons and The Banished Dark as PENDING for v0.7 (2026-11-15). Revisit if the gateway opens or an account is offered.
 - The permanent removal-request address (issue@soupmap.org is a working demo).
 - The next version's scope.
 
