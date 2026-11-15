@@ -112,3 +112,79 @@ living survey.
 The pre-stated bars. The ledger of what was not found. PENDING slots instead of substitutes.
 Reading the render as a test. Checking every number in every sentence against the data.
 These are why a reader can trust the one card that passed.
+
+---
+
+## 5. From far away — what would make this something everyone gets something from
+
+*Added at the maintainer's request: step back from the code and ask what would turn the survey
+from something worth seeing once into something people return to, and that no reader could say
+gave them nothing.*
+
+### What it is today, seen from a distance
+A beautiful, honest atlas **about everyone and addressed to no one**. You arrive, you're
+impressed, you toggle a few layers, you leave. Three things are missing, and they are the three
+reasons people come back to anything:
+
+- **It is not about me.** Aggregates of millions are true and numbing. Nobody returns to a map
+  of "us"; people return to a mirror.
+- **Nothing changes when I'm gone.** A finished atlas is seen once. Things people revisit
+  either move (news, seasons) or remember them (their streak, their places, their people).
+- **It doesn't ask me anything.** The survey has a beautiful method — say what you expect, then
+  check — but it does all of that itself. The reader only watches.
+
+And one tonal problem: **it leaves people heavier than it found them.** Seven layers of loss for
+every four of light. People come back to what leaves them a little better.
+
+### The transformation, in four moves (in order of importance)
+
+**1. Begin with you — the portrait of a place.** The front door asks one question:
+*where are you from?* (and, if you like, *where do you live now?*). The answer is not a
+dashboard; it's a **letter** — a page of honest sentences about that place across every layer:
+what's unusually bright there, what's unusually dark, how it compares with places like it, who
+the world remembers from within 50 km, what the survey *cannot see* there, and the arc between
+the two places you gave (your own migration, laid on the Great Sorting). Rates become human
+scale ("in your county, about one person every eleven days"). With the portrait comes a
+**soul fingerprint**: a single generated glyph, unique to each county and country, drawn from
+its 27 readings — art you can hold, compare with your mother's hometown, put on a wall. Everyone
+has a place. Everyone gets something. It stays in the browser: nothing about the reader is sent
+anywhere, which keeps the zero-network rule.
+
+**2. Guess before you look — the method becomes the game.** One question a day, the same for
+everyone: *Which county gives the largest share of its income away? Where do the most
+languages live? Do the lonely die younger?* You answer **before** the map reveals — tap where
+you think, or pick a number — then the map answers, and the card says what the survey knows and
+doesn't. Over weeks, the page shows a reader their own blind spots ("you expect more harm in
+cities than there is"). This is the survey's ethic — pre-state, then check — handed to every
+reader as a daily habit. It is the strongest return mechanic there is, and the most
+educational one: what everyone gets out of it is a calibrated sense of their own country.
+*Care rule:* never score guesses about deaths. Grief is not a game; those questions are asked,
+answered, and left unscored.
+
+**3. The exceptions — the hopeful half of every pattern.** For every pattern on the map, show
+the places that break it: the counties poor and unconnected on paper with low overdose rates;
+the towns that should be dark and aren't. This is still "where, not why" — the survey only
+points — but it is where the light lives, and where readers' attention turns into curiosity
+instead of dread. And it opens a door: **the people who live in the exceptions know things the
+data doesn't.** A simple, moderated way to say "here is what we do here" (an issue form, no
+server) turns readers into correspondents — the first light-side data the survey gathers itself,
+cited like everything else.
+
+**4. The survey keeps watch — the living record.** Every month the sources move: new overdose
+quarters, refugee mid-year counts, new data centers. A scheduled refresh opens a PR, and the page
+carries a dispatch — *What changed in the soul this month* — plus, for a returning reader, "since
+your last visit, here is what changed in **your** places." The world moved; the map noticed; the
+reader has a reason to look again.
+
+### If only one: build the portrait
+The portrait is the universal hook and the platform for the rest: the daily question can be about
+your place, the exceptions can be your neighbours, the monthly dispatch can be your county's. It
+uses only data the survey already has. Done honestly — uncertainty in every sentence, no
+"worst county in America" framing, the gaps named — it is the moment a stranger stops reading
+about "us" and starts reading about home.
+
+### What must not change while doing any of this
+The portrait must not become a horoscope: every sentence traces to a layer and says how sure it
+is. The game must never trivialize the dead. Contributions are moderated and cited, never
+anonymous claims presented as data. And the light is never manufactured to balance the dark — it
+is looked for, harder.
