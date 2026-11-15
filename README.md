@@ -59,6 +59,8 @@ self-contained file under 8 MB** — aggregate to cells, not rows.
 
 - [docs/HANDOFF.md](docs/HANDOFF.md) — **start here when resuming work**: state, rules,
   commands, environment, gotchas, what's next.
+- [docs/NEXT.md](docs/NEXT.md) — what to do after v0.7: the light side, legible legends,
+  sharper findings, and the one magic thing.
 - [docs/PLAN_V07.md](docs/PLAN_V07.md) — the current plan in phases, its QC loops, the
   status table and the goal scorecard.
 - [docs/NOTES_V07.md](docs/NOTES_V07.md) — the surveyor's notebook for v0.7: findings

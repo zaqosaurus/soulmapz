@@ -17,6 +17,8 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 ## 2. Read in this order
 
 1. **This file.**
+   Then [`docs/NEXT.md`](NEXT.md) — the recommended next work (v0.8 "The Light Side"), a goal to
+   start from, and what to leave alone.
 2. [`docs/PLAN_V07.md`](PLAN_V07.md) — §1 standing rules (binding), §6 Phase 4, §7 Phase 5,
    §8 QC loops, §10 status table and goal scorecard.
 3. [`docs/NOTES_V07.md`](NOTES_V07.md) — findings kept and rejected, the judgment calls and
