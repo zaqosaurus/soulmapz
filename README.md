@@ -59,6 +59,10 @@ self-contained file under 8 MB** — aggregate to cells, not rows.
 
 - [docs/HANDOFF.md](docs/HANDOFF.md) — **start here when resuming work**: state, rules,
   commands, environment, gotchas, what's next.
+- [docs/STRANGER_REVIEW.md](docs/STRANGER_REVIEW.md) — an outside review of the built page: the
+  population finding, what to cut, a plan. Not yet adopted.
+- [docs/STRANGE.md](docs/STRANGE.md) — candidate layers the survey lacks, by kind of record.
+  Leads only; nothing verified.
 - [docs/NEXT.md](docs/NEXT.md) — what to do after v0.7: the light side, legible legends,
   sharper findings, the one magic thing, and the long view (a portrait of every reader's place,
   guess-before-you-look, the exceptions, the living record).

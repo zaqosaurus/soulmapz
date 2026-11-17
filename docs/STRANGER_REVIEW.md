@@ -23,6 +23,13 @@ of the conterminous U.S. (863 populated cells, population from `data/ref/us_plac
 | Devil's Land, Angel's Land | 0.15 | 15% |
 | *(population itself)* | — | 71% |
 
+*How the table was made, so it can be redone:* each layer's `data/staging/<id>.json` records
+inside 24–50° N, 125–66° W were counted per one-degree cell; population per cell is the sum of
+`pop` over the city points in `us_places.csv` (21,783 places — incorporated places only, so
+rural population is undercounted). Spearman rank correlation with averaged ties, over cells
+with population above zero. The script was not kept. This is a rough check that shows the
+direction, not a finding to publish; redo it on county population before quoting a number.
+
 Two consequences.
 
 **"Density becomes elevation; overlap becomes light" mostly redraws the census.** The founding

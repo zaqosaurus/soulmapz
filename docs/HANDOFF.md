@@ -17,6 +17,11 @@ Repository: `zaqosaurus/soulmapz`. Work happens on a feature branch, then reache
 ## 2. Read in this order
 
 1. **This file.**
+   Then two outside reviews written 2026-11-16/17, which **disagree with NEXT.md in places and
+   have not yet been accepted or rejected by the maintainer** — ask before acting on either:
+   [`docs/STRANGER_REVIEW.md`](STRANGER_REVIEW.md) (the point layers mostly redraw population;
+   draw surprise instead; what to cut; a seven-step plan) and [`docs/STRANGE.md`](STRANGE.md)
+   (about 45 candidate layers the survey lacks, from memory, every source unverified).
    Then [`docs/NEXT.md`](NEXT.md) — the recommended next work (v0.8 "The Light Side"), a goal to
    start from, and what to leave alone.
 2. [`docs/PLAN_V07.md`](PLAN_V07.md) — §1 standing rules (binding), §6 Phase 4, §7 Phase 5,
